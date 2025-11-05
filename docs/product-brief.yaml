@@ -1,0 +1,109 @@
+# Product Brief for the Job Market Intelligence Aggregator
+# Version 1.0
+# Date: 2025-11-04
+# Product Manager: Rich
+
+project_overview:
+  title: Job Market Intelligence Aggregator
+  version: 1.0
+  date: "2025-11-04"
+  product_manager: Rich
+
+problem_statement:
+  whats_not_working: |
+    Job seekers lack real-time visibility into how in-demand their skills are across markets and roles, leading to inefficient upskilling, misguided career moves, and missed opportunities. 
+    Employers (future audience) lack visibility into competitors’ hiring intensity by role and market, impacting time-to-hire and compensation decisions.
+  why_now:
+    - Demand signals for data and product roles are shifting rapidly with AI adoption, remote/onsite changes, and macro volatility—historic reports are stale.
+    - Personal development goal: deliver a working prototype in 2–3 weeks to showcase end-to-end product and AI skills.
+    - Opportunity to validate a focused, queryable insights product before expanding to employer-facing analytics.
+  
+  target_scope:
+    locations:
+      - London
+      - New York City
+      - Denver
+    role_families:
+      data_roles:
+        - Data Analyst
+        - Data Engineer
+        - Analytics Engineer
+        - Data Scientist
+        - ML Engineer
+        - AI Engineer
+        - Data Architect
+      product_roles:
+        - Technical Product Manager
+        - Product Manager
+        - Product Owner
+        - Growth PM
+        - AI PM
+
+business_impact:
+  expected_benefits:
+    - Clear, current insight for job seekers on skills, titles, and locations in demand (e.g., rising skills for Data Engineers in NYC; remote vs onsite mix for PMs in London).
+    - Hands-on learning across data pipelines, LLM classification, and analytics—building a demonstrable portfolio piece.
+    - Foundation for a future B2B insights product (competitive hiring patterns, comp policy inputs, talent heatmaps).
+  strategic_fit:
+    - Aligned to learning-first philosophy: ship fast, keep simple schemas, iterate on real feedback.
+    - Demonstrates full-stack product skills: ingestion → extraction → classification → trends → consumable front-end.
+    - Creates a reusable data model and taxonomy for future expansion (more roles, geographies, employer view).
+
+user_impact:
+  current_state: Users rely on anecdote and static reports; little confidence in where to invest time or which roles to pursue.
+  future_state: Non-technical users can explore trends in a basic front-end (e.g., Streamlit): filter by role, city, time window; view skill demand trajectories, remote/onsite split, and employer concentration.
+
+core_capabilities:
+  data_layer:
+    - ingestion: web scraping + APIs with incremental updates.
+    - extraction: titles, locations, compensation text, skills, and seniority from raw descriptions.
+    - storage: raw and enriched layers with a simple, queryable schema.
+  ai_layer:
+    - taxonomy_mapping: via rules + lightweight models.
+    - classification: LLM-assisted classification for function, level, skills with confidence scores.
+    - human_in_the_loop: Optional queue for edge cases.
+  analysis_layer:
+    - trend_tracking: time series by role, skill, and city; remote vs onsite.
+    - front_end: Basic app (Streamlit/Plotly) for non-technical exploration and quick iteration.
+
+success_metrics:
+  - category: Coverage & Quality
+    kpis:
+      - kpi: Data Coverage
+        definition: Unique new postings/week (de-duplicated) — combined LON + NYC + DEN
+        target: "5,000–7,500 / week"
+        stretch: "10,000 / week"
+      - kpi: Data Freshness
+        definition: "% of postings ingested ≤72h from first seen"
+        target: "≥90%"
+        stretch: "≥95%"
+      - kpi: Classification Quality (F1)
+        definition: "Function & Level (macro-F1) and Skills (micro-F1 or Jaccard ≥0.70)"
+        target: "≥0.85 / ≥0.80"
+        stretch: "0.88 / 0.83"
+  
+  - category: Performance & Reliability
+    kpis:
+      - kpi: Insight Access — Median query latency
+        definition: null
+        target: "<5s"
+        stretch: "<2s"
+      - kpi: Reliability — Successful daily pipeline runs
+        definition: null
+        target: "≥95%"
+        stretch: "≥98%"
+      - kpi: Velocity — MVP feature completeness
+        definition: null
+        target: Ship in 2 or 3 weeks
+        stretch: null
+  
+  - category: Pilot User Validation
+    kpis:
+      - kpi: Recommendation Intent
+        instrument_wording: "“Would you recommend this prototype to a peer?” (Yes/No)"
+        target: "≥60% Yes"
+        stretch: "≥75% Yes"
+      - kpi: Qual Insight Quality
+        instrument_wording: "# of “new useful insights” surfaced per session (open-ended)"
+        target: Median ≥2
+        stretch: Median ≥3
