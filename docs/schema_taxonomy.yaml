@@ -1,38 +1,217 @@
 # Job Market Intelligence Platform - Taxonomy Schema
-# Version: 1.0
-# Last Updated: 2025-11-05
+# Version: 1.1
+# Last Updated: 2025-11-06
 # Purpose: Define classification taxonomy for job postings in Product and Data roles
+# Changes from v1.0: Restructured with fields first, added seniority, clarified required/nullable
 
 metadata:
-  version: 1.0
-  last_updated: "2025-11-05"
+  version: 1.1
+  last_updated: "2025-11-06"
   scope: ["Product", "Data"]
   markets: ["London", "New York", "Denver"]
   extraction_complexity:
     simple: [employer.name, role.title_display, location.city_code, posting.posted_date]
-    moderate: [job_subfamily, skills.items.name, working_arrangement, position_type]
+    moderate: [job_subfamily, skills.items.name, working_arrangement, position_type, seniority]
     complex: [experience_range, compensation.base_salary_range]
   data_availability:
     always: [title, company, location, url, posted_date]  # >95%
-    usually: [skills, job_type, arrangement, department]  # 70-90%
+    usually: [skills, job_type, arrangement, department, seniority]  # 70-90%
     sometimes: [salary, experience_years]  # 30-50%
     rarely: [equity, headcount]  # <10%
 
 # =========================
-# ENUMS (uniform code+label)
+# FIELD DEFINITIONS (Output Schema)
 # =========================
+# These define the structured output after LLM classification
+# LLM should return JSON matching this exact structure
+
+fields:
+  employer:
+    name: 
+      type: string
+      required: true
+      extraction_note: "Always present in job postings - exact company name"
+    
+    department: 
+      type: enum
+      enum: job_family
+      nullable: true
+      extraction_note: "Only if explicitly stated (e.g., 'Data team', 'Product org')"
+    
+    company_size_estimate: 
+      type: enum
+      enum: company_size
+      nullable: true
+      extraction_note: "Infer from context clues if clear (e.g., 'Series B startup', 'Fortune 500')"
+
+  role:
+    title_display: 
+      type: string
+      required: true
+      extraction_note: "Exact title from posting - preserve original formatting"
+    
+    title_canonical: 
+      type: string
+      nullable: true
+      extraction_note: "Normalized/standardized version using title_mappings (optional for LLM)"
+    
+    job_family: 
+      type: enum
+      enum: job_family
+      required: true
+      extraction_note: "MUST classify as 'product', 'data', or 'out_of_scope' - never null. Use 'out_of_scope' for non-Product/Data roles"
+    
+    job_subfamily: 
+      type: enum
+      enum: [product_subfamily, data_subfamily]
+      nullable: true
+      extraction_note: "MUST choose specific subfamily from valid options. Set to null only if job_family is 'out_of_scope'"
+    
+    seniority:
+      type: enum
+      enum: seniority_level
+      nullable: true
+      extraction_note: "Only if clear from title or description - use seniority_markers for hints"
+    
+    track: 
+      type: enum
+      enum: track
+      nullable: true
+      extraction_note: "IC vs Management - only if role explicitly involves people management"
+    
+    position_type: 
+      type: enum
+      enum: position_type
+      required: true
+      extraction_note: "Default to 'full_time' if not explicitly stated otherwise"
+    
+    experience_range: 
+      type: string
+      nullable: true
+      extraction_note: "Only if explicitly stated (e.g., '3-5 years', '5+ years') - do NOT infer"
+
+  location:
+    city_code: 
+      type: enum
+      enum: location_city
+      required: true
+      extraction_note: "Map location to one of: lon, nyc, den using aliases if needed"
+    
+    working_arrangement: 
+      type: enum
+      enum: working_arrangement
+      required: true
+      extraction_note: "Classify as onsite, hybrid, or remote - default to onsite if unclear"
+
+  compensation:
+    currency: 
+      type: enum
+      enum: currency_code
+      nullable: true
+      extraction_note: "Only if salary explicitly stated - infer from location if not specified"
+    
+    base_salary_range:
+      type: object
+      nullable: true
+      properties:
+        min: 
+          type: number
+          nullable: true
+          extraction_note: "Minimum salary if range provided"
+        max: 
+          type: number
+          nullable: true
+          extraction_note: "Maximum salary if range provided"
+      extraction_note: "Only extract if explicitly stated in posting - do NOT infer or estimate"
+    
+    equity_eligible: 
+      type: boolean
+      nullable: true
+      extraction_note: "True if equity/stock options mentioned, null if not mentioned"
+
+  skills:
+    items:
+      type: array
+      extraction_note: "CRITICAL: Extract ONLY skills explicitly mentioned in posting text - NO inference"
+      items:
+        type: object
+        properties:
+          name: 
+            type: string
+            extraction_note: "Exact skill name from posting (e.g., 'Python', 'SQL', 'A/B testing')"
+          
+          family_code: 
+            type: string
+            nullable: true
+            extraction_note: "Map to skill family from skills_ontology if match is clear"
+
+  posting:
+    posting_url: 
+      type: string
+      required: true
+      extraction_note: "Full URL to job posting"
+    
+    source: 
+      type: string
+      required: true
+      extraction_note: "Source identifier (e.g., 'linkedin_rss', 'adzuna_api', 'indeed_rss')"
+    
+    req_id: 
+      type: string
+      nullable: true
+      extraction_note: "Requisition/job ID if present in posting"
+    
+    posted_date: 
+      type: string
+      format: date
+      required: true
+      extraction_note: "Date job was posted (YYYY-MM-DD format)"
+    
+    last_seen_date: 
+      type: string
+      format: date
+      required: true
+      extraction_note: "Date job was last observed active (YYYY-MM-DD format)"
+    
+    is_sponsored: 
+      type: boolean
+      nullable: true
+      extraction_note: "True if marked as sponsored/promoted, null if unclear"
+
+# =========================
+# ENUMS (Valid Values)
+# =========================
+
 enums:
   job_family:
     - {code: product, label: "Product"}
     - {code: data, label: "Data"}
+    - {code: out_of_scope, label: "Out of Scope", description: "Job is not Product or Data (e.g., Marketing, Sales, Software Engineering, Finance)"}
 
   location_city:
-    - {code: lon, label: "London", region: "Greater London", country: "UK", country_code: "GB", default_currency: "GBP",
-       aliases: ["London, UK", "London, England", "LON", "London, United Kingdom"]}
-    - {code: nyc, label: "New York", region: "New York", country: "USA", country_code: "US", default_currency: "USD",
-       aliases: ["New York, NY", "NYC", "New York City", "Manhattan", "Brooklyn"]}
-    - {code: den, label: "Denver", region: "Colorado", country: "USA", country_code: "US", default_currency: "USD",
-       aliases: ["Denver, CO", "DEN", "Denver Metro", "Boulder, CO"]}
+    - code: lon
+      label: "London"
+      region: "Greater London"
+      country: "UK"
+      country_code: "GB"
+      default_currency: "GBP"
+      aliases: ["London, UK", "London, England", "LON", "London, United Kingdom", "Greater London"]
+    
+    - code: nyc
+      label: "New York"
+      region: "New York"
+      country: "USA"
+      country_code: "US"
+      default_currency: "USD"
+      aliases: ["New York, NY", "NYC", "New York City", "Manhattan", "Brooklyn", "Queens", "Bronx"]
+    
+    - code: den
+      label: "Denver"
+      region: "Colorado"
+      country: "USA"
+      country_code: "US"
+      default_currency: "USD"
+      aliases: ["Denver, CO", "DEN", "Denver Metro", "Boulder, CO", "Colorado"]
 
   working_arrangement:
     - {code: onsite, label: "Onsite"}
@@ -50,152 +229,306 @@ enums:
     - {code: management, label: "Management"}
 
   seniority_level:
-  - {code: junior, label: "Junior"}
-  - {code: mid, label: "Mid-Level"}
-  - {code: senior, label: "Senior"}
-  - {code: staff_plus, label: "Staff+"}
+    - {code: junior, label: "Junior"}
+    - {code: mid, label: "Mid-Level"}
+    - {code: senior, label: "Senior"}
+    - {code: staff_plus, label: "Staff+"}
 
-  # Product subfamilies
-  product_subfamily:
-    - {code: core_pm, label: "Core PM"}
-    - {code: growth_pm, label: "Growth PM"}
-    - {code: platform_pm, label: "Platform PM"}
-    - {code: technical_pm, label: "Technical PM"}
-    - {code: ai_ml_pm, label: "AI/ML PM"}
+  currency_code:
+    - {code: gbp, label: "GBP"}
+    - {code: usd, label: "USD"}
 
-  # Data subfamilies (as requested - 9 categories)
-  data_subfamily:
-    - {code: product_analytics, label: "Product Analytics"}
-    - {code: data_analyst, label: "Data Analyst"}
-    - {code: analytics_engineer, label: "Analytics Engineer"}
-    - {code: data_engineer, label: "Data Engineer"}
-    - {code: ml_engineer, label: "Machine Learning Engineer"}
-    - {code: data_scientist, label: "Data Scientist"}
-    - {code: research_scientist_ml, label: "Research Scientist (ML/AI)"}
-    - {code: ai_engineer, label: "AI Engineer"}
-    - {code: data_architect, label: "Data Architect"}
-
-  # Company size (for enrichment)
   company_size:
     - {code: startup, label: "Startup (1-50)"}
     - {code: scaleup, label: "Scale-up (51-500)"}
     - {code: enterprise, label: "Enterprise (500+)"}
 
-  # Cross-cutting skill parents
-  skill_parent:
-    - {code: product, label: "Product"}
-    - {code: data_ml, label: "Data/ML"}
-    - {code: platform_infra, label: "Platform/Infra"}
+  # Product subfamilies
+  product_subfamily:
+    - {code: core_pm, label: "Core PM", description: "Generalist product management across consumer or B2B products"}
+    - {code: growth_pm, label: "Growth PM", description: "Focus on acquisition, activation, retention, monetization"}
+    - {code: platform_pm, label: "Platform PM", description: "Internal tools, APIs, developer platforms, infrastructure products"}
+    - {code: technical_pm, label: "Technical PM", description: "Deep technical involvement, often with engineering background"}
+    - {code: ai_ml_pm, label: "AI/ML PM", description: "AI/ML product development, model integration, LLM products"}
+
+  # Data subfamilies
+  data_subfamily:
+    - {code: product_analytics, label: "Product Analytics", description: "Product metrics, user behavior, experimentation"}
+    - {code: data_analyst, label: "Data Analyst", description: "Business intelligence, reporting, dashboards, ad-hoc analysis"}
+    - {code: analytics_engineer, label: "Analytics Engineer", description: "dbt, data modeling, metrics layer, analytics infrastructure"}
+    - {code: data_engineer, label: "Data Engineer", description: "Data pipelines, ETL/ELT, data infrastructure, orchestration"}
+    - {code: ml_engineer, label: "Machine Learning Engineer", description: "Production ML systems, model deployment, MLOps"}
+    - {code: data_scientist, label: "Data Scientist", description: "Statistical modeling, predictions, experimentation, insights"}
+    - {code: research_scientist_ml, label: "Research Scientist (ML/AI)", description: "Novel ML research, paper publication, cutting-edge techniques"}
+    - {code: ai_engineer, label: "AI Engineer", description: "LLM applications, prompt engineering, RAG, GenAI products"}
+    - {code: data_architect, label: "Data Architect", description: "Data strategy, architecture design, governance, enterprise data"}
 
 # =========================
 # SKILLS ONTOLOGY
 # =========================
+# Used to map extracted skills to families for analysis
+# LLM should match skill names to this list when possible
+
 skills_ontology:
   product:
     - family: {code: discovery_research, label: "Discovery & Research"}
-      names: ["User interviews", "User research", "JTBD", "Jobs to be done", "Opportunity sizing", "Market research"]
+      names: 
+        - "User interviews"
+        - "User research"
+        - "JTBD"
+        - "Jobs to be done"
+        - "Opportunity sizing"
+        - "Market research"
+    
     - family: {code: execution_delivery, label: "Execution & Delivery"}
-      names: ["Backlog management", "Roadmapping", "Agile", "Scrum", "Kanban", "Prioritization", "JIRA", "Sprint planning"]
+      names: 
+        - "Backlog management"
+        - "Roadmapping"
+        - "Agile"
+        - "Scrum"
+        - "Kanban"
+        - "Prioritization"
+        - "JIRA"
+        - "Sprint planning"
+    
     - family: {code: experimentation, label: "Experimentation"}
-      names: ["A/B testing", "Experiment design", "Statistical significance", "Hypothesis testing"]
+      names: 
+        - "A/B testing"
+        - "Experiment design"
+        - "Statistical significance"
+        - "Hypothesis testing"
+    
     - family: {code: analytics_pm, label: "Analytics for PMs"}
-      names: ["SQL", "Data analysis", "Metrics", "KPIs", "Dashboards", "Amplitude", "Mixpanel", "Google Analytics"]
+      names: 
+        - "SQL"
+        - "Data analysis"
+        - "Metrics"
+        - "KPIs"
+        - "Dashboards"
+        - "Amplitude"
+        - "Mixpanel"
+        - "Google Analytics"
+    
     - family: {code: stakeholder_mgmt, label: "Stakeholder Management"}
-      names: ["Stakeholder management", "Executive communication", "Cross-functional collaboration"]
+      names: 
+        - "Stakeholder management"
+        - "Executive communication"
+        - "Cross-functional collaboration"
 
   data_ml:
     - family: {code: programming, label: "Programming"}
       names: ["Python", "R", "SQL", "Scala", "Java", "Julia"]
+    
     - family: {code: analytics_stats, label: "Analytics/Statistics"}
-      names: ["Statistics", "Probability", "Regression", "Causal inference", "Time series", "Hypothesis testing", "Bayesian analysis"]
+      names: 
+        - "Statistics"
+        - "Probability"
+        - "Regression"
+        - "Causal inference"
+        - "Time series"
+        - "Hypothesis testing"
+        - "Bayesian analysis"
+    
     - family: {code: classical_ml, label: "Classical Machine Learning"}
-      names: ["Scikit-learn", "XGBoost", "LightGBM", "Random Forest", "Logistic regression", "SVM", "Feature engineering"]
+      names: 
+        - "Scikit-learn"
+        - "XGBoost"
+        - "LightGBM"
+        - "Random Forest"
+        - "Logistic regression"
+        - "SVM"
+        - "Feature engineering"
+        - "Machine learning"
+        - "ML"
+    
     - family: {code: deep_learning, label: "Deep Learning"}
-      names: ["PyTorch", "TensorFlow", "Keras", "Neural networks", "CNNs", "RNNs", "Computer vision", "NLP"]
+      names: 
+        - "PyTorch"
+        - "TensorFlow"
+        - "Keras"
+        - "Neural networks"
+        - "CNNs"
+        - "RNNs"
+        - "Computer vision"
+        - "NLP"
+        - "Deep learning"
+    
     - family: {code: llm_genai, label: "LLM/GenAI"}
-      names: ["LLMs", "Transformers", "GPT", "BERT", "Prompt engineering", "RAG", "Vector databases", "LangChain", "Embeddings", "Fine-tuning"]
+      names: 
+        - "LLMs"
+        - "Large language models"
+        - "Transformers"
+        - "GPT"
+        - "BERT"
+        - "Prompt engineering"
+        - "RAG"
+        - "Retrieval augmented generation"
+        - "Vector databases"
+        - "LangChain"
+        - "Embeddings"
+        - "Fine-tuning"
+        - "GenAI"
+        - "Generative AI"
+    
     - family: {code: big_data, label: "Big Data"}
       names: ["Spark", "PySpark", "Hadoop", "Hive", "Presto", "Flink"]
+    
     - family: {code: pipelines_orchestration, label: "Pipelines/Orchestration"}
-      names: ["Airflow", "Dagster", "Prefect", "Luigi", "Data pipelines", "ETL", "ELT"]
+      names: 
+        - "Airflow"
+        - "Dagster"
+        - "Prefect"
+        - "Luigi"
+        - "Data pipelines"
+        - "ETL"
+        - "ELT"
+    
     - family: {code: data_modeling, label: "Data Modeling"}
-      names: ["dbt", "Data modeling", "Dimensional modeling", "Star schema", "Data warehouse design"]
+      names: 
+        - "dbt"
+        - "Data modeling"
+        - "Dimensional modeling"
+        - "Star schema"
+        - "Data warehouse design"
+    
     - family: {code: warehouses_lakes, label: "Warehouses/Lakes"}
-      names: ["Snowflake", "BigQuery", "Redshift", "Databricks", "Athena", "Delta Lake", "Data lake"]
+      names: 
+        - "Snowflake"
+        - "BigQuery"
+        - "Redshift"
+        - "Databricks"
+        - "Athena"
+        - "Delta Lake"
+        - "Data lake"
+        - "Data warehouse"
+    
     - family: {code: mlops, label: "MLOps"}
-      names: ["MLflow", "Kubeflow", "Model serving", "Model monitoring", "Feature stores", "Model registry"]
+      names: 
+        - "MLflow"
+        - "Kubeflow"
+        - "Model serving"
+        - "Model deployment"
+        - "Model monitoring"
+        - "Feature stores"
+        - "Model registry"
+        - "MLOps"
+    
     - family: {code: cloud, label: "Cloud"}
-      names: ["AWS", "GCP", "Azure", "S3", "EC2", "Lambda", "Cloud functions"]
+      names: 
+        - "AWS"
+        - "GCP"
+        - "Azure"
+        - "S3"
+        - "EC2"
+        - "Lambda"
+        - "Cloud functions"
+    
     - family: {code: streaming, label: "Streaming"}
-      names: ["Kafka", "Kinesis", "Pub/Sub", "Real-time processing", "Stream processing"]
+      names: 
+        - "Kafka"
+        - "Kinesis"
+        - "Pub/Sub"
+        - "Real-time processing"
+        - "Stream processing"
+    
     - family: {code: visualization, label: "Data Visualization"}
-      names: ["Tableau", "Power BI", "Looker", "Metabase", "Plotly", "Matplotlib", "Seaborn"]
+      names: 
+        - "Tableau"
+        - "Power BI"
+        - "Looker"
+        - "Metabase"
+        - "Plotly"
+        - "Matplotlib"
+        - "Seaborn"
 
   platform_infra:
     - family: {code: deployment, label: "Deployment"}
       names: ["Docker", "Kubernetes", "Helm", "Container orchestration"]
+    
     - family: {code: infrastructure_code, label: "Infrastructure as Code"}
       names: ["Terraform", "CloudFormation", "Pulumi", "Infrastructure automation"]
+    
     - family: {code: ci_cd, label: "CI/CD"}
       names: ["GitHub Actions", "Jenkins", "CircleCI", "GitLab CI", "ArgoCD"]
+    
     - family: {code: monitoring, label: "Monitoring/Observability"}
       names: ["Datadog", "New Relic", "Prometheus", "Grafana", "ELK stack"]
 
 # =========================
-# FIELD DEFINITIONS
+# NORMALIZATION HELPERS
 # =========================
-fields:
-  employer:
-    name: {type: string, required: true}
-    department: {type: enum, enum: job_family, nullable: true}
-    company_size_estimate: {type: enum, enum: company_size, nullable: true}
+# Used for post-processing and data cleaning
 
-  role:
-    title_display: {type: string, required: true}
-    title_canonical: {type: string, nullable: true}
-    job_family: {type: enum, enum: job_family, required: true}
-    job_subfamily: {type: enum, enum: [product_subfamily, data_subfamily], required: true}
-    track: {type: enum, enum: track, nullable: true}
-    position_type: {type: enum, enum: position_type, required: true}
-    experience_range: {type: string, nullable: true}  # Simplified: "3-5 years", "5+ years", etc.
-    role:
-    seniority: {type: enum, enum: seniority_level, nullable: true}
+normalization:
+  title_mappings:
+    # Product mappings
+    "PM": "Product Manager"
+    "Sr PM": "Senior Product Manager"
+    "Sr. PM": "Senior Product Manager"
+    "Product Owner": "Product Manager"
+    "PO": "Product Manager"
+    "TPM": "Technical Product Manager"
+    "AI Product Manager": "AI/ML Product Manager"
+    "ML Product Manager": "AI/ML Product Manager"
+    
+    # Data mappings
+    "DE": "Data Engineer"
+    "Sr DE": "Senior Data Engineer"
+    "Sr. DE": "Senior Data Engineer"
+    "MLE": "Machine Learning Engineer"
+    "ML Engineer": "Machine Learning Engineer"
+    "DS": "Data Scientist"
+    "Sr DS": "Senior Data Scientist"
+    "Sr. DS": "Senior Data Scientist"
+    "Analytics Eng": "Analytics Engineer"
+    "BI Developer": "Business Intelligence Engineer"
+    "BI Analyst": "Data Analyst"
+    "Business Intelligence Analyst": "Data Analyst"
 
-  location:
-    city_code: {type: enum, enum: location_city, required: true}
-    working_arrangement: {type: enum, enum: working_arrangement, required: true}
-
-  compensation:
-    currency: {type: enum, enum: [{code: gbp, label: "GBP"}, {code: usd, label: "USD"}], nullable: true}
-    base_salary_range:
-      type: object
-      nullable: true
-      properties:
-        min: {type: number, nullable: true}
-        max: {type: number, nullable: true}
-    equity_eligible: {type: boolean, nullable: true}
-
-  skills:
-    items:
-      type: array
-      items:
-        type: object
-        properties:
-          parent_code: {type: enum, enum: skill_parent}
-          family_code: {type: string}
-          name: {type: string}
-
-  posting:
-    posting_url: {type: string, required: true}
-    source: {type: string, required: true}  # "linkedin_rss", "adzuna_api", etc.
-    req_id: {type: string, nullable: true}
-    posted_date: {type: string, format: date, required: true}
-    last_seen_date: {type: string, format: date, required: true}
-    is_sponsored: {type: boolean, nullable: true}
+  seniority_markers:
+    junior: 
+      - "junior"
+      - "jr"
+      - "jr."
+      - "entry"
+      - "entry-level"
+      - "graduate"
+      - "early career"
+      - "0-2 years"
+      - "I"
+    
+    mid: 
+      - "mid"
+      - "mid-level"
+      - "intermediate"
+      - "II"
+      - "2-5 years"
+      - "3-5 years"
+    
+    senior: 
+      - "senior"
+      - "sr"
+      - "sr."
+      - "lead"
+      - "III"
+      - "5+ years"
+      - "7+ years"
+      - "5-7 years"
+    
+    staff_plus: 
+      - "staff"
+      - "principal"
+      - "distinguished"
+      - "architect"
+      - "IV"
+      - "V"
+      - "10+ years"
 
 # =========================
 # VALIDATION RULES
 # =========================
+# Applied after classification to ensure data quality
+
 validation:
   - rule: "salary_min_less_than_max"
     check: "compensation.base_salary_range.min <= compensation.base_salary_range.max"
@@ -208,46 +541,26 @@ validation:
   - rule: "job_family_subfamily_match"
     check: "if role.job_family == 'product' then role.job_subfamily in product_subfamily"
     severity: error
+  
+  - rule: "job_family_subfamily_match_data"
+    check: "if role.job_family == 'data' then role.job_subfamily in data_subfamily"
+    severity: error
 
   - rule: "location_currency_match"
     check: "if location.city_code == 'lon' then compensation.currency in ['gbp', null]"
     severity: warning
-
-# =========================
-# NORMALIZATION HELPERS
-# =========================
-normalization:
-  title_mappings:
-    # Product mappings
-    "PM": "Product Manager"
-    "Sr PM": "Senior Product Manager"
-    "Product Owner": "Product Manager"
-    "PO": "Product Manager"
-    "TPM": "Technical Product Manager"
-    "AI Product Manager": "AI/ML Product Manager"
-    "ML Product Manager": "AI/ML Product Manager"
-    
-    # Data mappings
-    "DE": "Data Engineer"
-    "Sr DE": "Senior Data Engineer"
-    "MLE": "Machine Learning Engineer"
-    "ML Engineer": "Machine Learning Engineer"
-    "DS": "Data Scientist"
-    "Sr DS": "Senior Data Scientist"
-    "Analytics Eng": "Analytics Engineer"
-    "BI Developer": "Business Intelligence Engineer"
-    "BI Analyst": "Data Analyst"
-
-  seniority_markers:
-    junior: ["junior", "jr", "entry", "graduate", "early career", "0-2 years"]
-    mid: ["mid", "intermediate", "II", "2-5 years", "3-5 years"]
-    senior: ["senior", "sr", "lead", "III", "5+ years", "7+ years"]
-    staff_plus: ["staff", "principal", "distinguished", "architect", "IV", "V"]
+  
+  - rule: "location_currency_match_us"
+    check: "if location.city_code in ['nyc', 'den'] then compensation.currency in ['usd', null]"
+    severity: warning
 
 # =========================
 # DEDUPLICATION STRATEGY
 # =========================
+# Used in data pipeline to identify duplicate postings
+
 deduplication:
   hash_fields: [employer.name, role.title_display, location.city_code]
   similarity_threshold: 0.85  # For fuzzy matching of descriptions
   time_window_days: 30  # Consider same job if posted within this window
+  notes: "Jobs are considered duplicates if they have matching company, title, and location within 30-day window"
