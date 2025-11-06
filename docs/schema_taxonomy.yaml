@@ -49,6 +49,12 @@ enums:
     - {code: ic, label: "IC"}
     - {code: management, label: "Management"}
 
+  seniority_level:
+  - {code: junior, label: "Junior"}
+  - {code: mid, label: "Mid-Level"}
+  - {code: senior, label: "Senior"}
+  - {code: staff_plus, label: "Staff+"}
+
   # Product subfamilies
   product_subfamily:
     - {code: core_pm, label: "Core PM"}
@@ -152,6 +158,8 @@ fields:
     track: {type: enum, enum: track, nullable: true}
     position_type: {type: enum, enum: position_type, required: true}
     experience_range: {type: string, nullable: true}  # Simplified: "3-5 years", "5+ years", etc.
+    role:
+    seniority: {type: enum, enum: seniority_level, nullable: true}
 
   location:
     city_code: {type: enum, enum: location_city, required: true}
