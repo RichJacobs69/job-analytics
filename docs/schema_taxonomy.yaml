@@ -1,12 +1,12 @@
 # Job Market Intelligence Platform - Taxonomy Schema
-# Version: 1.1
-# Last Updated: 2025-11-06
+# Version: 1.3.1
+# Last Updated: 2025-11-14
 # Purpose: Define classification taxonomy for job postings in Product and Data roles
-# Changes from v1.0: Restructured with fields first, added seniority, clarified required/nullable
+# Changes from v1.3: Added descriptions to all enums for better LLM classification
 
 metadata:
-  version: 1.1
-  last_updated: "2025-11-06"
+  version: 1.3.1
+  last_updated: "2025-11-14"
   scope: ["Product", "Data"]
   markets: ["London", "New York", "Denver"]
   extraction_complexity:
@@ -43,6 +43,17 @@ fields:
       enum: company_size
       nullable: true
       extraction_note: "Infer from context clues if clear (e.g., 'Series B startup', 'Fortune 500')"
+    
+    is_agency:
+      type: boolean
+      nullable: true
+      extraction_note: "True if employer is recruitment agency/staffing firm posting on behalf of client. False if direct employer. Null if unclear. Agencies typically say 'our client', 'exciting opportunity', have 'Recruitment', 'Talent', 'Search' in name."
+    
+    agency_confidence:
+      type: enum
+      enum: confidence_level
+      nullable: true
+      extraction_note: "Confidence in is_agency classification. High = clear agency indicators, Medium = some indicators, Low = ambiguous."
 
   role:
     title_display: 
@@ -59,25 +70,25 @@ fields:
       type: enum
       enum: job_family
       required: true
-      extraction_note: "MUST classify as 'product', 'data', or 'out_of_scope' - never null. Use 'out_of_scope' for non-Product/Data roles"
+      extraction_note: "MUST classify as 'product', 'data', or 'out_of_scope' - never null. Use 'out_of_scope' for Software Engineering (including AI Engineers building apps), Marketing, Sales, Finance, etc."
     
     job_subfamily: 
       type: enum
       enum: [product_subfamily, data_subfamily]
       nullable: true
-      extraction_note: "MUST choose specific subfamily from valid options. Set to null only if job_family is 'out_of_scope'"
+      extraction_note: "MUST choose specific subfamily from valid options. Set to null only if job_family is 'out_of_scope'. NOTE: ai_engineer has been removed - classify AI Engineering roles building LLM apps as out_of_scope, ML Engineers working on models as ml_engineer."
     
     seniority:
       type: enum
       enum: seniority_level
       nullable: true
-      extraction_note: "Only if clear from title or description - use seniority_markers for hints"
+      extraction_note: "CRITICAL: Prioritize explicit title markers (Senior, Staff, Director) over years. Use years as secondary signal when title is ambiguous. See classification_guidance for detailed rules."
     
     track: 
       type: enum
       enum: track
       nullable: true
-      extraction_note: "IC vs Management - only if role explicitly involves people management"
+      extraction_note: "IC = individual contributor with no direct reports (includes tech/product leads). Management = explicit people management with direct reports, line management, or hiring/performance review responsibilities. When unclear or mentions 'team lead' without direct reports, default to IC."
     
     position_type: 
       type: enum
@@ -101,7 +112,7 @@ fields:
       type: enum
       enum: working_arrangement
       required: true
-      extraction_note: "Classify as onsite, hybrid, or remote - default to onsite if unclear"
+      extraction_note: "Classify as onsite, hybrid, remote, or flexible. If job offers multiple options (e.g., 'remote or hybrid'), use 'flexible'. If not explicitly stated, default to 'onsite'."
 
   compensation:
     currency: 
@@ -184,13 +195,14 @@ fields:
 
 enums:
   job_family:
-    - {code: product, label: "Product"}
-    - {code: data, label: "Data"}
-    - {code: out_of_scope, label: "Out of Scope", description: "Job is not Product or Data (e.g., Marketing, Sales, Software Engineering, Finance)"}
+    - {code: product, label: "Product", description: "Product management roles focused on strategy, roadmap, and user experience"}
+    - {code: data, label: "Data", description: "Data and analytics roles including engineering, science, and analysis"}
+    - {code: out_of_scope, label: "Out of Scope", description: "Job is not Product or Data (e.g., Software Engineering, Marketing, Sales, Finance, Operations)"}
 
   location_city:
     - code: lon
       label: "London"
+      description: "Greater London area, United Kingdom"
       region: "Greater London"
       country: "UK"
       country_code: "GB"
@@ -199,6 +211,7 @@ enums:
     
     - code: nyc
       label: "New York"
+      description: "New York City metro area, United States"
       region: "New York"
       country: "USA"
       country_code: "US"
@@ -207,6 +220,7 @@ enums:
     
     - code: den
       label: "Denver"
+      description: "Denver metro area, Colorado, United States"
       region: "Colorado"
       country: "USA"
       country_code: "US"
@@ -214,245 +228,248 @@ enums:
       aliases: ["Denver, CO", "DEN", "Denver Metro", "Boulder, CO", "Colorado"]
 
   working_arrangement:
-    - {code: onsite, label: "Onsite"}
-    - {code: hybrid, label: "Hybrid"}
-    - {code: remote, label: "Remote"}
+    - {code: onsite, label: "Onsite", description: "Must work from office location full-time"}
+    - {code: hybrid, label: "Hybrid", description: "Mix of office and remote work (e.g., 2-3 days office per week)"}
+    - {code: remote, label: "Remote", description: "Work from home, remote-first, no office requirement"}
+    - {code: flexible, label: "Flexible", description: "Multiple arrangements offered - employee can choose (remote OR hybrid OR onsite)"}
 
   position_type:
-    - {code: full_time, label: "Full Time"}
-    - {code: part_time, label: "Part Time"}
-    - {code: contract, label: "Contract"}
-    - {code: internship, label: "Internship"}
+    - {code: full_time, label: "Full Time", description: "Permanent, full-time employment (35-40 hours/week)"}
+    - {code: part_time, label: "Part Time", description: "Permanent, part-time hours (<35 hours/week)"}
+    - {code: contract, label: "Contract", description: "Fixed-term contract, contractor, temporary role"}
+    - {code: internship, label: "Internship", description: "Temporary internship, co-op, or graduate program"}
 
   track:
-    - {code: ic, label: "IC"}
-    - {code: management, label: "Management"}
+    - {code: ic, label: "IC", description: "Individual contributor with no direct reports (includes tech leads and senior ICs)"}
+    - {code: management, label: "Management", description: "People management with direct reports, hiring authority, performance reviews"}
 
   seniority_level:
-    - {code: junior, label: "Junior"}
-    - {code: mid, label: "Mid-Level"}
-    - {code: senior, label: "Senior"}
-    - {code: staff_plus, label: "Staff+"}
-
-  currency_code:
-    - {code: gbp, label: "GBP"}
-    - {code: usd, label: "USD"}
-
-  company_size:
-    - {code: startup, label: "Startup (1-50)"}
-    - {code: scaleup, label: "Scale-up (51-500)"}
-    - {code: enterprise, label: "Enterprise (500+)"}
+    - {code: junior, label: "Junior", description: "Entry-level, 0-2 years experience, early career"}
+    - {code: mid, label: "Mid-Level", description: "3-5 years experience, intermediate level, competent practitioner"}
+    - {code: senior, label: "Senior", description: "6-10 years experience, lead-level individual contributor, domain expert"}
+    - {code: staff_principal, label: "Staff/Principal", description: "11+ years, senior IC track (Staff Engineer, Principal PM, Distinguished Scientist)"}
+    - {code: director_plus, label: "Director+", description: "Management track: Director, VP, SVP, Head of, C-level executive roles"}
 
   # Product subfamilies
   product_subfamily:
-    - {code: core_pm, label: "Core PM", description: "Generalist product management across consumer or B2B products"}
-    - {code: growth_pm, label: "Growth PM", description: "Focus on acquisition, activation, retention, monetization"}
-    - {code: platform_pm, label: "Platform PM", description: "Internal tools, APIs, developer platforms, infrastructure products"}
-    - {code: technical_pm, label: "Technical PM", description: "Deep technical involvement, often with engineering background"}
-    - {code: ai_ml_pm, label: "AI/ML PM", description: "AI/ML product development, model integration, LLM products"}
+    - {code: core_pm, label: "Core PM", description: "General product management for user-facing features and products"}
+    - {code: growth_pm, label: "Growth PM", description: "Focus on growth, acquisition, retention, monetization, conversion optimization"}
+    - {code: platform_pm, label: "Platform PM", description: "Developer tools, APIs, infrastructure products, internal platforms"}
+    - {code: technical_pm, label: "Technical PM", description: "Deep technical skills, often ex-engineer, works on complex technical products"}
+    - {code: ai_ml_pm, label: "AI/ML PM", description: "AI/ML products, models, data products, machine learning features"}
+    - {code: product_analytics, label: "Product Analytics", description: "Product metrics, experimentation, A/B testing, user behavior analysis"}
 
-  # Data subfamilies
+  # Data subfamilies (ai_engineer REMOVED in v1.3)
   data_subfamily:
-    - {code: product_analytics, label: "Product Analytics", description: "Product metrics, user behavior, experimentation"}
-    - {code: data_analyst, label: "Data Analyst", description: "Business intelligence, reporting, dashboards, ad-hoc analysis"}
-    - {code: analytics_engineer, label: "Analytics Engineer", description: "dbt, data modeling, metrics layer, analytics infrastructure"}
-    - {code: data_engineer, label: "Data Engineer", description: "Data pipelines, ETL/ELT, data infrastructure, orchestration"}
-    - {code: ml_engineer, label: "Machine Learning Engineer", description: "Production ML systems, model deployment, MLOps"}
-    - {code: data_scientist, label: "Data Scientist", description: "Statistical modeling, predictions, experimentation, insights"}
-    - {code: research_scientist_ml, label: "Research Scientist (ML/AI)", description: "Novel ML research, paper publication, cutting-edge techniques"}
-    - {code: ai_engineer, label: "AI Engineer", description: "LLM applications, prompt engineering, RAG, GenAI products"}
-    - {code: data_architect, label: "Data Architect", description: "Data strategy, architecture design, governance, enterprise data"}
+    - {code: product_analytics, label: "Product Analytics", description: "Product-focused analytics - metrics, experiments, user behavior, growth analytics"}
+    - {code: data_analyst, label: "Data Analyst", description: "Business reporting, dashboards, SQL analysis, ad-hoc queries, BI tools"}
+    - {code: analytics_engineer, label: "Analytics Engineer", description: "dbt, metrics layer, data modeling, semantic layer, SQL-focused transformations"}
+    - {code: data_engineer, label: "Data Engineer", description: "Data pipelines, infrastructure, ETL/ELT, big data processing, Python/Scala"}
+    - {code: ml_engineer, label: "Machine Learning Engineer", description: "Production ML systems, model deployment, MLOps - includes classical ML and GenAI/LLM work"}
+    - {code: data_scientist, label: "Data Scientist", description: "Business insights, predictions, exploratory analysis, statistical modeling"}
+    - {code: research_scientist_ml, label: "Research Scientist (ML/AI)", description: "Novel ML research, publications, cutting-edge techniques, pushing state-of-the-art"}
+    - {code: data_architect, label: "Data Architect", description: "Data strategy, enterprise architecture design, data governance, platform design"}
+
+  # Company size
+  company_size:
+    - {code: startup, label: "Startup (1-50)", description: "Small startup, 1-50 employees, early-stage"}
+    - {code: scaleup, label: "Scale-up (51-500)", description: "Growth stage company, 51-500 employees, Series A-C"}
+    - {code: enterprise, label: "Enterprise (500+)", description: "Large corporation, 500+ employees, established company"}
+
+  # Skill parent families
+  skill_parent:
+    - {code: product, label: "Product", description: "Product management skills"}
+    - {code: data_ml, label: "Data/ML", description: "Data science and machine learning skills"}
+    - {code: platform_infra, label: "Platform/Infra", description: "Platform and infrastructure skills"}
+
+  # Currency codes
+  currency_code:
+    - {code: gbp, label: "GBP", description: "British Pound Sterling"}
+    - {code: usd, label: "USD", description: "United States Dollar"}
+    - {code: eur, label: "EUR", description: "Euro"}
+
+  # Confidence levels
+  confidence_level:
+    - {code: high, label: "High", description: "High confidence classification"}
+    - {code: medium, label: "Medium", description: "Medium confidence classification"}
+    - {code: low, label: "Low", description: "Low confidence classification"}
 
 # =========================
 # SKILLS ONTOLOGY
 # =========================
-# Used to map extracted skills to families for analysis
-# LLM should match skill names to this list when possible
+# No changes from v1.3 - LLM/GenAI skills retained as they're relevant to ML Engineers
 
 skills_ontology:
   product:
     - family: {code: discovery_research, label: "Discovery & Research"}
-      names: 
-        - "User interviews"
-        - "User research"
-        - "JTBD"
-        - "Jobs to be done"
-        - "Opportunity sizing"
-        - "Market research"
+      names: ["User interviews", "User research", "JTBD", "Jobs to be done", "Opportunity sizing", "Market research"]
     
     - family: {code: execution_delivery, label: "Execution & Delivery"}
-      names: 
-        - "Backlog management"
-        - "Roadmapping"
-        - "Agile"
-        - "Scrum"
-        - "Kanban"
-        - "Prioritization"
-        - "JIRA"
-        - "Sprint planning"
+      names: ["Backlog management", "Roadmapping", "Agile", "Scrum", "Kanban", "Prioritization", "JIRA", "Sprint planning", "Product strategy"]
     
     - family: {code: experimentation, label: "Experimentation"}
-      names: 
-        - "A/B testing"
-        - "Experiment design"
-        - "Statistical significance"
-        - "Hypothesis testing"
+      names: ["A/B testing", "Experiment design", "Statistical significance", "Hypothesis testing", "Multivariate testing"]
     
     - family: {code: analytics_pm, label: "Analytics for PMs"}
-      names: 
-        - "SQL"
-        - "Data analysis"
-        - "Metrics"
-        - "KPIs"
-        - "Dashboards"
-        - "Amplitude"
-        - "Mixpanel"
-        - "Google Analytics"
+      names: ["SQL", "Data analysis", "Metrics", "KPIs", "Dashboards", "Amplitude", "Mixpanel", "Google Analytics", "Product analytics"]
     
     - family: {code: stakeholder_mgmt, label: "Stakeholder Management"}
-      names: 
-        - "Stakeholder management"
-        - "Executive communication"
-        - "Cross-functional collaboration"
+      names: ["Stakeholder management", "Executive communication", "Cross-functional collaboration", "Influence without authority"]
 
   data_ml:
     - family: {code: programming, label: "Programming"}
-      names: ["Python", "R", "SQL", "Scala", "Java", "Julia"]
+      names: ["Python", "R", "SQL", "Scala", "Java", "Julia", "C++", "Rust", "Go"]
     
     - family: {code: analytics_stats, label: "Analytics/Statistics"}
-      names: 
-        - "Statistics"
-        - "Probability"
-        - "Regression"
-        - "Causal inference"
-        - "Time series"
-        - "Hypothesis testing"
-        - "Bayesian analysis"
+      names: ["Statistics", "Probability", "Regression", "Causal inference", "Time series", "Hypothesis testing", "Bayesian analysis", "Experimentation"]
     
     - family: {code: classical_ml, label: "Classical Machine Learning"}
-      names: 
-        - "Scikit-learn"
-        - "XGBoost"
-        - "LightGBM"
-        - "Random Forest"
-        - "Logistic regression"
-        - "SVM"
-        - "Feature engineering"
-        - "Machine learning"
-        - "ML"
+      names: ["Scikit-learn", "XGBoost", "LightGBM", "CatBoost", "Random Forest", "Logistic regression", "SVM", "Feature engineering", "Model training"]
     
     - family: {code: deep_learning, label: "Deep Learning"}
-      names: 
-        - "PyTorch"
-        - "TensorFlow"
-        - "Keras"
-        - "Neural networks"
-        - "CNNs"
-        - "RNNs"
-        - "Computer vision"
-        - "NLP"
-        - "Deep learning"
+      names: ["PyTorch", "TensorFlow", "Keras", "JAX", "Neural networks", "CNNs", "RNNs", "Transformers", "Computer vision", "NLP"]
     
     - family: {code: llm_genai, label: "LLM/GenAI"}
-      names: 
-        - "LLMs"
-        - "Large language models"
-        - "Transformers"
-        - "GPT"
-        - "BERT"
-        - "Prompt engineering"
-        - "RAG"
-        - "Retrieval augmented generation"
-        - "Vector databases"
-        - "LangChain"
-        - "Embeddings"
-        - "Fine-tuning"
-        - "GenAI"
-        - "Generative AI"
+      names: ["LLMs", "Large language models", "GPT", "BERT", "Claude", "Llama", "Prompt engineering", "RAG", "Retrieval augmented generation", "Vector databases", "LangChain", "LlamaIndex", "Embeddings", "Fine-tuning", "RLHF", "Agents", "Agentic AI"]
     
     - family: {code: big_data, label: "Big Data"}
-      names: ["Spark", "PySpark", "Hadoop", "Hive", "Presto", "Flink"]
+      names: ["Spark", "PySpark", "Hadoop", "Hive", "Presto", "Trino", "Flink", "Distributed computing"]
     
     - family: {code: pipelines_orchestration, label: "Pipelines/Orchestration"}
-      names: 
-        - "Airflow"
-        - "Dagster"
-        - "Prefect"
-        - "Luigi"
-        - "Data pipelines"
-        - "ETL"
-        - "ELT"
+      names: ["Airflow", "Dagster", "Prefect", "Luigi", "Data pipelines", "ETL", "ELT", "Workflow orchestration"]
     
     - family: {code: data_modeling, label: "Data Modeling"}
-      names: 
-        - "dbt"
-        - "Data modeling"
-        - "Dimensional modeling"
-        - "Star schema"
-        - "Data warehouse design"
+      names: ["dbt", "Data modeling", "Dimensional modeling", "Star schema", "Snowflake schema", "Data warehouse design", "Data vault"]
     
     - family: {code: warehouses_lakes, label: "Warehouses/Lakes"}
-      names: 
-        - "Snowflake"
-        - "BigQuery"
-        - "Redshift"
-        - "Databricks"
-        - "Athena"
-        - "Delta Lake"
-        - "Data lake"
-        - "Data warehouse"
+      names: ["Snowflake", "BigQuery", "Redshift", "Databricks", "Athena", "Delta Lake", "Data lake", "Lakehouse", "Iceberg"]
     
     - family: {code: mlops, label: "MLOps"}
-      names: 
-        - "MLflow"
-        - "Kubeflow"
-        - "Model serving"
-        - "Model deployment"
-        - "Model monitoring"
-        - "Feature stores"
-        - "Model registry"
-        - "MLOps"
+      names: ["MLflow", "Kubeflow", "Model serving", "Model monitoring", "Model deployment", "Feature stores", "Model registry", "Experiment tracking", "Weights & Biases"]
     
     - family: {code: cloud, label: "Cloud"}
-      names: 
-        - "AWS"
-        - "GCP"
-        - "Azure"
-        - "S3"
-        - "EC2"
-        - "Lambda"
-        - "Cloud functions"
+      names: ["AWS", "GCP", "Google Cloud", "Azure", "S3", "EC2", "Lambda", "Cloud functions", "SageMaker", "Vertex AI"]
     
     - family: {code: streaming, label: "Streaming"}
-      names: 
-        - "Kafka"
-        - "Kinesis"
-        - "Pub/Sub"
-        - "Real-time processing"
-        - "Stream processing"
+      names: ["Kafka", "Kinesis", "Pub/Sub", "Real-time processing", "Stream processing", "Event-driven"]
     
     - family: {code: visualization, label: "Data Visualization"}
-      names: 
-        - "Tableau"
-        - "Power BI"
-        - "Looker"
-        - "Metabase"
-        - "Plotly"
-        - "Matplotlib"
-        - "Seaborn"
+      names: ["Tableau", "Power BI", "Looker", "Metabase", "Superset", "Plotly", "Matplotlib", "Seaborn", "D3.js"]
 
   platform_infra:
     - family: {code: deployment, label: "Deployment"}
-      names: ["Docker", "Kubernetes", "Helm", "Container orchestration"]
+      names: ["Docker", "Kubernetes", "Helm", "Container orchestration", "K8s"]
     
     - family: {code: infrastructure_code, label: "Infrastructure as Code"}
-      names: ["Terraform", "CloudFormation", "Pulumi", "Infrastructure automation"]
+      names: ["Terraform", "CloudFormation", "Pulumi", "Infrastructure automation", "IaC"]
     
     - family: {code: ci_cd, label: "CI/CD"}
-      names: ["GitHub Actions", "Jenkins", "CircleCI", "GitLab CI", "ArgoCD"]
+      names: ["GitHub Actions", "Jenkins", "CircleCI", "GitLab CI", "ArgoCD", "Continuous integration", "Continuous deployment"]
     
     - family: {code: monitoring, label: "Monitoring/Observability"}
-      names: ["Datadog", "New Relic", "Prometheus", "Grafana", "ELK stack"]
+      names: ["Datadog", "New Relic", "Prometheus", "Grafana", "ELK stack", "Observability", "Logging", "Metrics"]
+
+# =========================
+# CLASSIFICATION GUIDANCE
+# =========================
+# Critical rules for LLM classifier - read carefully before classifying
+
+classification_guidance:
+  agency_detection:
+    high_confidence_indicators:
+      - "Employer name contains: 'Recruitment', 'Recruiting', 'Talent', 'Staffing', 'Search', 'Headhunters', 'Solutions', 'Consulting', 'Partners', 'Associates'"
+      - "Job description says: 'our client', 'on behalf of', 'exciting opportunity', 'leading company', 'confidential client'"
+      - "Employer is known agency: Hays, Robert Half, Michael Page, Randstad, Adecco, Manpower, Harvey Nash"
+    
+    medium_confidence_indicators:
+      - "Generic job description with minimal company details"
+      - "Employer name ends with: Ltd, Limited, Group, International, Global (combined with recruitment terms)"
+      - "CV submission instructions rather than application process"
+    
+    false_positives_to_avoid:
+      - "Accenture Consulting, McKinsey - these are NOT recruitment agencies"
+      - "Companies with 'Solutions' or 'Partners' in name are often legitimate tech companies"
+      - "When in doubt, default to is_agency=false"
+
+  seniority:
+    priority_order:
+      - "**Title is primary signal**: If title explicitly states level (Junior, Senior, Staff, Principal, Director), use that as primary classification"
+      - "**Years as secondary signal**: Use experience years only when title is ambiguous (e.g., 'Data Scientist' without level qualifier)"
+      - "**When both present**: If title and years conflict, prioritize title unless conflict is extreme (e.g., 'Junior' with 15 years)"
+    
+    year_boundary_rules:
+      - "2 years exactly → junior (not mid)"
+      - "3 years exactly → mid (not junior)"
+      - "5 years exactly → mid (not senior)"
+      - "6 years exactly → senior (not mid)"
+      - "10 years exactly → senior (not staff_principal)"
+      - "11 years exactly → staff_principal (not senior)"
+      - "When years are borderline (e.g., '5-7 years'), use title as tiebreaker"
+    
+    title_priority_examples:
+      - "'Senior Data Scientist, 4 years' → senior (title wins over years)"
+      - "'Staff Engineer, 8 years' → staff_principal (title wins)"
+      - "'Director of Data, 7 years' → director_plus (title wins)"
+      - "'Data Scientist, 7 years' → senior (years guide when no level in title)"
+      - "'Lead Data Scientist' → senior (Lead = senior level)"
+      - "'Principal PM, 9 years' → staff_principal (title wins despite years suggesting senior)"
+    
+    market_context:
+      - "UK Senior roles typically 6-8 years; US Senior roles typically 7-10 years"
+      - "Both map to 'senior' classification for cross-market comparison"
+      - "'Staff' and 'Principal' titles → staff_principal regardless of years stated"
+      - "'Architect' roles → senior unless combined with 'Principal/Staff' (then staff_principal) or very senior (11+ years)"
+    
+    track_distinction:
+      - "staff_principal = IC track (Staff Engineer, Principal PM, Distinguished Scientist)"
+      - "director_plus = Management track (Director, VP, Head of, C-level)"
+      - "These are parallel paths, not sequential - don't promote Staff to Director"
+      - "Director with 8 years → director_plus (management track, ignore years)"
+    
+    edge_cases:
+      - "Lead Engineer without years → senior (Lead = senior IC, not management)"
+      - "Principal Engineer without years → staff_principal"
+      - "Engineering Manager without years → senior (entry-level management)"
+      - "Director without years → director_plus (management hierarchy)"
+      - "Senior Engineer, 12+ years → senior (title wins, don't auto-promote to staff_principal)"
+      - "'Architect' alone with 6-8 years → senior"
+      - "'Principal Architect' → staff_principal"
+      - "'5+ years' requirement → Use title to determine level (senior if title is Senior, mid if title is generic)"
+    
+    default_when_ambiguous: "mid"
+
+  job_subfamily:
+    key_distinctions:
+      - "Product Analytics vs Data Analyst: Product Analytics = product metrics, user behavior, in-product experimentation, feature analysis, growth analytics. Data Analyst = business reporting, dashboards, ad-hoc SQL analysis, BI tools."
+      - "Analytics Engineer vs Data Engineer: Analytics Engineer = dbt, metrics layer, SQL-focused, data modeling, semantic layer. Data Engineer = pipelines, infrastructure, Python/Scala-focused, ETL/ELT, big data."
+      - "ML Engineer scope (EXPANDED): Includes both classical ML (training models, feature engineering) AND GenAI/LLM work (fine-tuning, embeddings, RAG systems, agent frameworks) when focused on MODEL DEVELOPMENT. If role is primarily calling LLM APIs with minimal ML work, classify as out_of_scope (Software Engineering)."
+      - "Data Scientist vs Research Scientist: Data Scientist = business insights, predictions, practical ML, stakeholder communication. Research Scientist = novel research, publications, cutting-edge techniques, pushing SOTA."
+      - "Technical PM vs Platform PM: Technical PM = deep technical skills, often ex-engineer, technical architecture. Platform PM = developer tools, APIs, infrastructure products (may or may not be technical)."
+    
+    product_analytics_routing:
+      - "Title 'Product Analyst' → Check job description:"
+      - "  - If mentions: product metrics, user behavior, experimentation, A/B tests, feature analysis, growth → product_analytics"
+      - "  - If mentions: business reporting, dashboards, SQL queries, BI tools, stakeholder reports → data_analyst"
+      - "Title 'Product Analytics' → Always product_analytics"
+      - "Title 'Growth Analyst' → Usually product_analytics (growth is product-adjacent)"
+    
+    ml_engineer_vs_software_engineer:
+      - "AI Engineer title → Classify as out_of_scope UNLESS description clearly involves:"
+      - "  - Training/fine-tuning ML models"
+      - "  - Building ML pipelines or MLOps infrastructure"
+      - "  - Research on model architectures"
+      - "  - Feature engineering or data science workflows"
+      - "If AI Engineer role is primarily: API integration, prompt engineering without model work, backend development → out_of_scope"
+      - "If ML Engineer role involves LLMs, RAG, embeddings, fine-tuning → ml_engineer (legitimate ML work)"
+
+  working_arrangement:
+    classification_rules:
+      - "If posting says 'remote OR hybrid OR onsite' → flexible"
+      - "If posting says 'hybrid (2 days office)' → hybrid"
+      - "If posting says 'remote-first with quarterly offsites' → remote"
+      - "If nothing stated → onsite (default)"
+      - "If says 'remote within [region]' → remote (not flexible)"
+      - "CRITICAL: Look for phrases at END of job description - working arrangement often specified in final paragraphs"
 
 # =========================
 # NORMALIZATION HELPERS
@@ -470,6 +487,7 @@ normalization:
     "TPM": "Technical Product Manager"
     "AI Product Manager": "AI/ML Product Manager"
     "ML Product Manager": "AI/ML Product Manager"
+    "Product Analyst": "Product Analytics"  # New mapping
     
     # Data mappings
     "DE": "Data Engineer"
@@ -495,15 +513,18 @@ normalization:
       - "graduate"
       - "early career"
       - "0-2 years"
+      - "0-3 years"
       - "I"
+      - "associate"
     
     mid: 
       - "mid"
       - "mid-level"
       - "intermediate"
       - "II"
-      - "2-5 years"
       - "3-5 years"
+      - "3-4 years"
+      - "4-5 years"
     
     senior: 
       - "senior"
@@ -511,18 +532,40 @@ normalization:
       - "sr."
       - "lead"
       - "III"
-      - "5+ years"
+      - "6+ years"
       - "7+ years"
-      - "5-7 years"
+      - "6-10 years"
+      - "architect"  # when standalone without principal/staff modifier
     
-    staff_plus: 
+    staff_principal: 
       - "staff"
       - "principal"
       - "distinguished"
-      - "architect"
+      - "fellow"
       - "IV"
       - "V"
-      - "10+ years"
+      - "11+ years"
+      - "staff engineer"
+      - "principal engineer"
+      - "staff pm"
+      - "principal pm"
+      - "principal architect"
+      - "staff architect"
+      - "staff data scientist"
+      - "principal data scientist"
+    
+    director_plus:
+      - "director"
+      - "senior director"
+      - "vp"
+      - "vice president"
+      - "svp"
+      - "head of"
+      - "chief"
+      - "cto"
+      - "cpo"
+      - "cdo"
+      - "evp"
 
 # =========================
 # VALIDATION RULES
@@ -545,6 +588,10 @@ validation:
   - rule: "job_family_subfamily_match_data"
     check: "if role.job_family == 'data' then role.job_subfamily in data_subfamily"
     severity: error
+  
+  - rule: "out_of_scope_has_null_subfamily"
+    check: "if role.job_family == 'out_of_scope' then role.job_subfamily is null"
+    severity: error
 
   - rule: "location_currency_match"
     check: "if location.city_code == 'lon' then compensation.currency in ['gbp', null]"
@@ -553,6 +600,11 @@ validation:
   - rule: "location_currency_match_us"
     check: "if location.city_code in ['nyc', 'den'] then compensation.currency in ['usd', null]"
     severity: warning
+  
+  - rule: "ai_engineer_removed"
+    check: "role.job_subfamily != 'ai_engineer'"
+    severity: error
+    message: "ai_engineer removed in v1.3 - classify as ml_engineer or out_of_scope"
 
 # =========================
 # DEDUPLICATION STRATEGY

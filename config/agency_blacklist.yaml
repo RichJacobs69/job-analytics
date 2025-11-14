@@ -1,0 +1,275 @@
+# Agency Blacklist Configuration
+# Version: 1.0
+# Last Updated: 2025-11-13
+# Purpose: Filter recruitment agencies from job aggregation pipeline
+
+metadata:
+  version: 1.0
+  last_updated: "2025-11-13"
+  total_agencies: 49
+  usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
+
+# =========================
+# HARD FILTER BLACKLIST
+# =========================
+# Skip these employers entirely at ingestion (before classification)
+# Add agencies here to save LLM classification costs
+
+hard_filter:
+  # Top volume UK recruitment agencies
+  - tenth revolution group
+  - understanding recruitment
+  - people talent
+  - harvey nash
+  - hays
+  - michael page
+  - robert half
+  - randstad
+  - adecco
+  - manpower
+  - korn ferry
+  - allegis group
+  - modis
+  - capita
+  - pertemps
+  - reed specialist recruitment
+  - morgan mckinley
+  - mackenzie jones
+  - mcgregor boyall
+  
+  # Tech recruitment specialists
+  - interex group
+  - pulse recruit
+  - aurum search limited
+  - aurum search
+  - pioneer search
+  - computer futures
+  - talent international
+  - explore group
+  - crimson
+  - crimson recruitment
+  - frank recruitment
+  - harnham
+  - la fosse associates
+  - oliver bernard
+  - burns sheehan
+  - development technology solutions
+  - xcede
+  - harrington starr
+  - rmg digital
+  - found by few
+  
+  # Generic placement agencies
+  - the idols group limited
+  - idols group
+  - g-p partners
+  - nash squared
+  - aspire
+  - darwin recruitment
+  - cpl
+  - cpl resources
+  - madison black
+  - trs consulting
+  - nigel frank international
+  - arc it recruitment
+  - anderson knight
+  - cathcart associates
+
+# =========================
+# PATTERN DETECTION
+# =========================
+# Used for soft flagging (is_agency field in classification)
+
+keywords:
+  high_confidence:
+    - recruitment
+    - recruiting
+    - recruiter
+    - staffing
+    - headhunters
+    - executive search
+    - talent acquisition
+    - placement
+    - resourcing
+  
+  medium_confidence:
+    - talent
+    - search
+    - consultancy
+    - consulting
+    - solutions
+    - group
+    - partners
+    - associates
+    - international
+    - global
+
+suffixes:
+  high_confidence:
+    - recruitment
+    - recruiting
+    - staffing
+    - headhunters
+  
+  medium_confidence:
+    - talent
+    - search
+    - consultancy
+    - consulting
+    - solutions
+    - group
+    - partners
+    - associates
+
+# =========================
+# FALSE POSITIVE EXCLUSIONS
+# =========================
+# Companies that match patterns but are NOT agencies
+
+legitimate_companies:
+  - accenture  # Has "consulting" but is a direct employer
+  - mckinsey
+  - boston consulting group
+  - bain
+  - deloitte
+  - pwc
+  - kpmg
+  - ey
+  - google
+  - amazon web services
+  - microsoft
+  - meta
+  - stripe
+  - databricks
+  - thoughtworks  # Has "consulting" but direct employer
+  - palantir
+  - openai
+
+# =========================
+# DOMAIN FILTERING (for web scraping phase)
+# =========================
+# Job board domains with heavy agency presence
+# Consider deprioritizing these URLs in scraping queue
+
+agency_heavy_domains:
+  - cwjobs.co.uk
+  - reed.co.uk
+  - cv-library.co.uk
+  - totaljobs.com
+  - jobsite.co.uk
+  
+direct_employer_domains:
+  - linkedin.com/jobs
+  - greenhouse.io
+  - lever.co
+  - myworkdayjobs.com
+  - smartrecruiters.com
+  - jobvite.com
+  - careers.google.com
+  - amazon.jobs
+
+# =========================
+# DETECTION LOGIC
+# =========================
+# Python implementation guide
+
+detection_rules:
+  hard_filter:
+    description: "Skip these jobs at ingestion to save costs"
+    implementation: "employer_name.lower().strip() in hard_filter list"
+    
+  high_confidence_agency:
+    description: "Flag as agency with high confidence"
+    conditions:
+      - "Employer name in hard_filter list"
+      - "2+ high_confidence keywords present"
+      - "Employer name ends with high_confidence suffix"
+    
+  medium_confidence_agency:
+    description: "Flag as agency with medium confidence"
+    conditions:
+      - "1 high_confidence keyword OR 2+ medium_confidence keywords"
+      - "Employer name ends with medium_confidence suffix"
+      - "Job description contains: 'our client', 'on behalf of', 'exciting opportunity'"
+    
+  false_positive_handling:
+    description: "Avoid flagging legitimate companies"
+    implementation: "Check against legitimate_companies list before flagging"
+
+# =========================
+# USAGE EXAMPLES
+# =========================
+
+usage_examples:
+  python_hard_filter: |
+    import yaml
+    
+    with open('agency_blacklist.yaml') as f:
+        config = yaml.safe_load(f)
+    
+    HARD_FILTER = config['hard_filter']
+    
+    def should_skip_job(employer_name):
+        return employer_name.lower().strip() in HARD_FILTER
+  
+  python_soft_flag: |
+    def detect_agency(employer_name, job_description=None):
+        name_lower = employer_name.lower().strip()
+        
+        # Check legitimate companies first
+        if name_lower in config['legitimate_companies']:
+            return False, 'low'
+        
+        # High confidence checks
+        if name_lower in config['hard_filter']:
+            return True, 'high'
+        
+        keyword_matches = sum(
+            1 for kw in config['keywords']['high_confidence']
+            if kw in name_lower
+        )
+        if keyword_matches >= 2:
+            return True, 'high'
+        
+        # Medium confidence checks
+        if any(kw in name_lower for kw in config['keywords']['high_confidence']):
+            return True, 'medium'
+        
+        if any(name_lower.endswith(s) for s in config['suffixes']['medium_confidence']):
+            return True, 'medium'
+        
+        # Check job description for agency phrases
+        if job_description:
+            desc_lower = job_description.lower()
+            agency_phrases = ['our client', 'on behalf of', 'exciting opportunity']
+            if any(phrase in desc_lower for phrase in agency_phrases):
+                return True, 'medium'
+        
+        return False, 'low'
+
+# =========================
+# MAINTENANCE GUIDELINES
+# =========================
+
+maintenance:
+  how_to_add_agencies:
+    - "Run: SELECT employer_name, COUNT(*) FROM raw_jobs GROUP BY employer_name ORDER BY COUNT(*) DESC LIMIT 100"
+    - "Manually review top employers"
+    - "Add confirmed agencies to hard_filter list"
+    - "Update last_updated date"
+    - "Increment version if major changes"
+  
+  review_frequency: "Monthly - check for new high-volume agencies"
+  
+  false_positive_monitoring: "If is_agency=true but user reports legitimate job, add to legitimate_companies"
+
+# =========================
+# STATISTICS TRACKING
+# =========================
+# Track impact of filtering over time
+
+expected_metrics:
+  hard_filter_rate: "10-15% of raw jobs skipped"
+  soft_flag_rate: "5-10% of remaining jobs flagged as potential agencies"
+  false_positive_rate: "Target <5% of flagged jobs are actually direct employers"
+  cost_savings: "~$0.04 per 10 filtered jobs (assuming $0.004/job classification)"

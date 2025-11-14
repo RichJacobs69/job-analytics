@@ -1,0 +1,375 @@
+# Job Market Intelligence Platform - System Architecture
+# Version: 1.0
+# Last Updated: 2025-11-11
+# Purpose: Document the complete data pipeline and system dependencies
+
+metadata:
+  version: 1.0
+  last_updated: "2025-11-11"
+  project_name: "Job Market Intelligence Platform"
+  primary_pipeline: "Adzuna → Claude → Supabase"
+
+# ============================================
+# PROJECT FILES
+# ============================================
+
+scripts:
+  fetch_adzuna_jobs:
+    file: "fetch_adzuna_jobs.py"
+    role: "Main orchestrator"
+    purpose: "Data ingestion pipeline"
+    responsibilities:
+      - "Fetch jobs from Adzuna API"
+      - "Format jobs for classification"
+      - "Check for duplicates"
+      - "Orchestrate classification workflow"
+      - "Store results in database"
+    imports:
+      - "classifier.py"
+      - "db_connection.py"
+      - ".env"
+    key_functions:
+      - "fetch_adzuna_jobs() - API calls to Adzuna"
+      - "format_job_for_classification() - JSON to text conversion"
+      - "check_if_job_exists() - Deduplication logic"
+      - "process_adzuna_jobs() - Main pipeline orchestration"
+    execution: "python fetch_adzuna_jobs.py [city] [max_jobs]"
+    
+  classifier:
+    file: "classifier.py"
+    role: "Claude integration"
+    purpose: "LLM-powered job classification"
+    responsibilities:
+      - "Build classification prompts"
+      - "Call Claude API (Anthropic)"
+      - "Parse Claude JSON responses"
+      - "Return structured classification"
+    imports:
+      - "docs/schema_taxonomy.yaml"
+      - ".env"
+    key_functions:
+      - "build_classification_prompt() - Prompt construction"
+      - "classify_job_with_claude() - Main classification function"
+    reads:
+      - "schema_taxonomy.yaml for classification rules"
+    api_calls:
+      - "Claude 3.5 Haiku API (Anthropic)"
+    test_mode: "python classifier.py (runs standalone test)"
+    
+  db_connection:
+    file: "db_connection.py"
+    role: "Database helpers"
+    purpose: "Supabase/Postgres operations"
+    responsibilities:
+      - "Connect to Supabase"
+      - "Insert raw jobs"
+      - "Insert enriched jobs"
+      - "Query for duplicates"
+      - "Test connections"
+    imports:
+      - ".env"
+    key_functions:
+      - "test_connection() - Verify Supabase connectivity"
+      - "insert_raw_job() - Store unprocessed job text"
+      - "insert_enriched_job() - Store classified job data"
+    database_tables:
+      - "raw_jobs"
+      - "enriched_jobs"
+    
+  test_manual_insert:
+    file: "test_manual_insert.py"
+    role: "Validation script"
+    purpose: "Test classification against ground truth"
+    responsibilities:
+      - "Load ground truth jobs"
+      - "Run classification pipeline"
+      - "Compare results against expected labels"
+      - "Calculate accuracy metrics"
+    imports:
+      - "classifier.py"
+      - "db_connection.py"
+    execution: "python test_manual_insert.py"
+    status: "Used for initial validation (93% accuracy achieved)"
+
+configuration:
+  env_file:
+    file: ".env"
+    role: "Configuration"
+    purpose: "Store API credentials and secrets"
+    required_variables:
+      - "ADZUNA_APP_ID"
+      - "ADZUNA_API_KEY"
+      - "ANTHROPIC_API_KEY"
+      - "SUPABASE_URL"
+      - "SUPABASE_KEY"
+    security: "Never commit to Git (in .gitignore)"
+
+data_files:
+  schema_taxonomy:
+    file: "docs/schema_taxonomy.yaml"
+    role: "Classification rules"
+    purpose: "Define taxonomy and classification guidance"
+    contains:
+      enums:
+        - "job_family (product, data, out_of_scope)"
+        - "job_subfamily (data_scientist, ml_engineer, core_pm, etc.)"
+        - "seniority_level (junior, mid, senior, staff_principal, director_plus)"
+        - "working_arrangement (onsite, hybrid, remote, flexible)"
+        - "location_city (lon, nyc, den)"
+        - "position_type (full_time, part_time, contract, internship)"
+        - "company_size (startup, scaleup, enterprise)"
+      skills_ontology:
+        - "Product skills (discovery, execution, analytics, stakeholder mgmt)"
+        - "Data/ML skills (programming, ML, big data, cloud, visualization)"
+        - "Platform/Infra skills (deployment, IaC, CI/CD, monitoring)"
+      classification_guidance:
+        - "Seniority rules (title > years, boundary handling)"
+        - "Job subfamily distinctions"
+        - "Working arrangement classification"
+        - "Edge case handling"
+    read_by:
+      - "classifier.py (loaded at runtime)"
+    version: "1.2"
+    last_updated: "2025-11-11"
+
+# ============================================
+# EXTERNAL SERVICES
+# ============================================
+
+external_services:
+  adzuna_api:
+    service: "Adzuna Job Board API"
+    role: "Job data source"
+    purpose: "Fetch raw job postings"
+    provides:
+      - "Job title"
+      - "Company name"
+      - "Location"
+      - "Full description"
+      - "Salary (when available)"
+      - "Contract type"
+      - "Posted date"
+    endpoints:
+      uk: "https://api.adzuna.com/v1/api/jobs/gb/search"
+      us: "https://api.adzuna.com/v1/api/jobs/us/search"
+    authentication: "API ID + API Key"
+    rate_limits: "250 calls/month (free tier)"
+    cost: "Free"
+    
+  claude_api:
+    service: "Claude API (Anthropic)"
+    role: "LLM classifier"
+    purpose: "Structured job classification"
+    model: "claude-3-5-haiku-20241022"
+    provides:
+      - "Job family classification"
+      - "Job subfamily classification"
+      - "Seniority extraction"
+      - "Location parsing"
+      - "Skills extraction"
+      - "Salary parsing"
+      - "Company info extraction"
+    endpoint: "https://api.anthropic.com/v1/messages"
+    authentication: "API Key (Bearer token)"
+    cost: "~$0.001 per job (~$0.05 for 50 jobs)"
+    input: "Formatted job text + taxonomy prompt"
+    output: "Structured JSON classification"
+    
+  supabase:
+    service: "Supabase (Postgres)"
+    role: "Database"
+    purpose: "Store raw and enriched job data"
+    provides:
+      - "Persistent storage"
+      - "SQL querying"
+      - "REST API access"
+      - "Real-time subscriptions (not used yet)"
+    tables:
+      raw_jobs:
+        purpose: "Store unprocessed job text"
+        columns:
+          - "id (primary key)"
+          - "source (e.g., 'adzuna')"
+          - "posting_url (unique)"
+          - "raw_text (full job posting)"
+          - "source_job_id (Adzuna's ID)"
+          - "scraped_at (timestamp)"
+          - "metadata (JSONB)"
+      enriched_jobs:
+        purpose: "Store classified/structured job data"
+        columns:
+          - "id (primary key)"
+          - "raw_job_id (foreign key)"
+          - "job_hash (deduplication key)"
+          - "employer_name, employer_department, employer_size"
+          - "title_display, job_family, job_subfamily"
+          - "seniority, track, position_type"
+          - "city_code, working_arrangement"
+          - "currency, salary_min, salary_max"
+          - "skills (JSONB array)"
+          - "posted_date, last_seen_date"
+          - "created_at, updated_at"
+    authentication: "Supabase URL + Service Key"
+    cost: "Free (500MB storage, sufficient for 1000s of jobs)"
+
+# ============================================
+# DATA FLOW
+# ============================================
+
+data_flow:
+  step_1:
+    stage: "Fetch from Adzuna"
+    script: "fetch_adzuna_jobs.py"
+    function: "fetch_adzuna_jobs()"
+    input: "Search query (e.g., 'Data Scientist'), city code"
+    output: "List of job dictionaries (JSON from Adzuna)"
+    
+  step_2:
+    stage: "Format for classification"
+    script: "fetch_adzuna_jobs.py"
+    function: "format_job_for_classification()"
+    input: "Adzuna job JSON"
+    output: "Human-readable job posting text"
+    
+  step_3:
+    stage: "Check for duplicates"
+    script: "fetch_adzuna_jobs.py"
+    function: "check_if_job_exists()"
+    input: "Job URL"
+    output: "Boolean (exists in database?)"
+    action: "Skip job if already processed"
+    
+  step_4:
+    stage: "Store raw job"
+    script: "db_connection.py"
+    function: "insert_raw_job()"
+    input: "Job text, URL, metadata"
+    output: "raw_job_id"
+    database_table: "raw_jobs"
+    
+  step_5:
+    stage: "Classify with Claude"
+    script: "classifier.py"
+    function: "classify_job_with_claude()"
+    input: "Job text"
+    process:
+      - "Build prompt with taxonomy"
+      - "Call Claude API"
+      - "Parse JSON response"
+    output: "Structured classification (Python dict)"
+    
+  step_6:
+    stage: "Store enriched job"
+    script: "db_connection.py"
+    function: "insert_enriched_job()"
+    input: "Classification dict + raw_job_id"
+    output: "enriched_job_id"
+    database_table: "enriched_jobs"
+
+# ============================================
+# EXECUTION PATTERNS
+# ============================================
+
+execution_patterns:
+  initial_test:
+    command: "python fetch_adzuna_jobs.py lon 10"
+    description: "Fetch 10 jobs per query from London (50 total)"
+    duration: "~3-5 minutes"
+    cost: "~$0.05"
+    
+  scale_up:
+    command: "python fetch_adzuna_jobs.py lon 50"
+    description: "Fetch 50 jobs per query from London (250 total)"
+    duration: "~15-20 minutes"
+    cost: "~$0.25"
+    
+  multi_city:
+    commands:
+      - "python fetch_adzuna_jobs.py lon 50"
+      - "python fetch_adzuna_jobs.py nyc 50"
+      - "python fetch_adzuna_jobs.py den 50"
+    description: "Fetch from all 3 cities (750 total jobs)"
+    duration: "~45-60 minutes"
+    cost: "~$0.75"
+    
+  re_run_safety:
+    description: "Re-running same command skips duplicate jobs"
+    behavior: "Deduplication prevents re-processing"
+    cost_impact: "Only pays for new jobs"
+
+# ============================================
+# KEY DEPENDENCIES
+# ============================================
+
+dependencies:
+  fetch_adzuna_jobs_py:
+    imports:
+      - module: "classifier"
+        function: "classify_job_with_claude()"
+      - module: "db_connection"
+        functions:
+          - "insert_raw_job()"
+          - "insert_enriched_job()"
+          - "supabase (client)"
+      - module: "requests"
+        purpose: "HTTP calls to Adzuna"
+      - module: "dotenv"
+        purpose: "Load .env variables"
+    
+  classifier_py:
+    imports:
+      - module: "anthropic"
+        purpose: "Claude API client"
+      - module: "yaml"
+        purpose: "Load schema_taxonomy.yaml"
+      - module: "dotenv"
+        purpose: "Load ANTHROPIC_API_KEY"
+    reads:
+      - "docs/schema_taxonomy.yaml"
+    
+  db_connection_py:
+    imports:
+      - module: "supabase"
+        purpose: "Postgres client for Supabase"
+      - module: "dotenv"
+        purpose: "Load SUPABASE_URL and SUPABASE_KEY"
+
+# ============================================
+# VALIDATION & TESTING
+# ============================================
+
+validation:
+  ground_truth_test:
+    script: "test_manual_insert.py"
+    test_cases: 3
+    results:
+      - "Job 1 (Kharon Staff Data Engineer): 5/5 ✅"
+      - "Job 2 (Brij Director of Product): 4/5 (ai_ml_pm vs technical_pm)"
+      - "Job 3 (Ascendion Data Architect): 5/5 ✅"
+    accuracy: "93.3% (14/15 fields correct)"
+    status: "Validated and production-ready"
+    
+  classification_quality:
+    seniority_accuracy: "100% (3/3)"
+    location_accuracy: "100% (3/3)"
+    working_arrangement_accuracy: "100% (3/3)"
+    subfamily_accuracy: "66% (2/3) - one edge case"
+    
+  edge_cases_identified:
+    - "Technical PM vs AI/ML PM boundary (both valid for some roles)"
+    - "Staff title with fewer years than expected (title wins)"
+    - "Hybrid with specific days requirement (classified as hybrid)"
+
+# ============================================
+# CURRENT STATE
+# ============================================
+
+current_state:
+  status: "MVP pipeline operational"
+  jobs_processed: "~50 (initial test)"
+  tables_populated:
+    - "raw_jobs: ~50 rows"
+    - "enriched_jobs: ~50 rows"
+  accuracy: "93% on ground truth"
+  cost_per_job: "$0.001"
+  ready_for: "Scale-up to 500-1000 jobs"
