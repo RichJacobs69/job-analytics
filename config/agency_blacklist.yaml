@@ -6,7 +6,7 @@
 metadata:
   version: 1.0
   last_updated: "2025-11-13"
-  total_agencies: 49
+  total_agencies: 53
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================

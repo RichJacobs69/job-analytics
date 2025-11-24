@@ -1,5 +1,6 @@
 """
 Job classification using Claude 3.5 Haiku
+UPDATED: Removed agency detection from Claude prompt (handled by Python pattern matching)
 """
 import os
 import json
@@ -31,8 +32,10 @@ with open('docs/schema_taxonomy.yaml', 'r') as f:
 
 def build_classification_prompt(job_text: str) -> str:
     """
-    Build comprehensive prompt that includes taxonomy guidance.
-    Claude needs to see the full taxonomy to classify accurately.
+    Build classification prompt for Claude.
+    
+    NOTE: Agency detection is NOT included here - it's handled by Python
+    pattern matching after Claude classification completes.
     """
     
     # Extract key enum values for the prompt
@@ -163,12 +166,16 @@ def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
     """
     Classify a job posting using Claude 3.5 Haiku.
     
+    NOTE: This function does NOT populate is_agency or agency_confidence fields.
+    Those are added by Python pattern matching after this function returns.
+    
     Args:
         job_text: Full job posting text
         verbose: If True, print prompt and raw response
     
     Returns:
         Dictionary with classified job data matching schema
+        (is_agency and agency_confidence will be null - added later by pattern matching)
     """
     prompt = build_classification_prompt(job_text)
     
@@ -212,27 +219,27 @@ def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
         response_text = response_text.strip()
         
         result = json.loads(response_text)
+        
+        # Ensure employer dict exists and add placeholder agency fields
+        # (These will be overwritten by pattern matching in fetch script)
+        if 'employer' not in result:
+            result['employer'] = {}
+        result['employer']['is_agency'] = None
+        result['employer']['agency_confidence'] = None
+        
         return result
         
     except json.JSONDecodeError as e:
-        print(f"❌ Failed to parse Claude's response as JSON: {e}")
+        print(f"[ERROR] Failed to parse Claude's response as JSON: {e}")
         print(f"Raw response: {response_text}")
         raise
     except Exception as e:
-        print(f"❌ Classification failed: {e}")
+        print(f"[ERROR] Classification failed: {e}")
         raise
 
 
 # ============================================
-# ============================================
-# Test Function (OPTIONAL - only runs when you execute python classifier.py directly)
-# ============================================
-# This section is ignored when classifier.py is imported by other scripts.
-# Use it to quickly test Claude classification without running the full pipeline.
-# 
-# To test: python classifier.py
-# 
-# You can safely delete this entire section if you never use it.
+# Test Function
 # ============================================
 
 if __name__ == "__main__":
@@ -259,3 +266,5 @@ if __name__ == "__main__":
     print("CLASSIFICATION RESULT")
     print("="*60)
     print(json.dumps(result, indent=2))
+    print("\n[WARNING] Note: is_agency and agency_confidence are null here")
+    print("   They will be populated by pattern matching in fetch script")

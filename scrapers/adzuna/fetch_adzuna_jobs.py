@@ -71,7 +71,7 @@ with open('config/agency_blacklist.yaml') as f:
 HARD_FILTER = set(agency.lower().strip() for agency in AGENCY_CONFIG['hard_filter'])
 
 # Validation: print on startup
-print(f"🛡️  Hard filter loaded: {len(HARD_FILTER)} agencies")
+print(f"[PROTECT] Hard filter loaded: {len(HARD_FILTER)} agencies")
 if len(HARD_FILTER) > 0:
     sample = list(HARD_FILTER)[:3]
     print(f"   Sample: {', '.join(sample)}")
@@ -116,7 +116,7 @@ def fetch_adzuna_jobs(
         data = response.json()
         return data.get("results", [])
     except requests.exceptions.RequestException as e:
-        print(f"❌ Adzuna API error: {e}")
+        print(f"[ERROR] Adzuna API error: {e}")
         if hasattr(e, 'response') and e.response is not None:
             print(f"   Response status: {e.response.status_code}")
         return []
@@ -160,7 +160,7 @@ def check_if_job_exists(posting_url: str) -> bool:
             .execute()
         return len(result.data) > 0
     except Exception as e:
-        print(f"⚠️  Error checking for duplicate: {e}")
+        print(f"[WARNING] Error checking for duplicate: {e}")
         return False
 
 
@@ -200,7 +200,7 @@ def process_adzuna_jobs(
             results_per_page=max_jobs_per_query
         )
         
-        print(f"\n✅ Fetched {len(adzuna_jobs)} jobs from Adzuna")
+        print(f"\n[OK] Fetched {len(adzuna_jobs)} jobs from Adzuna")
         total_fetched += len(adzuna_jobs)
         
         for i, adzuna_job in enumerate(adzuna_jobs, 1):
@@ -210,7 +210,7 @@ def process_adzuna_jobs(
             
             # HARD FILTER: Block known agencies before classification
             if is_hard_filter_agency(employer_name):
-                print(f"   ⏭️  Filtered agency (hard): {employer_name}")
+                print(f"   [SKIP] Filtered agency (hard): {employer_name}")
                 total_skipped += 1
                 continue
             
@@ -218,7 +218,7 @@ def process_adzuna_jobs(
             
             # Check for duplicates
             if skip_existing and check_if_job_exists(job_url):
-                print(f"   ⏭️  Skipping (already in database)")
+                print(f"   [SKIP] Skipping (already in database)")
                 total_skipped += 1
                 continue
             
@@ -238,11 +238,11 @@ def process_adzuna_jobs(
                         "adzuna_contract_type": adzuna_job.get("contract_type")
                     }
                 )
-                print(f"   ✅ Raw job inserted: ID {raw_id}")
+                print(f"   [OK] Raw job inserted: ID {raw_id}")
                 
                 # Classify with Claude
                 classification = classify_job_with_claude(job_text)
-                print(f"   ✅ Classified: {classification['role']['job_family']} → {classification['role'].get('job_subfamily')}")
+                print(f"   [OK] Classified: {classification['role']['job_family']} → {classification['role'].get('job_subfamily')}")
                 
                 # ========================================
                 # SOFT DETECTION: Validate agency classification
@@ -261,7 +261,7 @@ def process_adzuna_jobs(
                 
                 # Log if agency detected by soft filter
                 if final_is_agency:
-                    print(f"   🔍 Agency detected (soft): {employer_name} (confidence: {final_confidence})")
+                    print(f"   [DETECT] Agency detected (soft): {employer_name} (confidence: {final_confidence})")
                 
                 # Extract salary
                 salary_range = classification['compensation'].get('base_salary_range')
@@ -315,13 +315,13 @@ def process_adzuna_jobs(
                     posted_date=posted_date,
                     last_seen_date=date.today()
                 )
-                print(f"   ✅ Enriched job inserted: ID {enriched_id}")
+                print(f"   [OK] Enriched job inserted: ID {enriched_id}")
                 
                 total_processed += 1
                 time.sleep(1)  # Rate limiting
                 
             except Exception as e:
-                print(f"   ❌ Error processing job: {e}")
+                print(f"   [ERROR] Error processing job: {e}")
                 import traceback
                 traceback.print_exc()
                 total_errors += 1
@@ -337,8 +337,8 @@ def process_adzuna_jobs(
     print(f"Errors: {total_errors}")
     
     if total_processed > 0:
-        print(f"\n💰 Estimated cost: ~${total_processed * 0.004:.2f} (Claude API)")
-        print(f"⏱️  Average time: ~3-4 seconds per job")
+        print(f"\n[COST] Estimated cost: ~${total_processed * 0.004:.2f} (Claude API)")
+        print(f"[TIME] Average time: ~3-4 seconds per job")
 
 
 # ============================================
@@ -352,10 +352,10 @@ if __name__ == "__main__":
     max_jobs = int(sys.argv[2]) if len(sys.argv) > 2 else 10
     
     if city not in ["lon", "nyc", "den"]:
-        print("❌ Invalid city code. Use: lon, nyc, or den")
+        print("[ERROR] Invalid city code. Use: lon, nyc, or den")
         sys.exit(1)
     
-    print(f"\n🚀 Starting Adzuna fetch for {LOCATION_QUERIES[city]}")
+    print(f"\n[START] Starting Adzuna fetch for {LOCATION_QUERIES[city]}")
     print(f"   Target: {max_jobs} jobs per search query")
     print(f"   Search queries: {', '.join(DEFAULT_SEARCH_QUERIES)}\n")
     

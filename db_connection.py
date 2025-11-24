@@ -58,18 +58,22 @@ def insert_raw_job(
     posting_url: str,
     raw_text: str,
     source_job_id: Optional[str] = None,
-    metadata: Optional[Dict] = None
+    metadata: Optional[Dict] = None,
+    full_text: Optional[str] = None,
+    text_source: Optional[str] = None
 ) -> int:
     """
     Insert a raw job posting into the database.
-    
+
     Args:
         source: Source identifier (e.g., 'adzuna', 'linkedin_rss', 'manual')
         posting_url: Full URL to job posting
         raw_text: Complete job description text/HTML
         source_job_id: Optional external ID from source
         metadata: Optional additional metadata (dict)
-    
+        full_text: Optional full job description (for enrichment from ATS scraping)
+        text_source: Source of full_text ('adzuna_api', 'ats_scrape', 'company_website', etc.)
+
     Returns:
         ID of inserted raw job
     """
@@ -78,9 +82,15 @@ def insert_raw_job(
         "posting_url": posting_url,
         "raw_text": raw_text,
         "source_job_id": source_job_id,
-        "metadata": metadata or {}
+        "metadata": metadata or {},
     }
-    
+
+    # Only add optional fields if they're provided
+    if full_text is not None:
+        data["full_text"] = full_text
+    if text_source is not None:
+        data["text_source"] = text_source
+
     result = supabase.table("raw_jobs").insert(data).execute()
     return result.data[0]["id"]
 
@@ -109,7 +119,13 @@ def insert_enriched_job(
     salary_min: Optional[float] = None,
     salary_max: Optional[float] = None,
     equity_eligible: Optional[bool] = None,
-    skills: Optional[List[Dict]] = None
+    skills: Optional[List[Dict]] = None,
+    # Dual pipeline tracking (new fields)
+    data_source: Optional[str] = "adzuna",
+    description_source: Optional[str] = "adzuna",
+    deduplicated: Optional[bool] = False,
+    original_url_secondary: Optional[str] = None,
+    merged_from_source: Optional[str] = None
 ) -> int:
     """
     Insert a classified/enriched job into the database.
@@ -151,14 +167,14 @@ def insert_enriched_job(
     data = {
         "raw_job_id": raw_job_id,
         "job_hash": job_hash,
-        
+
         # Employer
         "employer_name": employer_name,
         "employer_department": employer_department,
         "employer_size": employer_size,
         "is_agency": is_agency,
         "agency_confidence": agency_confidence,
-        
+
         # Role
         "title_display": title_display,
         "title_canonical": title_canonical,
@@ -168,23 +184,30 @@ def insert_enriched_job(
         "seniority": seniority,
         "position_type": position_type,
         "experience_range": experience_range,
-        
+
         # Location
         "city_code": city_code,
         "working_arrangement": working_arrangement,
-        
+
         # Compensation
         "currency": currency,
         "salary_min": salary_min,
         "salary_max": salary_max,
         "equity_eligible": equity_eligible,
-        
+
         # Skills
         "skills": skills or [],
-        
+
         # Dates
         "posted_date": posted_date.isoformat(),
-        "last_seen_date": last_seen_date.isoformat()
+        "last_seen_date": last_seen_date.isoformat(),
+
+        # Dual pipeline source tracking (new fields)
+        "data_source": data_source,
+        "description_source": description_source,
+        "deduplicated": deduplicated,
+        "original_url_secondary": original_url_secondary,
+        "merged_from_source": merged_from_source
     }
     
     # Use upsert to handle duplicates (same job_hash)
@@ -196,15 +219,64 @@ def insert_enriched_job(
     return result.data[0]["id"]
 
 
+def update_raw_job_full_text(
+    raw_job_id: int,
+    full_text: str,
+    text_source: str
+) -> bool:
+    """
+    Update full_text and text_source on an existing raw job record.
+
+    Used for enriching Adzuna records with full job descriptions from ATS scraping.
+
+    Args:
+        raw_job_id: ID of the raw_job record to update
+        full_text: Full job description text
+        text_source: Source of the full text ('ats_scrape', 'company_website', etc.)
+
+    Returns:
+        True if update successful, False otherwise
+    """
+    try:
+        data = {
+            "full_text": full_text,
+            "text_source": text_source
+        }
+
+        result = supabase.table("raw_jobs").update(data).eq("id", raw_job_id).execute()
+        return len(result.data) > 0
+    except Exception as e:
+        print(f"Error updating raw job {raw_job_id}: {e}")
+        return False
+
+
+def get_raw_job_by_id(raw_job_id: int) -> Optional[Dict]:
+    """
+    Retrieve a raw job record by ID.
+
+    Args:
+        raw_job_id: ID of the raw job
+
+    Returns:
+        Job record dict or None if not found
+    """
+    try:
+        result = supabase.table("raw_jobs").select("*").eq("id", raw_job_id).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error retrieving raw job {raw_job_id}: {e}")
+        return None
+
+
 def test_connection():
     """Test that we can connect to Supabase"""
     try:
         result = supabase.table("raw_jobs").select("count").execute()
-        print(f"✅ Connected to Supabase successfully")
+        print(f"[OK] Connected to Supabase successfully")
         print(f"   Current raw jobs count: {result.count}")
         return True
     except Exception as e:
-        print(f"❌ Connection failed: {e}")
+        print(f"[ERROR] Connection failed: {e}")
         return False
 
 

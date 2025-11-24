@@ -1,0 +1,16 @@
+# Supported ATS Systems
+# 
+# List of ATS systems to build parsers for.
+# Add new ATS systems here when you want to build parsers for them.
+
+- greenhouse
+- ashby
+- lever
+- workable
+- smartrecruiters
+- bamboohr
+- recruitee
+- comeet
+- taleo
+- workday
+- custom

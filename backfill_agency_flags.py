@@ -25,10 +25,10 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
     with open('config/agency_blacklist.yaml') as f:
         AGENCY_CONFIG = yaml.safe_load(f)
     HARD_FILTER = set(agency.lower().strip() for agency in AGENCY_CONFIG['hard_filter'])
-    print(f"🛡️  Loaded hard filter: {len(HARD_FILTER)} agencies")
+    print(f"[PROTECT] Loaded hard filter: {len(HARD_FILTER)} agencies")
     
     # Step 1: Get all jobs that need agency flags
-    print("\n📊 Fetching jobs from database...")
+    print("\n[DATA] Fetching jobs from database...")
     
     try:
         if force_reprocess:
@@ -36,28 +36,28 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
             result = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
                 .execute()
-            print(f"✅ Found {len(result.data)} jobs (FORCE REPROCESS mode)")
+            print(f"[OK] Found {len(result.data)} jobs (FORCE REPROCESS mode)")
         else:
             # Only process jobs with NULL agency flags
             result = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
                 .is_("is_agency", "null") \
                 .execute()
-            print(f"✅ Found {len(result.data)} jobs with NULL agency flags")
+            print(f"[OK] Found {len(result.data)} jobs with NULL agency flags")
         
         jobs = result.data
         total_jobs = len(jobs)
         
         if total_jobs == 0:
-            print("\n✨ All jobs already have agency flags!")
+            print("\n[DONE] All jobs already have agency flags!")
             return
         
     except Exception as e:
-        print(f"❌ Error fetching jobs: {e}")
+        print(f"[ERROR] Error fetching jobs: {e}")
         return
     
     # Step 2: Also get raw job text for better detection
-    print("\n📝 Fetching raw job text for enhanced detection...")
+    print("\n[NOTE] Fetching raw job text for enhanced detection...")
     
     # Build a map of raw_job_id -> job text
     raw_job_ids = [job['raw_job_id'] for job in jobs]
@@ -69,14 +69,14 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
             .execute()
         
         raw_text_map = {row['id']: row['raw_text'] for row in raw_result.data}
-        print(f"✅ Retrieved raw text for {len(raw_text_map)} jobs")
+        print(f"[OK] Retrieved raw text for {len(raw_text_map)} jobs")
     except Exception as e:
-        print(f"⚠️  Could not fetch raw text: {e}")
+        print(f"[WARNING] Could not fetch raw text: {e}")
         print("   Will proceed with employer name only (less accurate)")
         raw_text_map = {}
     
     # Step 3: Process jobs in batches
-    print(f"\n🔄 Processing {total_jobs} jobs...")
+    print(f"\n[PROCESS] Processing {total_jobs} jobs...")
     print(f"   Dry run: {'YES (no changes will be made)' if dry_run else 'NO (will update database)'}")
     print()
     
@@ -103,21 +103,21 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
                 # Hard filter match = definitely an agency
                 is_agency = True
                 confidence = 'high'
-                status = "🚫"
+                status = "[BLOCKED]"
                 
                 # Track if we're correcting a wrong classification
                 if current_is_agency is False:
                     corrected_count += 1
-                    status = "🔧"  # Correction icon
+                    status = "[FIX]"  # Correction icon
             else:
                 # Not in hard filter, run pattern matching
                 is_agency, confidence = detect_agency(employer_name, job_text)
-                status = "🔍" if is_agency else "✅"
+                status = "[DETECT]" if is_agency else "[OK]"
                 
                 # Track corrections
                 if current_is_agency is not None and current_is_agency != is_agency:
                     corrected_count += 1
-                    status = "🔧"
+                    status = "[FIX]"
             
             # Show progress with status indicator
             print(f"{status} [{i}/{total_jobs}] {employer_name[:40]:40} → is_agency={is_agency:5} ({confidence})")
@@ -139,11 +139,11 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
                 
                 # Rate limiting (be nice to Supabase)
                 if i % batch_size == 0:
-                    print(f"   💤 Batch complete, pausing briefly...")
+                    print(f"   [PAUSE] Batch complete, pausing briefly...")
                     time.sleep(0.5)
         
         except Exception as e:
-            print(f"   ❌ Error processing job {job_id}: {e}")
+            print(f"   [ERROR] Error processing job {job_id}: {e}")
             error_count += 1
             continue
     
@@ -158,9 +158,9 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
     if not dry_run:
         print(f"Successfully updated: {updated_count}")
         print(f"Errors: {error_count}")
-        print("\n✅ Backfill complete!")
+        print("\n[OK] Backfill complete!")
     else:
-        print("\n💡 This was a dry run. Run with dry_run=False to apply changes.")
+        print("\n[TIP] This was a dry run. Run with dry_run=False to apply changes.")
     
     # Step 5: Show sample of detected agencies
     if agency_count > 0:
@@ -180,7 +180,7 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
                 print(f"  • {row['employer_name']:40} ({row['agency_confidence']}) - {row['job_subfamily']}")
         
         except Exception as e:
-            print(f"⚠️  Could not fetch sample: {e}")
+            print(f"[WARNING] Could not fetch sample: {e}")
 
 
 def verify_backfill():
@@ -206,14 +206,14 @@ def verify_backfill():
         non_agency_count = sum(1 for j in jobs if j['is_agency'] is False)
         
         print(f"\nTotal jobs in database: {total}")
-        print(f"  ✅ Direct employers: {non_agency_count} ({non_agency_count/total*100:.1f}%)")
-        print(f"  🔍 Agencies: {agency_count} ({agency_count/total*100:.1f}%)")
+        print(f"  [OK] Direct employers: {non_agency_count} ({non_agency_count/total*100:.1f}%)")
+        print(f"  [DETECT] Agencies: {agency_count} ({agency_count/total*100:.1f}%)")
         print(f"  ❓ NULL (not processed): {null_count} ({null_count/total*100:.1f}%)")
         
         if null_count == 0:
-            print("\n✨ All jobs have been processed!")
+            print("\n[DONE] All jobs have been processed!")
         else:
-            print(f"\n⚠️  {null_count} jobs still need processing")
+            print(f"\n[WARNING] {null_count} jobs still need processing")
         
         # Count by confidence
         if agency_count > 0:
@@ -227,7 +227,7 @@ def verify_backfill():
             print(f"  Low confidence: {low} ({low/agency_count*100:.1f}%)")
     
     except Exception as e:
-        print(f"❌ Verification failed: {e}")
+        print(f"[ERROR] Verification failed: {e}")
 
 
 if __name__ == "__main__":

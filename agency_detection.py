@@ -190,6 +190,22 @@ def validate_agency_classification(
     return False, 'low'
 
 
+def is_agency_job(employer_name: str) -> bool:
+    """
+    Simple wrapper for detect_agency that returns only the boolean result.
+    
+    This is used for quick filtering in the pipeline.
+    
+    Args:
+        employer_name: Company name to check
+    
+    Returns:
+        True if agency detected, False otherwise
+    """
+    is_agency, _ = detect_agency(employer_name)
+    return is_agency
+
+
 # ============================================
 # Test cases (run with: python agency_detection.py)
 # ============================================
@@ -213,7 +229,7 @@ if __name__ == "__main__":
     print("=" * 70)
     for name, expected, reason in test_cases:
         is_agency, confidence = detect_agency(name)
-        status = "✅" if is_agency == expected else "❌"
+        status = "[OK]" if is_agency == expected else "[ERROR]"
         print(f"{status} {name:40} → {is_agency:5} ({confidence:6}) - {reason}")
     print("=" * 70)
     

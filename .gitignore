@@ -12,6 +12,18 @@ __pycache__/
 backup/
 *.backup.py
 
+# Generated outputs (should not be committed)
+output/
+ats_*.json
+*_results.csv
+*.html
+validation_metrics*.json
+nul
+
+# Exception: Keep ATS validation reference files (these document verified companies)
+!greenhouse_validation_results.json
+!greenhouse_validation_results.csv
+
 # Database
 *.db
 *.sqlite

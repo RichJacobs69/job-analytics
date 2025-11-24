@@ -1,0 +1,276 @@
+{
+  "greenhouse": {
+    "Stripe": {
+      "slug": "stripe",
+      "status": "verified",
+      "job_count": 65,
+      "avg_description_length": 11106,
+      "error": null
+    },
+    "Warby Parker": {
+      "slug": "warbyparker",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 9010,
+      "error": null
+    },
+    "Zocdoc": {
+      "slug": "zocdoc",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 5381,
+      "error": null
+    },
+    "Affirm": {
+      "slug": "affirm",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 11215,
+      "error": null
+    },
+    "Reddit": {
+      "slug": "reddit",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 11451,
+      "error": null
+    },
+    "Airtable": {
+      "slug": "airtable",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 14502,
+      "error": null
+    },
+    "Figma": {
+      "slug": "figma",
+      "status": "verified",
+      "job_count": 132,
+      "avg_description_length": 14831,
+      "error": null
+    },
+    "Coursera": {
+      "slug": "coursera",
+      "status": "verified",
+      "job_count": 33,
+      "avg_description_length": 12322,
+      "error": null
+    },
+    "BuzzFeed": {
+      "slug": "buzzfeed",
+      "status": "verified",
+      "job_count": 2,
+      "avg_description_length": 16183,
+      "error": null
+    },
+    "Rent the Runway": {
+      "slug": "renttherunway",
+      "status": "verified",
+      "job_count": 9,
+      "avg_description_length": 12784,
+      "error": null
+    },
+    "DoubleVerify": {
+      "slug": "doubleverify",
+      "status": "verified",
+      "job_count": 44,
+      "avg_description_length": 11596,
+      "error": null
+    },
+    "Harry's": {
+      "slug": "harrys",
+      "status": "verified",
+      "job_count": 12,
+      "avg_description_length": 14553,
+      "error": null
+    },
+    "Peloton": {
+      "slug": "peloton",
+      "status": "verified",
+      "job_count": 1,
+      "avg_description_length": 2977,
+      "error": null
+    },
+    "Vimeo": {
+      "slug": "vimeo",
+      "status": "verified",
+      "job_count": 11,
+      "avg_description_length": 8702,
+      "error": null
+    },
+    "Instacart": {
+      "slug": "instacart",
+      "status": "verified",
+      "job_count": 1,
+      "avg_description_length": 297,
+      "error": null
+    },
+    "Twilio": {
+      "slug": "twilio",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 13461,
+      "error": null
+    },
+    "Monzo": {
+      "slug": "monzo",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 14214,
+      "error": null
+    },
+    "GoCardless": {
+      "slug": "gocardless",
+      "status": "verified",
+      "job_count": 46,
+      "avg_description_length": 11808,
+      "error": null
+    },
+    "SonderMind": {
+      "slug": "sondermind",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 7125,
+      "error": null
+    },
+    "Angi": {
+      "slug": "angi",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 11517,
+      "error": null
+    },
+    "Checkr": {
+      "slug": "checkr",
+      "status": "verified",
+      "job_count": 46,
+      "avg_description_length": 9763,
+      "error": null
+    },
+    "Automox": {
+      "slug": "automox",
+      "status": "verified",
+      "job_count": 4,
+      "avg_description_length": 10330,
+      "error": null
+    },
+    "GitLab": {
+      "slug": "gitlab",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 17205,
+      "error": null
+    },
+    "Intercom": {
+      "slug": "intercom",
+      "status": "verified",
+      "job_count": 50,
+      "avg_description_length": 14322,
+      "error": null
+    }
+  },
+  "ashby": {
+    "Notion": "notion",
+    "Vercel": "vercel",
+    "Retool": "retool",
+    "Rippling": "rippling",
+    "Webflow": "webflow",
+    "OpenSea": "opensea",
+    "Linear": "linear",
+    "Replit": "replit",
+    "Midjourney": "midjourney",
+    "Perplexity AI": "perplexity",
+    "Vanta": "vanta",
+    "Mercury": "mercury",
+    "Sourcegraph": "sourcegraph",
+    "Hex (Hex Technologies)": "hex"
+  },
+  "lever": {
+    "Atlassian": "atlassian",
+    "Grammarly": "grammarly",
+    "Quora": "quora",
+    "Patreon": "patreon",
+    "Postman": "postman",
+    "Eventbrite": "eventbrite",
+    "DonorsChoose": "donorschoose",
+    "Opendoor": "opendoor",
+    "Khan Academy": "khanacademy",
+    "Loom": "loom"
+  },
+  "workable": {
+    "Starling Bank": "starling-bank",
+    "Zego": "zego",
+    "Cleo": "meetcleo",
+    "Form3": "form3",
+    "Gousto": "gousto",
+    "Codat": "codat",
+    "Curve": "curve",
+    "Pento": "pento"
+  },
+  "smartrecruiters": {
+    "Spotify": "Spotify",
+    "Ubisoft": "Ubisoft",
+    "King": "King"
+  },
+  "bamboohr": {
+    "Formlabs": "formlabs",
+    "Lucid Software": "lucid"
+  },
+  "recruitee": {
+    "Backbase": "backbase",
+    "Bynder": "bynder",
+    "Otrium": "otrium"
+  },
+  "comeet": {
+    "Riskified": "riskified",
+    "Taboola": "taboola",
+    "Similarweb": "similarweb",
+    "Fiverr": "fiverr",
+    "Via (Via Transportation)": "viatransportation"
+  },
+  "taleo": {
+    "Transport for London (TfL)": "tfl",
+    "Metropolitan Police": "metpolice",
+    "University College London (UCL)": "ucl",
+    "University of the Arts London (UAL)": "ual"
+  },
+  "workday": {
+    "Bloomberg": "bloomberg",
+    "Deliveroo": "deliveroo",
+    "Snowflake": "snowflakecomputing",
+    "Nike": "nike",
+    "Salesforce": "salesforce",
+    "Walmart": "walmart",
+    "Target": "target"
+  },
+  "custom": {
+    "Microsoft": "https://careers.microsoft.com",
+    "Johnson & Johnson": "https://jobs.jnj.com",
+    "ServiceNow": "https://careers.servicenow.com",
+    "DaVita": "https://careers.davita.com",
+    "DISH": "https://careers.dish.com",
+    "JPMorgan Chase": "https://careers.jpmorgan.com/global/en",
+    "BlackRock": "https://careers.blackrock.com",
+    "Citi": "https://careers.citigroup.com",
+    "Shell": "https://jobs.shell.com",
+    "HSBC": "https://mycareer.hsbc.com",
+    "Amazon": "https://www.amazon.jobs",
+    "Google": "https://careers.google.com/jobs/results/",
+    "Apple": "https://jobs.apple.com",
+    "Meta": "https://www.metacareers.com",
+    "Netflix": "https://jobs.netflix.com",
+    "Tesla": "https://www.tesla.com/careers",
+    "Jane Street": "https://www.janestreet.com/join-jane-street/",
+    "Hudson River Trading": "https://www.hudsonrivertrading.com/careers/",
+    "Citadel": "https://www.citadel.com/careers/",
+    "DE Shaw": "https://www.deshaw.com/careers",
+    "Jump Trading": "https://jumptrading.com/careers/",
+    "DRW": "https://drw.com/work-at-drw/",
+    "IMC Trading": "https://www.imc.com/us/careers/",
+    "Optiver": "https://optiver.com/working-at-optiver/",
+    "Uber": "https://www.uber.com/us/en/careers/",
+    "DeepMind": "https://www.deepmind.com/careers",
+    "The Guardian": "https://workforus.theguardian.com/",
+    "BBC": "https://careerssearch.bbc.co.uk/"
+  }
+}

@@ -343,9 +343,9 @@ validation:
     script: "test_manual_insert.py"
     test_cases: 3
     results:
-      - "Job 1 (Kharon Staff Data Engineer): 5/5 ✅"
+      - "Job 1 (Kharon Staff Data Engineer): 5/5 [OK]"
       - "Job 2 (Brij Director of Product): 4/5 (ai_ml_pm vs technical_pm)"
-      - "Job 3 (Ascendion Data Architect): 5/5 ✅"
+      - "Job 3 (Ascendion Data Architect): 5/5 [OK]"
     accuracy: "93.3% (14/15 fields correct)"
     status: "Validated and production-ready"
     

@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python validate_pipeline.py:*)",
+      "Bash(python classifier.py:*)",
+      "Bash(python debug_classification.py:*)",
+      "Bash(python:*)",
+      "Bash(cat:*)",
+      "Bash(if [ -f \"C:\\Cursor Projects\\job-analytics\\validation_metrics_full_pipeline.json\" ])",
+      "Bash(then echo \"[COMPLETE] Test finished!\")",
+      "Bash(else echo \"[RUNNING] Test still in progress (Greenhouse scraper...)\")",
+      "Bash(fi)",
+      "Bash(else echo \"[RUNNING] Still waiting...\")",
+      "Bash(if pgrep -f \"test_full_pipeline_scale\")",
+      "Bash(then echo \"[RUNNING] Still processing...\")",
+      "Bash(else echo \"[COMPLETE] Test finished\")",
+      "Bash(timeout 2700 python test_full_pipeline_scale.py)",
+      "Bash(nul)",
+      "Bash(dir:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(powershell \"if (Test-Path ''C:\\Cursor Projects\\job-analytics\\validation_metrics_full_pipeline.json'') { echo ''[COMPLETE] Test finished!'' } else { echo ''[RUNNING] Test still in progress (Greenhouse scraper...)'' }\")",
+      "Bash(move test_classify_only.py docsarchivetests )",
+      "Bash(move test_dedupe_only.py docsarchivetests )",
+      "Bash(move test_greenhouse_only.py docsarchivetests )",
+      "Bash(move test_insert_greenhouse.py docsarchivetests )",
+      "Bash(move test_store_only.py docsarchivetests )",
+      "Bash(move test_unified_job_fix.py docsarchivetests )",
+      "Bash(move test_pipeline_integration.py docsarchivetests )",
+      "Bash(move:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

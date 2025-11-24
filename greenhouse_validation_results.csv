@@ -1,0 +1,91 @@
+Company Name,Status,Job Count,Avg Description Length,Error Message
+Affirm,verified,50,11215,
+Airbnb,unverified,0,0,No jobs found
+Airtable,verified,50,14502,
+Angi,verified,50,11517,
+Asana,unverified,0,0,No jobs found
+Automox,verified,4,10330,
+Away,unverified,0,0,No jobs found
+Better.com,unverified,0,0,No jobs found
+Betterment,unverified,0,0,No jobs found
+Bloom & Wild,unverified,0,0,No jobs found
+Bluecore,unverified,0,0,No jobs found
+Box,unverified,0,0,No jobs found
+Brex,unverified,0,0,No jobs found
+BuzzFeed,verified,2,16183,
+Canva,unverified,0,0,No jobs found
+Casper,unverified,0,0,No jobs found
+Checkout.com,unverified,0,0,No jobs found
+Checkr,verified,46,9763,
+CircleCI,unverified,17,0,Description too short (0 chars)
+Citymapper,unverified,0,0,No jobs found
+Cloudflare,unverified,0,0,No jobs found
+Coinbase,unverified,0,0,No jobs found
+Compass,unverified,0,0,No jobs found
+Confluent,unverified,0,0,No jobs found
+Coursera,verified,33,12322,
+Databricks,unverified,0,0,No jobs found
+Datadog,unverified,0,0,No jobs found
+DigitalOcean,unverified,0,0,No jobs found
+DoorDash,unverified,0,0,No jobs found
+DoubleVerify,verified,44,11596,
+Dropbox,unverified,0,0,No jobs found
+Duolingo,unverified,5,0,Description too short (0 chars)
+Elastic,unverified,38,0,Description too short (0 chars)
+Etsy,unverified,0,0,No jobs found
+Figma,verified,132,14831,
+Flatiron Health,unverified,0,0,No jobs found
+Foursquare,unverified,0,0,No jobs found
+Funding Circle,unverified,0,0,No jobs found
+GitHub,unverified,0,0,No jobs found
+GitLab,verified,50,17205,
+Glossier,unverified,0,0,No jobs found
+GoCardless,verified,46,11808,
+Guild,unverified,0,0,No jobs found
+Harry's,verified,12,14553,
+Hinge,unverified,0,0,No jobs found
+HubSpot,unverified,0,0,No jobs found
+Ibotta,unverified,0,0,No jobs found
+Improbable,unverified,0,0,No jobs found
+Instacart,verified,1,297,
+Intercom,verified,50,14322,
+JumpCloud,unverified,0,0,No jobs found
+LogRhythm,unverified,0,0,No jobs found
+Lyft,unverified,0,0,No jobs found
+Meetup,unverified,0,0,No jobs found
+Miro,unverified,0,0,No jobs found
+MongoDB,unverified,0,0,No jobs found
+Monzo,verified,50,14214,
+OkCupid,unverified,0,0,No jobs found
+Onfido,unverified,0,0,No jobs found
+OpenAI,unverified,0,0,No jobs found
+Paddle,unverified,0,0,No jobs found
+Palantir,unverified,0,0,No jobs found
+Peloton,verified,1,2977,
+Pinterest,unverified,29,0,Description too short (0 chars)
+Plaid,unverified,0,0,No jobs found
+Quantum Metric,unverified,0,0,No jobs found
+Ramp,unverified,0,0,No jobs found
+Red Canary,unverified,0,0,No jobs found
+Reddit,verified,50,11451,
+Rent the Runway,verified,9,12784,
+Robinhood,unverified,0,0,No jobs found
+SeatGeek,unverified,0,0,No jobs found
+Snyk,unverified,0,0,No jobs found
+SoFi,unverified,0,0,No jobs found
+SonderMind,verified,50,7125,
+Squarespace,unverified,0,0,No jobs found
+StackHawk,unverified,0,0,No jobs found
+Stripe,verified,65,11106,
+Thought Machine,unverified,0,0,No jobs found
+TrueLayer,unverified,0,0,No jobs found
+Twilio,verified,50,13461,
+Two Sigma,unverified,0,0,No jobs found
+Vimeo,verified,11,8702,
+Vox Media,unverified,0,0,No jobs found
+Warby Parker,verified,50,9010,
+WeWork,unverified,0,0,No jobs found
+Wise,unverified,0,0,No jobs found
+Zapier,unverified,0,0,No jobs found
+Zocdoc,verified,50,5381,
+Zopa,unverified,0,0,No jobs found
