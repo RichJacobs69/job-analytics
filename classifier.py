@@ -197,16 +197,32 @@ def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
                 }
             ]
         )
-        
+
+        # Extract actual token usage from API response
+        usage = response.usage
+        haiku_input_price = 0.80  # $0.80 per 1M input tokens
+        haiku_output_price = 2.40  # $2.40 per 1M output tokens
+
+        cost_data = {
+            'input_tokens': usage.input_tokens,
+            'output_tokens': usage.output_tokens,
+            'input_cost': (usage.input_tokens / 1_000_000) * haiku_input_price,
+            'output_cost': (usage.output_tokens / 1_000_000) * haiku_output_price,
+            'total_cost': (usage.input_tokens / 1_000_000) * haiku_input_price +
+                         (usage.output_tokens / 1_000_000) * haiku_output_price
+        }
+
         # Extract text from Claude's response
         response_text = response.content[0].text
-        
+
         if verbose:
             print("\n" + "="*60)
             print("RAW CLAUDE RESPONSE")
             print("="*60)
             print(response_text[:500] + "...\n")
-        
+            print(f"Token usage: {usage.input_tokens} input, {usage.output_tokens} output")
+            print(f"Cost: ${cost_data['total_cost']:.6f}\n")
+
         # Parse JSON (Claude should return clean JSON)
         # Strip any markdown code fences just in case
         response_text = response_text.strip()
@@ -217,16 +233,19 @@ def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         response_text = response_text.strip()
-        
+
         result = json.loads(response_text)
-        
+
         # Ensure employer dict exists and add placeholder agency fields
         # (These will be overwritten by pattern matching in fetch script)
         if 'employer' not in result:
             result['employer'] = {}
         result['employer']['is_agency'] = None
         result['employer']['agency_confidence'] = None
-        
+
+        # Attach actual cost data to the result for tracking
+        result['_cost_data'] = cost_data
+
         return result
         
     except json.JSONDecodeError as e:

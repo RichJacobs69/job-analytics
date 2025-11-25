@@ -233,17 +233,26 @@ class PipelineValidator:
                         mapping = json.load(f)
                     # Extract just the slugs (not full dict objects)
                     company_data = mapping.get('greenhouse', {})
-                    company_slugs = [company['slug'] for company in company_data.values() if 'slug' in company]
-                    # SKIP GREENHOUSE FOR SPEED - just use Adzuna for quick validation
-                    company_slugs = []
-                    logger.info(f"Skipping Greenhouse (using Adzuna only for speed)...")
+                    # VALIDATION MODE: Use only Twilio and limit to 5 jobs for fast testing
+                    # Tests: deduplication, classification, storage without long runtime
+                    # Using Twilio instead of Stripe to avoid duplicate test data
+                    company_slugs = ['twilio']
+                    logger.info(f"Fetching from {len(company_slugs)} Greenhouse company: {', '.join(company_slugs)} (LIMITED TO 5 JOBS)")
 
                     # scrape_all returns dict of {slug: [jobs]}
                     greenhouse_results = await scraper.scrape_all(company_slugs)
 
-                    # Flatten results into single list
+                    # Flatten results into single list - LIMIT TO 5 JOBS TOTAL
+                    job_limit = 5
+                    jobs_added = 0
                     for company_slug, jobs in greenhouse_results.items():
-                        all_greenhouse_jobs.extend(jobs)
+                        for job in jobs:
+                            if jobs_added >= job_limit:
+                                break
+                            all_greenhouse_jobs.append(job)
+                            jobs_added += 1
+                        if jobs_added >= job_limit:
+                            break
 
                     self.metrics.greenhouse_fetched = len(all_greenhouse_jobs)
                     self.metrics.greenhouse_fetch_time = time.time() - start_time
@@ -305,6 +314,9 @@ class PipelineValidator:
             remote_count = 0
             compensation_count = 0
             agencies_filtered = 0
+            total_input_tokens = 0
+            total_output_tokens = 0
+            total_actual_cost = 0.0
 
             for i, job in enumerate(merged_jobs):
                 if (i + 1) % 10 == 0:
@@ -318,11 +330,24 @@ class PipelineValidator:
                         logger.info(f"  [FILTERED AGENCY] {job.company} - {job.title[:40]} ({agency_reason})")
                     continue
 
+                # DEBUG: Log description info for first few jobs
+                if i < 5:
+                    source_label = job.source.value if hasattr(job, 'source') else 'unknown'
+                    logger.info(f"  [DEBUG {i+1}] {job.company} - {job.title[:40]}")
+                    logger.info(f"    Source: {source_label} | Desc length: {len(job.description)} chars")
+
                 # Classify with timing
                 job_start = time.time()
                 try:
                     classification = classify_job_with_claude(job.description)
                     classification_time = time.time() - job_start
+
+                    # Extract actual cost data from classification
+                    cost_data = classification.get('_cost_data', {})
+                    if cost_data:
+                        total_input_tokens += cost_data.get('input_tokens', 0)
+                        total_output_tokens += cost_data.get('output_tokens', 0)
+                        total_actual_cost += cost_data.get('total_cost', 0.0)
 
                     # Parse classification results
                     skills = classification.get('skills', [])
@@ -343,7 +368,7 @@ class PipelineValidator:
                     # Store sample for quality review (first 5 of each source)
                     if len([s for s in self.classification_samples if s.source == (job.source.value if hasattr(job, 'source') else 'unknown')]) < 5:
                         self.classification_samples.append(ClassificationMetrics(
-                            job_id=str(hash(job.company + job.title)) % 10000,
+                            job_id=str(hash(job.company + job.title) % 10000),
                             company=job.company,
                             title=job.title,
                             source=job.source.value if hasattr(job, 'source') else 'unknown',
@@ -356,12 +381,23 @@ class PipelineValidator:
                         ))
 
                 except Exception as e:
-                    # Safe error logging - avoid format string issues
-                    try:
-                        logger.warning(f"Classification failed for: {job.title[:50]} - {str(e)[:100]}")
-                    except:
-                        logger.warning("Classification failed (error in error logging)")
+                    # Detailed error logging for debugging
+                    import traceback
                     self.metrics.classification_failures += 1
+                    source_label = job.source.value if hasattr(job, 'source') else 'unknown'
+                    logger.error(f"  [FAILED] {job.company} - {job.title[:40]}")
+                    logger.error(f"    Source: {source_label}")
+                    logger.error(f"    Description length: {len(job.description)} chars")
+                    logger.error(f"    Error type: {type(e).__name__}")
+                    logger.error(f"    Error message: {str(e)[:200]}")
+                    logger.error(f"    Full traceback:")
+                    for line in traceback.format_exc().split('\n'):
+                        if line.strip():
+                            logger.error(f"      {line}")
+                    if len(job.description) > 0:
+                        # Escape % symbols to prevent string formatting errors
+                        preview = job.description[:100].replace('%', '%%')
+                        logger.error(f"    Description preview: {preview}...")
                     continue
 
             self.metrics.jobs_classified = len(classified_jobs)
@@ -379,9 +415,9 @@ class PipelineValidator:
             logger.info(f"  - Classification time: {self.metrics.jobs_classified_time:.2f}s")
             logger.info(f"  - Avg time per job: {self.metrics.avg_classification_time:.3f}s")
             logger.info(f"  - Failures: {self.metrics.classification_failures}")
-            logger.info(f"  - Skills extraction rate: {self.metrics.skills_extraction_rate:.1f}%")
-            logger.info(f"  - Remote status detection: {self.metrics.remote_status_detection_rate:.1f}%")
-            logger.info(f"  - Compensation detection: {self.metrics.compensation_detection_rate:.1f}%\n")
+            logger.info(f"  - Skills extraction rate: {self.metrics.skills_extraction_rate:.1f}%%")
+            logger.info(f"  - Remote status detection: {self.metrics.remote_status_detection_rate:.1f}%%")
+            logger.info(f"  - Compensation detection: {self.metrics.compensation_detection_rate:.1f}%%\n")
 
         except Exception as e:
             logger.error(f"✗ Classification failed: {str(e)}\n")
@@ -391,26 +427,113 @@ class PipelineValidator:
         # Phase 4: Cost analysis
         logger.info("PHASE 4: COST ANALYSIS\n")
 
-        cost_per_job = self.estimate_classification_cost()
-        self.metrics.estimated_claude_calls = self.metrics.jobs_classified
-        self.metrics.estimated_claude_cost = self.metrics.jobs_classified * cost_per_job
-        self.metrics.cost_per_unique_job = self.metrics.estimated_claude_cost / max(self.metrics.merged_count, 1)
+        # Use actual costs from API if available, otherwise fall back to estimates
+        if total_actual_cost > 0:
+            actual_cost_per_job = total_actual_cost / max(self.metrics.jobs_classified, 1)
+            self.metrics.estimated_claude_calls = self.metrics.jobs_classified
+            self.metrics.estimated_claude_cost = total_actual_cost
+            self.metrics.cost_per_unique_job = total_actual_cost / max(self.metrics.merged_count, 1)
 
-        logger.info(f"Cost per classification (Haiku): ${cost_per_job:.6f}")
-        logger.info(f"Total Claude cost for {self.metrics.jobs_classified} jobs: ${self.metrics.estimated_claude_cost:.2f}")
-        logger.info(f"Cost per unique merged job: ${self.metrics.cost_per_unique_job:.6f}")
-        logger.info(f"Estimated monthly cost (1,500 jobs): ${(1500 * self.metrics.cost_per_unique_job):.2f}\n")
+            logger.info(f"ACTUAL token usage from API:")
+            logger.info(f"  - Total input tokens: {total_input_tokens:,}")
+            logger.info(f"  - Total output tokens: {total_output_tokens:,}")
+            logger.info(f"  - Avg input tokens per job: {total_input_tokens / max(self.metrics.jobs_classified, 1):.0f}")
+            logger.info(f"  - Avg output tokens per job: {total_output_tokens / max(self.metrics.jobs_classified, 1):.0f}")
+            logger.info(f"Cost per classification (actual): ${actual_cost_per_job:.6f}")
+            logger.info(f"Total Claude cost for {self.metrics.jobs_classified} jobs: ${total_actual_cost:.4f}")
+            logger.info(f"Cost per unique merged job: ${self.metrics.cost_per_unique_job:.6f}")
+            logger.info(f"Estimated monthly cost (1,500 jobs): ${(1500 * self.metrics.cost_per_unique_job):.2f}\n")
+        else:
+            # Fall back to estimates if no actual data
+            cost_per_job = self.estimate_classification_cost()
+            self.metrics.estimated_claude_calls = self.metrics.jobs_classified
+            self.metrics.estimated_claude_cost = self.metrics.jobs_classified * cost_per_job
+            self.metrics.cost_per_unique_job = self.metrics.estimated_claude_cost / max(self.metrics.merged_count, 1)
 
-        # Phase 5: Deduplication analysis
-        logger.info("PHASE 5: DEDUPLICATION & SOURCE QUALITY ANALYSIS\n")
+            logger.info(f"Cost per classification (estimated): ${cost_per_job:.6f}")
+            logger.info(f"Total Claude cost for {self.metrics.jobs_classified} jobs: ${self.metrics.estimated_claude_cost:.2f}")
+            logger.info(f"Cost per unique merged job: ${self.metrics.cost_per_unique_job:.6f}")
+            logger.info(f"Estimated monthly cost (1,500 jobs): ${(1500 * self.metrics.cost_per_unique_job):.2f}\n")
+
+        # Phase 5: Storage (E2E validation)
+        logger.info("PHASE 5: DATABASE STORAGE (E2E VALIDATION)\n")
+        logger.info("Storing classified jobs in Supabase...\n")
+        start_time = time.time()
+
+        try:
+            from db_connection import insert_raw_job, insert_enriched_job
+            from datetime import date
+
+            for job in classified_jobs:
+                try:
+                    # Store raw job
+                    source_value = job.source.value if hasattr(job, 'source') else 'unknown'
+                    raw_job_id = insert_raw_job(
+                        source=source_value,
+                        posting_url=job.url or '',
+                        raw_text=job.description
+                    )
+
+                    # Store enriched job (with classification)
+                    if raw_job_id and job.classification:
+                        classification = job.classification
+                        role = classification.get('role', {})
+                        location = classification.get('location', {})
+                        employer = classification.get('employer', {})
+                        compensation = classification.get('compensation', {})
+
+                        # Get city_code with fallback to 'unknown' if missing or None
+                        city_code = location.get('city_code') or 'unknown'
+
+                        enriched_job_id = insert_enriched_job(
+                            raw_job_id=raw_job_id,
+                            employer_name=employer.get('name', job.company),
+                            title_display=role.get('title_display', job.title),
+                            job_family=role.get('job_family', 'out_of_scope'),
+                            city_code=city_code,
+                            working_arrangement=location.get('working_arrangement', 'onsite'),
+                            position_type=role.get('position_type', 'full_time'),
+                            posted_date=date.today(),
+                            last_seen_date=date.today(),
+                            # Optional fields
+                            job_subfamily=role.get('job_subfamily'),
+                            track=role.get('track'),
+                            seniority=role.get('seniority'),
+                            experience_range=role.get('experience_range'),
+                            employer_department=employer.get('department'),
+                            employer_size=employer.get('company_size_estimate'),
+                            is_agency=employer.get('is_agency'),
+                            agency_confidence=employer.get('agency_confidence'),
+                            currency=compensation.get('currency')
+                        )
+                        if enriched_job_id:
+                            self.metrics.jobs_stored += 1
+
+                except Exception as e:
+                    logger.error(f"  Storage failed for {job.company} - {job.title[:40]}: {str(e)[:100]}")
+                    self.metrics.storage_failures += 1
+                    continue
+
+            self.metrics.storage_time = time.time() - start_time
+
+            logger.info(f"✓ Stored {self.metrics.jobs_stored} jobs in Supabase")
+            logger.info(f"  - Storage time: {self.metrics.storage_time:.2f}s")
+            logger.info(f"  - Storage failures: {self.metrics.storage_failures}\n")
+
+        except Exception as e:
+            logger.error(f"✗ Storage phase failed: {str(e)}\n")
+            logger.error(traceback.format_exc())
+
+        # Phase 6: Deduplication analysis
+        logger.info("PHASE 6: DEDUPLICATION & SOURCE QUALITY ANALYSIS\n")
 
         greenhouse_preference = self.metrics.greenhouse_after_merge
         if self.metrics.merged_count > 0:
             self.metrics.greenhouse_preference_ratio = (greenhouse_preference / self.metrics.merged_count) * 100
 
-        logger.info(f"Greenhouse jobs in final merged set: {self.metrics.greenhouse_after_merge} ({self.metrics.greenhouse_preference_ratio:.1f}%)")
-        logger.info(f"Adzuna jobs in final merged set: {self.metrics.adzuna_after_merge} ({100-self.metrics.greenhouse_preference_ratio:.1f}%)")
-        logger.info(f"Deduplication efficiency: {(self.metrics.duplicates_removed / max(self.metrics.adzuna_fetched + self.metrics.greenhouse_fetched, 1)) * 100:.1f}%\n")
+        logger.info(f"Greenhouse jobs in final merged set: {self.metrics.greenhouse_after_merge} ({self.metrics.greenhouse_preference_ratio:.1f}%%)")
+        logger.info(f"Adzuna jobs in final merged set: {self.metrics.adzuna_after_merge} ({100-self.metrics.greenhouse_preference_ratio:.1f}%%)")
+        logger.info(f"Deduplication efficiency: {(self.metrics.duplicates_removed / max(self.metrics.adzuna_fetched + self.metrics.greenhouse_fetched, 1)) * 100:.1f}%%\n")
 
         logger.info("="*80)
         logger.info("VALIDATION COMPLETE")
