@@ -19,7 +19,9 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 - ✅ Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
 - ✅ Epic 3: Database & Data Layer - Schema and connections stable
 - ✅ Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
-- ⏳ Epic 5: Analytics Query Layer - Ready to start (planning phase)
+  - **Production Data (2025-11-26):** 1,279 raw jobs + 1,044 enriched jobs (Adzuna only, all 3 cities)
+  - **Greenhouse:** Pending (deferred until analytics development begins)
+- ⏳ Epic 5: Analytics Query Layer - Ready to start (sufficient dataset available)
 - ⏳ Epic 6: Dashboard & Visualization - Blocked (depends on Epic 5)
 - ⏳ Epic 7: Automation & Operational - Ready after Epic 6
 
@@ -49,6 +51,15 @@ python backfill_agency_flags.py
 
 # Validate pipeline health and economics
 python validate_pipeline.py --cities lon,nyc --max-jobs 100
+
+# Running tests (title filter feature)
+# Fast tests (recommended - runs in ~1 second)
+pytest tests/test_greenhouse_title_filter_unit.py tests/test_greenhouse_scraper_filtered.py tests/test_e2e_greenhouse_filtered.py -v -m "not integration"
+
+# Live validation on real company (runs in ~60 seconds)
+python tests/test_monzo_filtering.py
+
+# See tests/README_TITLE_FILTER_TESTS.md for full testing guide
 ```
 
 **Valid cities:** `lon` (London), `nyc` (New York), `den` (Denver)
@@ -145,6 +156,8 @@ streamlit_app.py (User-Facing Dashboards)
 - **Complete sections included:** Main responsibilities, Hybrid work arrangements, Pay & benefits, In-office expectations, Remote work policies
 - **Tested:** 66 Stripe jobs successfully extracted with all content sections
 - **Coverage:** 91 Greenhouse companies pre-configured for rapid expansion
+- **Title filtering:** Pre-classification filtering reduces LLM costs by 60-70% (implemented 2025-11-26)
+- **Pagination support:** Multi-page navigation (Load More, Next buttons, page numbers)
 
 **Example improvement:**
 - Backend Engineer, Data job: Captures complete job posting including:
@@ -153,6 +166,18 @@ streamlit_app.py (User-Facing Dashboards)
   - [OK] In-office expectations
   - [OK] Working remotely policies
   - [OK] Responsibilities
+
+**Title Filtering & Cost Optimization:**
+- **Purpose:** Filter jobs by title BEFORE expensive description fetching and LLM classification
+- **Configuration:** 20 regex patterns in `config/greenhouse_title_patterns.yaml`
+- **Target roles:** Data Analyst, Data Engineer, Data Scientist, ML Engineer, AI Engineer, Product Manager, etc.
+- **Filter rate:** 60-70% of jobs filtered out (Sales, Marketing, HR, Legal, etc.)
+- **Cost savings:** $0.00388/job × filtered jobs (e.g., 70 jobs filtered = $0.27 saved)
+- **Validation:** Tested on Stripe (97.1% filter rate), Monzo (87.9% filter rate)
+- **Usage:** Enabled by default, disable with `GreenhouseScraper(filter_titles=False)`
+- **Test suite:** 39 automated tests (unit, integration, E2E) - all passing in <1 second
+- **See:** `docs/testing/greenhouse_title_filter_implementation.md` for full details
+- **See:** `tests/README_TITLE_FILTER_TESTS.md` for test suite usage guide
 
 **✅ Phase 2 Integration Complete:**
 1. ✅ ATS mapping validated for 91 companies → 24 verified with active Greenhouse (captured 1,045 jobs)
@@ -218,8 +243,9 @@ job-analytics/
 ├── validate_greenhouse_batched.py  # ATS company validation (COMPLETE)
 │
 ├── config/
-│   ├── agency_blacklist.yaml       # Known recruitment agencies (hard filter)
-│   └── company_ats_mapping.json    # Company → ATS platform mapping (verified status)
+│   ├── agency_blacklist.yaml           # Known recruitment agencies (hard filter)
+│   ├── company_ats_mapping.json        # Company → ATS platform mapping (verified status)
+│   └── greenhouse_title_patterns.yaml  # Title filter patterns for Data/Product roles
 │
 ├── docs/                       # Documentation (see docs/README.md for index)
 │   ├── README.md               # Documentation index & reading guide (START HERE)
@@ -231,7 +257,9 @@ job-analytics/
 │   ├── marketplace_questions.yaml # User research questionnaire
 │   ├── architecture/             # Architecture deep-dives
 │   ├── database/                 # Schema migrations & updates
-│   ├── testing/                  # Test documentation
+│   ├── testing/                  # Test documentation & validation results
+│   │   ├── greenhouse_title_filter_experiment.md      # Initial validation (Stripe)
+│   │   └── greenhouse_title_filter_implementation.md  # Full implementation docs
 │   └── archive/                  # Historical docs & legacy code
 │
 ├── scrapers/
@@ -242,11 +270,18 @@ job-analytics/
 │       ├── greenhouse_scraper.py # Greenhouse web scraper (browser automation)
 │       └── README.md
 │
-├── tests/                       # Test suite (6 active tests)
-│   ├── test_greenhouse_scraper_simple.py
-│   ├── test_end_to_end.py
-│   ├── test_two_companies.py
+├── tests/                       # Test suite (43 active tests)
+│   ├── README_TITLE_FILTER_TESTS.md          # Full test usage guide
+│   ├── QUICK_REFERENCE.md                    # Quick reference card
+│   ├── test_greenhouse_title_filter_unit.py  # Unit tests (18 tests)
+│   ├── test_greenhouse_scraper_filtered.py   # Integration tests (13 tests)
+│   ├── test_e2e_greenhouse_filtered.py       # E2E tests (12 tests)
+│   ├── test_monzo_filtering.py               # Live validation script (Monzo)
+│   ├── test_greenhouse_scraper_simple.py     # Legacy scraper tests
+│   ├── test_end_to_end.py                    # Legacy E2E tests
+│   ├── test_two_companies.py                 # Legacy company tests
 │   └── [archived tests in docs/archive/tests/]
+│
 │
 ├── output/                      # Generated outputs (gitignored)
 │   ├── stripe_job_page.html     # Test cache
@@ -681,17 +716,24 @@ The project is organized into discrete epics that can be addressed in any order 
 
 **Key Achievement:** Cost tracking now embedded in production pipeline via `classifier.py`, not just validation
 
+**Production Data Collection (2025-11-26):**
+- ✅ **Adzuna Pipeline:** COMPLETE for all 3 cities (London, NYC, Denver)
+  - **Total collected:** 1,279 raw jobs → 1,044 enriched jobs (18.4% filtering rate)
+  - **London:** 500 jobs fetched, $1.94 cost, ~26 minutes
+  - **NYC:** 503 jobs fetched, ~7% deduplication rate
+  - **Denver:** 482 jobs fetched, ~14% deduplication rate
+  - **All 11 role types covered:** Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM
+  - **Storage:** All jobs successfully stored in Supabase (raw_jobs + enriched_jobs tables)
+- ⏸️ **Greenhouse Pipeline:** Deferred until analytics development begins
+  - **Reason:** Current dataset (1,044 jobs) sufficient for Epic 5 prototyping
+  - **Ready when needed:** 24 verified companies with active Greenhouse pages
+
 **Validation Artifacts:**
 - `validation_actual_costs.json` - 7-job test with real API costs
 - `validation_e2e_success.json` - E2E pipeline test results
 - `validation_e2e_final.json` - Final E2E validation
 
-**Decision:** Pipeline validated as economically viable. Ready to proceed to Epic 5 (Analytics Query Layer).
-
-**Next Steps:**
-1. Expand job scraping to build dataset for analytics development
-2. Run larger Adzuna batches across all 3 cities (lon, nyc, den)
-3. Target: 500-1,000 jobs for robust analytics prototyping
+**Decision:** Pipeline validated as economically viable. Sufficient dataset collected. Ready to proceed to Epic 5 (Analytics Query Layer).
 
 ---
 
@@ -772,11 +814,11 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ## Epic 4 Completion Summary
 
-**Status:** ✅ COMPLETE (2025-11-25)
+**Status:** ✅ COMPLETE (2025-11-26)
 
-Epic 4 validated the dual-source pipeline is economically viable and technically sound. Key findings:
+Epic 4 validated the dual-source pipeline is economically viable and technically sound, then executed production data collection.
 
-**Validation Approach:**
+**Validation Approach (2025-11-25):**
 - Small-scale testing (7-10 jobs) proved pipeline mechanics
 - Actual cost tracking implemented in production code (`classifier.py`)
 - Measured real token usage from Anthropic API instead of estimates
@@ -793,10 +835,14 @@ Epic 4 validated the dual-source pipeline is economically viable and technically
 - Storage 100% success rate
 - Agency filtering blocking 10-15% of jobs pre-LLM
 
+**Production Data Collection (2025-11-26):**
+- ✅ **Adzuna:** 1,279 raw jobs → 1,044 enriched jobs (all 3 cities, 11 role types)
+- ⏸️ **Greenhouse:** Deferred until analytics development begins
+
 **Key Innovation:**
 Cost tracking now embedded in production pipeline, not just validation scripts. Every classification returns actual token counts and costs for ongoing observability.
 
-**Decision:** Pipeline validated. Ready to proceed to Epic 5 (Analytics Query Layer).
+**Decision:** Pipeline validated. Dataset collected. Ready to proceed to Epic 5 (Analytics Query Layer).
 
 ## Current State & Known Limitations
 
@@ -822,10 +868,11 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 ### 📋 Immediate Next Steps
 **Epic 5: Analytics Query Layer** (ready to start)
-- **Status:** Epic 4 ✅ COMPLETE - pipeline validated as economically viable
+- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, dataset collected (1,044 enriched jobs)
+- **Dataset:** 1,044 jobs across all 3 cities (London, NYC, Denver) and 11 role types
 - **Action:** Begin building `analytics.py` with query functions for marketplace questions
 - **Goal:** Programmatically answer questions like "Which skills are growing fastest for Data Engineers in NYC?"
-- **Before analytics:** Expand job scraping to build 500-1,000 job dataset for robust prototyping
+- **Greenhouse:** Deferred until analytics development begins - current Adzuna dataset sufficient for prototyping
 - **See:** Epic 5 section in "Planned Epics" for full details
 
 ## Key Development Workflows

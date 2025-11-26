@@ -20,6 +20,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import re
 from urllib.parse import urljoin
+from pathlib import Path
+import yaml
 
 try:
     from playwright.async_api import async_playwright, Browser, Page, BrowserContext
@@ -34,6 +36,69 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+
+def load_title_patterns(config_path: Optional[Path] = None) -> List[str]:
+    """
+    Load job title filter patterns from YAML config.
+
+    Args:
+        config_path: Path to YAML config file. If None, uses default location.
+
+    Returns:
+        List of regex patterns for matching relevant job titles
+    """
+    if config_path is None:
+        # Default: config/greenhouse_title_patterns.yaml relative to project root
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / 'config' / 'greenhouse_title_patterns.yaml'
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+            patterns = config.get('relevant_title_patterns', [])
+            logger.info(f"Loaded {len(patterns)} title filter patterns from {config_path}")
+            return patterns
+    except FileNotFoundError:
+        logger.warning(f"Title patterns config not found at {config_path}. Filtering disabled.")
+        return []
+    except Exception as e:
+        logger.warning(f"Failed to load title patterns: {e}. Filtering disabled.")
+        return []
+
+
+def is_relevant_role(title: str, patterns: List[str]) -> bool:
+    """
+    Check if job title matches Data/Product family patterns.
+
+    Args:
+        title: Job title string to evaluate
+        patterns: List of regex patterns to match against
+
+    Returns:
+        True if title matches any pattern in the list
+
+    Examples:
+        >>> patterns = ['data (analyst|engineer)', 'product manager']
+        >>> is_relevant_role('Senior Data Engineer', patterns)
+        True
+        >>> is_relevant_role('Account Executive', patterns)
+        False
+    """
+    if not patterns:
+        # No patterns loaded - accept all jobs (filtering disabled)
+        return True
+
+    title_lower = title.lower()
+    for pattern in patterns:
+        try:
+            if re.search(pattern, title_lower):
+                return True
+        except re.error as e:
+            logger.warning(f"Invalid regex pattern '{pattern}': {e}")
+            continue
+
+    return False
 
 
 @dataclass
@@ -96,7 +161,27 @@ class GreenhouseScraper:
             '.location',
             'div[class*="meta"]',
         ],
-        'load_more_btn': 'button:has-text("Load More")',
+        # Pagination selectors - Greenhouse uses different pagination styles
+        'pagination': {
+            'load_more_btn': [
+                'button:has-text("Load More")',
+                'button:has-text("Show More")',
+                'a:has-text("Load More")',
+            ],
+            'next_btn': [
+                'a:has-text("Next")',
+                'button:has-text("Next")',
+                'a[aria-label="Next"]',
+                'button[aria-label="Next"]',
+                'a.next',
+                'button.next',
+            ],
+            'page_numbers': [
+                'a[class*="pagination"]',
+                'button[class*="pagination"]',
+                'nav[class*="pagination"] a',
+            ]
+        },
 
         # Individual job page selectors - be very broad to find the description
         'job_description': [
@@ -120,7 +205,14 @@ class GreenhouseScraper:
         'job_type': '[class*="type"]',
     }
 
-    def __init__(self, headless: bool = True, timeout_ms: int = 30000, max_concurrent_pages: int = 2):
+    def __init__(
+        self,
+        headless: bool = True,
+        timeout_ms: int = 30000,
+        max_concurrent_pages: int = 2,
+        filter_titles: bool = True,
+        pattern_config_path: Optional[Path] = None
+    ):
         """
         Initialize scraper.
 
@@ -128,6 +220,8 @@ class GreenhouseScraper:
             headless: Run browser in headless mode (no UI)
             timeout_ms: Timeout for page operations in milliseconds
             max_concurrent_pages: Max number of concurrent pages to prevent browser crashes
+            filter_titles: Enable title-based filtering to reduce classification costs (default: True)
+            pattern_config_path: Path to YAML config with title patterns (default: config/greenhouse_title_patterns.yaml)
         """
         self.headless = headless
         self.timeout_ms = timeout_ms
@@ -135,6 +229,22 @@ class GreenhouseScraper:
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.active_pages = 0
+
+        # Title filtering configuration
+        self.filter_titles = filter_titles
+        self.title_patterns = load_title_patterns(pattern_config_path) if filter_titles else []
+
+        # Filtering statistics (tracked per scrape)
+        self.reset_filter_stats()
+
+    def reset_filter_stats(self):
+        """Reset filtering statistics for a new scrape."""
+        self.filter_stats = {
+            'jobs_scraped': 0,
+            'jobs_kept': 0,
+            'jobs_filtered': 0,
+            'filtered_titles': [],
+        }
 
     async def init(self):
         """Initialize browser instance. Call before scraping."""
@@ -160,7 +270,7 @@ class GreenhouseScraper:
         self,
         company_slug: str,
         max_retries: int = 3
-    ) -> List[Job]:
+    ) -> Dict:
         """
         Scrape all jobs for a single company.
 
@@ -169,10 +279,15 @@ class GreenhouseScraper:
             max_retries: Number of retries on failure
 
         Returns:
-            List of Job objects
+            Dict with keys:
+                - 'jobs': List[Job] - Job objects that passed filtering
+                - 'stats': Dict - Filtering statistics (jobs_scraped, jobs_kept, jobs_filtered, etc.)
         """
         if not self.context:
             raise RuntimeError("Scraper not initialized. Call .init() first.")
+
+        # Reset filter stats for this company
+        self.reset_filter_stats()
 
         page = None
 
@@ -207,10 +322,30 @@ class GreenhouseScraper:
                             logger.warning(f"[{company_slug}] No job listings found with any selector on {base_url}")
                             continue  # Try next base URL
 
-                        # Extract jobs
+                        # Extract jobs (with filtering if enabled)
                         jobs = await self._extract_all_jobs(page, company_slug)
+
+                        # Calculate additional stats
+                        filter_rate = (self.filter_stats['jobs_filtered'] / self.filter_stats['jobs_scraped'] * 100) if self.filter_stats['jobs_scraped'] > 0 else 0
+                        cost_savings_estimate = self.filter_stats['jobs_filtered'] * 0.00388  # Cost per classification
+
+                        stats = {
+                            **self.filter_stats,
+                            'filter_rate': round(filter_rate, 1),
+                            'cost_savings_estimate': f"${cost_savings_estimate:.2f}",
+                            'filtered_titles_sample': self.filter_stats['filtered_titles'][:20],  # First 20 only
+                        }
+
                         logger.info(f"[{company_slug}] Successfully scraped {len(jobs)} jobs from {base_url}")
-                        return jobs
+                        if self.filter_titles:
+                            logger.info(f"[{company_slug}] Filtering: {self.filter_stats['jobs_scraped']} total, "
+                                      f"{self.filter_stats['jobs_kept']} kept, "
+                                      f"{self.filter_stats['jobs_filtered']} filtered ({filter_rate:.1f}%)")
+
+                        return {
+                            'jobs': jobs,
+                            'stats': stats
+                        }
 
                     except Exception as e:
                         logger.warning(f"[{company_slug}] Attempt {attempt + 1} on {base_url} failed: {str(e)[:100]}")
@@ -224,10 +359,18 @@ class GreenhouseScraper:
                 continue  # Try next base URL
 
         logger.error(f"[{company_slug}] Failed to scrape on any base URL")
-        return []
+        return {
+            'jobs': [],
+            'stats': self.filter_stats
+        }
 
     async def _extract_all_jobs(self, page: Page, company_slug: str) -> List[Job]:
-        """Extract all jobs from listing page, handling pagination."""
+        """
+        Extract all jobs from listing page, handling pagination.
+
+        If filtering is enabled, extracts job titles first, filters by pattern,
+        then fetches full descriptions only for relevant jobs (60-70% cost savings).
+        """
         jobs = []
         seen_urls = set()
 
@@ -251,26 +394,131 @@ class GreenhouseScraper:
 
             for job_element in job_elements:
                 try:
-                    job = await self._extract_job_listing(job_element, company_slug, page)
-                    if job and job.url not in seen_urls:
-                        jobs.append(job)
-                        seen_urls.add(job.url)
+                    # STEP 1: Extract basic job info WITHOUT description (fast, cheap)
+                    job = await self._extract_job_listing(
+                        job_element,
+                        company_slug,
+                        page,
+                        fetch_description=False  # Don't fetch description yet
+                    )
+
+                    if not job or job.url in seen_urls:
+                        continue
+
+                    seen_urls.add(job.url)
+                    self.filter_stats['jobs_scraped'] += 1
+
+                    # STEP 2: Apply title filter
+                    if self.filter_titles and self.title_patterns:
+                        if not is_relevant_role(job.title, self.title_patterns):
+                            # Job filtered out - don't fetch description
+                            self.filter_stats['jobs_filtered'] += 1
+                            self.filter_stats['filtered_titles'].append(job.title)
+                            logger.debug(f"[{company_slug}] Filtered out: {job.title}")
+                            continue
+
+                    # STEP 3: Job passed filter - fetch full description (expensive)
+                    self.filter_stats['jobs_kept'] += 1
+                    job.description = await self._get_job_description(job.url)
+                    jobs.append(job)
+
                 except Exception as e:
                     logger.warning(f"[{company_slug}] Failed to extract job: {str(e)[:100]}")
                     continue
 
-            # Check for "Load More" button
-            try:
-                load_more = await page.query_selector(self.SELECTORS['load_more_btn'])
-                if load_more:
-                    await load_more.click()
-                    await page.wait_for_timeout(1000)
-                    logger.info(f"[{company_slug}] Clicked Load More, waiting for new jobs...")
-                    continue
-            except:
-                pass
+            # Check for pagination controls (try multiple methods)
+            pagination_found = False
 
-            break  # No more jobs to load
+            # Method 1: Try "Load More" or "Show More" buttons
+            for selector in self.SELECTORS['pagination']['load_more_btn']:
+                try:
+                    load_more = await page.query_selector(selector)
+                    if load_more:
+                        # Check if button is visible and enabled
+                        is_visible = await load_more.is_visible()
+                        is_enabled = await load_more.is_enabled()
+
+                        if is_visible and is_enabled:
+                            await load_more.click()
+                            await page.wait_for_timeout(1500)  # Wait for new jobs to load
+                            logger.info(f"[{company_slug}] Clicked Load More using selector: {selector}")
+                            pagination_found = True
+                            break
+                except Exception as e:
+                    logger.debug(f"[{company_slug}] Load More selector '{selector}' failed: {str(e)[:50]}")
+                    continue
+
+            if pagination_found:
+                continue
+
+            # Method 2: Try "Next" button/link
+            for selector in self.SELECTORS['pagination']['next_btn']:
+                try:
+                    next_btn = await page.query_selector(selector)
+                    if next_btn:
+                        # Check if Next button exists and is enabled
+                        is_visible = await next_btn.is_visible()
+                        is_enabled = await next_btn.is_enabled()
+
+                        if is_visible and is_enabled:
+                            await next_btn.click()
+                            await page.wait_for_timeout(2000)  # Wait for page to load
+                            logger.info(f"[{company_slug}] Clicked Next button using selector: {selector}")
+                            pagination_found = True
+                            break
+                except Exception as e:
+                    logger.debug(f"[{company_slug}] Next button selector '{selector}' failed: {str(e)[:50]}")
+                    continue
+
+            if pagination_found:
+                continue
+
+            # Method 3: Try page number links (find unvisited page numbers)
+            # This is more complex - look for pagination links and find the next one
+            for selector in self.SELECTORS['pagination']['page_numbers']:
+                try:
+                    page_links = await page.query_selector_all(selector)
+                    if page_links:
+                        # Try to find a page number we haven't visited
+                        # Usually the current page has an "active" class or aria-current
+                        for link in page_links:
+                            try:
+                                # Check if this is NOT the current page
+                                class_name = await link.get_attribute('class') or ''
+                                aria_current = await link.get_attribute('aria-current') or ''
+
+                                # Skip if it's the current/active page
+                                if 'active' in class_name.lower() or 'current' in class_name.lower():
+                                    continue
+                                if aria_current == 'page':
+                                    continue
+
+                                # Check if it's visible and enabled
+                                is_visible = await link.is_visible()
+                                is_enabled = await link.is_enabled()
+
+                                if is_visible and is_enabled:
+                                    link_text = await link.text_content()
+                                    await link.click()
+                                    await page.wait_for_timeout(2000)
+                                    logger.info(f"[{company_slug}] Clicked page number: {link_text}")
+                                    pagination_found = True
+                                    break
+                            except:
+                                continue
+
+                        if pagination_found:
+                            break
+                except Exception as e:
+                    logger.debug(f"[{company_slug}] Page numbers selector '{selector}' failed: {str(e)[:50]}")
+                    continue
+
+            if pagination_found:
+                continue
+
+            # No pagination found - we've reached the end
+            logger.info(f"[{company_slug}] No more pagination controls found, scraping complete")
+            break
 
         return jobs
 
@@ -278,9 +526,19 @@ class GreenhouseScraper:
         self,
         job_element,
         company_slug: str,
-        page: Page
+        page: Page,
+        fetch_description: bool = True
     ) -> Optional[Job]:
-        """Extract a single job from listing element."""
+        """
+        Extract a single job from listing element.
+
+        Args:
+            job_element: DOM element containing job listing
+            company_slug: Company identifier
+            page: Playwright page object
+            fetch_description: If True, fetch full description from detail page (expensive).
+                             If False, only extract title/location from listing.
+        """
         try:
             # Get title from the element text content (works for <a> tags)
             title = await job_element.text_content()
@@ -328,9 +586,11 @@ class GreenhouseScraper:
             # Department is optional, not critical to extract
             department = None
 
-            # Get full description from job detail page
+            # Get full description from job detail page (optional, expensive operation)
             # Uses page pooling to prevent browser crashes
-            description = await self._get_job_description(job_url)
+            description = ""
+            if fetch_description:
+                description = await self._get_job_description(job_url)
 
             return Job(
                 company=company_slug,
@@ -489,7 +749,7 @@ class GreenhouseScraper:
     async def scrape_all(
         self,
         company_slugs: List[str]
-    ) -> Dict[str, List[Job]]:
+    ) -> Dict[str, Dict]:
         """
         Scrape multiple companies sequentially.
 
@@ -497,7 +757,7 @@ class GreenhouseScraper:
             company_slugs: List of company slugs
 
         Returns:
-            Dict mapping company_slug to list of jobs
+            Dict mapping company_slug to dict with 'jobs' and 'stats'
         """
         results = {}
 
@@ -509,7 +769,7 @@ class GreenhouseScraper:
 
 
 async def main():
-    """Example usage"""
+    """Example usage with title filtering"""
 
     test_companies = [
         'stripe',
@@ -517,28 +777,63 @@ async def main():
         'github',
     ]
 
-    scraper = GreenhouseScraper(headless=True)
+    # Initialize scraper with filtering enabled (default)
+    scraper = GreenhouseScraper(headless=True, filter_titles=True)
 
     try:
         await scraper.init()
         results = await scraper.scrape_all(test_companies)
 
-        # Print results
-        for company, jobs in results.items():
+        # Print results with filtering stats
+        total_scraped = 0
+        total_kept = 0
+        total_filtered = 0
+
+        for company, result in results.items():
+            jobs = result['jobs']
+            stats = result['stats']
+
             print(f"\n{'='*70}")
-            print(f"{company.upper()}: {len(jobs)} jobs found")
+            print(f"{company.upper()}: {len(jobs)} jobs kept")
             print('='*70)
 
+            # Print filtering stats
+            if stats['jobs_scraped'] > 0:
+                print(f"Total scraped: {stats['jobs_scraped']}")
+                print(f"Kept (relevant): {stats['jobs_kept']} ({100 - stats['filter_rate']:.1f}%)")
+                print(f"Filtered out: {stats['jobs_filtered']} ({stats['filter_rate']}%)")
+                print(f"Cost savings: {stats['cost_savings_estimate']}")
+
+                total_scraped += stats['jobs_scraped']
+                total_kept += stats['jobs_kept']
+                total_filtered += stats['jobs_filtered']
+
+            # Show sample jobs
             for i, job in enumerate(jobs[:2], 1):  # Show first 2
                 print(f"\n[{i}] {job.title}")
                 print(f"    Location: {job.location}")
                 print(f"    Department: {job.department}")
                 print(f"    Description (first 300 chars): {job.description[:300]}...")
 
+        # Summary
+        print(f"\n{'='*70}")
+        print("OVERALL SUMMARY")
+        print('='*70)
+        print(f"Total jobs scraped: {total_scraped}")
+        print(f"Total jobs kept: {total_kept}")
+        print(f"Total filtered out: {total_filtered}")
+        if total_scraped > 0:
+            overall_filter_rate = (total_filtered / total_scraped * 100)
+            print(f"Overall filter rate: {overall_filter_rate:.1f}%")
+            print(f"Total cost savings: ${total_filtered * 0.00388:.2f}")
+
         # Save to JSON for verification
         output = {
-            company: [asdict(j) for j in jobs]
-            for company, jobs in results.items()
+            company: {
+                'jobs': [asdict(j) for j in result['jobs']],
+                'stats': result['stats']
+            }
+            for company, result in results.items()
         }
 
         with open('greenhouse_scrape_results.json', 'w') as f:

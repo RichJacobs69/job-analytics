@@ -48,44 +48,52 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def fetch_from_adzuna(city: str, max_jobs: int) -> List:
-    """Fetch jobs from Adzuna API and convert to UnifiedJob objects"""
+async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
+    """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects"""
     try:
-        from scrapers.adzuna.fetch_adzuna_jobs import fetch_adzuna_jobs
+        from scrapers.adzuna.fetch_adzuna_jobs import fetch_adzuna_jobs, DEFAULT_SEARCH_QUERIES
         from unified_job_ingester import UnifiedJob, DataSource
 
-        logger.info(f"Fetching {max_jobs} jobs from Adzuna API for {city}")
+        logger.info(f"Fetching jobs from Adzuna API for {city}")
+        logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with {max_jobs_per_query} jobs per query")
 
-        # Fetch raw dicts from Adzuna - use Data Scientist as default search query
-        raw_jobs = fetch_adzuna_jobs(
-            city_code=city,
-            search_query="Data Scientist",
-            results_per_page=max_jobs
-        )
+        all_unified_jobs = []
 
-        # Convert dicts to UnifiedJob objects
-        unified_jobs = []
-        for job_dict in raw_jobs:
-            try:
-                unified_job = UnifiedJob(
-                    company=job_dict.get("company", {}).get("display_name", "Unknown Company"),
-                    title=job_dict.get("title", "Unknown Title"),
-                    location=job_dict.get("location", {}).get("display_name", city),
-                    description=job_dict.get("description", ""),
-                    url=job_dict.get("redirect_url", f"adzuna-{job_dict.get('id')}"),
-                    job_id=str(job_dict.get("id", "")),
-                    job_type=job_dict.get("contract_type"),
-                    source=DataSource.ADZUNA,
-                    description_source=DataSource.ADZUNA,
-                    adzuna_description=job_dict.get("description", "")
-                )
-                unified_jobs.append(unified_job)
-            except Exception as e:
-                logger.warning(f"Failed to convert Adzuna job: {str(e)}")
-                continue
+        # Loop through all role queries (Data Scientist, Data Engineer, ML Engineer, etc.)
+        for query in DEFAULT_SEARCH_QUERIES:
+            logger.info(f"  Searching: '{query}' in {city}")
 
-        logger.info(f"Successfully converted {len(unified_jobs)} Adzuna jobs to UnifiedJob format")
-        return unified_jobs
+            # Fetch raw dicts from Adzuna for this query
+            raw_jobs = fetch_adzuna_jobs(
+                city_code=city,
+                search_query=query,
+                results_per_page=max_jobs_per_query
+            )
+
+            logger.info(f"    Found {len(raw_jobs)} jobs for '{query}'")
+
+            # Convert dicts to UnifiedJob objects
+            for job_dict in raw_jobs:
+                try:
+                    unified_job = UnifiedJob(
+                        company=job_dict.get("company", {}).get("display_name", "Unknown Company"),
+                        title=job_dict.get("title", "Unknown Title"),
+                        location=job_dict.get("location", {}).get("display_name", city),
+                        description=job_dict.get("description", ""),
+                        url=job_dict.get("redirect_url", f"adzuna-{job_dict.get('id')}"),
+                        job_id=str(job_dict.get("id", "")),
+                        job_type=job_dict.get("contract_type"),
+                        source=DataSource.ADZUNA,
+                        description_source=DataSource.ADZUNA,
+                        adzuna_description=job_dict.get("description", "")
+                    )
+                    all_unified_jobs.append(unified_job)
+                except Exception as e:
+                    logger.warning(f"Failed to convert Adzuna job: {str(e)}")
+                    continue
+
+        logger.info(f"Successfully fetched {len(all_unified_jobs)} total jobs from Adzuna across all role types")
+        return all_unified_jobs
 
     except Exception as e:
         logger.error(f"Failed to fetch from Adzuna: {str(e)}")
@@ -120,12 +128,20 @@ async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
                     return []
 
             # Flatten dict result into a single list of jobs
-            # scrape_all returns Dict[str, List[Job]] - we need to flatten it
+            # scrape_all returns Dict[str, Dict] with 'jobs' and 'stats' - we need to flatten it
             all_jobs = []
-            for company_slug, jobs in jobs_dict.items():
-                all_jobs.extend(jobs)
+            total_scraped = 0
+            total_filtered = 0
+            for company_slug, result in jobs_dict.items():
+                all_jobs.extend(result['jobs'])
+                total_scraped += result['stats']['jobs_scraped']
+                total_filtered += result['stats']['jobs_filtered']
 
             logger.info(f"Successfully scraped {len(all_jobs)} jobs from {len(jobs_dict)} Greenhouse companies")
+            if total_scraped > 0:
+                filter_rate = (total_filtered / total_scraped * 100)
+                logger.info(f"Greenhouse filtering: {total_scraped} total, {len(all_jobs)} kept, {total_filtered} filtered ({filter_rate:.1f}%)")
+                logger.info(f"Cost savings from filtering: ${total_filtered * 0.00388:.2f}")
             return all_jobs
 
         finally:
@@ -352,7 +368,7 @@ Examples:
         nargs='?',
         type=int,
         default=100,
-        help='Max jobs to fetch from Adzuna. Default: 100'
+        help='Max jobs to fetch per role query from Adzuna (11 role types total). Default: 100'
     )
 
     parser.add_argument(
@@ -391,9 +407,12 @@ Examples:
     logger.info("DUAL PIPELINE JOB FETCHER")
     logger.info("="*80)
     logger.info(f"City: {args.city}")
-    logger.info(f"Max jobs (Adzuna): {args.max_jobs}")
+    logger.info(f"Max jobs per role query (Adzuna): {args.max_jobs}")
     logger.info(f"Sources: {args.sources}")
     logger.info(f"Min description length: {args.min_description_length}")
+    if 'adzuna' in [s.strip().lower() for s in args.sources.split(',')]:
+        from scrapers.adzuna.fetch_adzuna_jobs import DEFAULT_SEARCH_QUERIES
+        logger.info(f"Adzuna will search {len(DEFAULT_SEARCH_QUERIES)} role types: {', '.join(DEFAULT_SEARCH_QUERIES[:3])}...")
     logger.info("="*80 + "\n")
 
     # Parse sources

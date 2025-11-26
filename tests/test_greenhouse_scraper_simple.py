@@ -8,7 +8,7 @@ Tests the browser automation scraper with a few known Greenhouse companies.
 import asyncio
 import json
 import logging
-from greenhouse_scraper import GreenhouseScraper
+from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,10 +43,14 @@ async def main():
             print(f"{'='*80}")
 
             try:
-                jobs = await scraper.scrape_company(company_slug)
+                result = await scraper.scrape_company(company_slug)
+                jobs = result['jobs']
+                stats = result['stats']
+
                 results[company_slug] = {
                     'status': 'success',
                     'job_count': len(jobs),
+                    'stats': stats,
                     'jobs': [
                         {
                             'title': j.title,
@@ -59,6 +63,15 @@ async def main():
                 }
 
                 print(f"\n✓ SUCCESS: Found {len(jobs)} jobs")
+
+                # Print filtering stats if filtering was enabled
+                if stats['jobs_scraped'] > 0:
+                    print(f"   Filtering stats:")
+                    print(f"     - Total scraped: {stats['jobs_scraped']}")
+                    print(f"     - Kept (relevant): {stats['jobs_kept']} ({100 - stats['filter_rate']:.1f}%)")
+                    print(f"     - Filtered out: {stats['jobs_filtered']} ({stats['filter_rate']}%)")
+                    print(f"     - Cost savings: {stats['cost_savings_estimate']}")
+
                 for i, job in enumerate(jobs[:3], 1):
                     print(f"\n  [{i}] {job.title}")
                     print(f"      Location: {job.location}")
