@@ -129,9 +129,11 @@ class GreenhouseScraper:
 
     # Greenhouse has migrated to job-boards.greenhouse.io for some companies
     # Try both domains to find the correct one
+    # Some companies (MongoDB, Databricks, etc.) only work with embed URLs
     BASE_URLS = [
-        "https://job-boards.greenhouse.io",  # New domain (try first)
-        "https://boards.greenhouse.io",      # Legacy domain (fallback)
+        "https://job-boards.greenhouse.io",                    # New domain (try first)
+        "https://boards.greenhouse.io",                        # Legacy domain (fallback)
+        "https://boards.greenhouse.io/embed/job_board?for=",   # Embed pattern (fallback for custom career sites)
     ]
 
     # CSS selectors for job listings page
@@ -269,7 +271,8 @@ class GreenhouseScraper:
     async def scrape_company(
         self,
         company_slug: str,
-        max_retries: int = 3
+        max_retries: int = 3,
+        max_jobs: Optional[int] = None
     ) -> Dict:
         """
         Scrape all jobs for a single company.
@@ -277,6 +280,7 @@ class GreenhouseScraper:
         Args:
             company_slug: Company slug for Greenhouse URL (e.g., 'stripe')
             max_retries: Number of retries on failure
+            max_jobs: Maximum number of jobs to fetch (None = no limit)
 
         Returns:
             Dict with keys:
@@ -293,7 +297,11 @@ class GreenhouseScraper:
 
         # Try each base URL until one works
         for base_url in self.BASE_URLS:
-            url = f"{base_url}/{company_slug}"
+            # Handle embed URL pattern (ends with ?for=) differently
+            if base_url.endswith('?for='):
+                url = f"{base_url}{company_slug}"
+            else:
+                url = f"{base_url}/{company_slug}"
 
             try:
                 for attempt in range(max_retries):
@@ -323,7 +331,7 @@ class GreenhouseScraper:
                             continue  # Try next base URL
 
                         # Extract jobs (with filtering if enabled)
-                        jobs = await self._extract_all_jobs(page, company_slug)
+                        jobs = await self._extract_all_jobs(page, company_slug, max_jobs)
 
                         # Calculate additional stats
                         filter_rate = (self.filter_stats['jobs_filtered'] / self.filter_stats['jobs_scraped'] * 100) if self.filter_stats['jobs_scraped'] > 0 else 0
@@ -364,12 +372,17 @@ class GreenhouseScraper:
             'stats': self.filter_stats
         }
 
-    async def _extract_all_jobs(self, page: Page, company_slug: str) -> List[Job]:
+    async def _extract_all_jobs(self, page: Page, company_slug: str, max_jobs: Optional[int] = None) -> List[Job]:
         """
         Extract all jobs from listing page, handling pagination.
 
         If filtering is enabled, extracts job titles first, filters by pattern,
         then fetches full descriptions only for relevant jobs (60-70% cost savings).
+
+        Args:
+            page: Playwright page object
+            company_slug: Company identifier
+            max_jobs: Maximum number of jobs to fetch (None = no limit)
         """
         jobs = []
         seen_urls = set()
@@ -421,6 +434,11 @@ class GreenhouseScraper:
                     self.filter_stats['jobs_kept'] += 1
                     job.description = await self._get_job_description(job.url)
                     jobs.append(job)
+
+                    # Check if we've reached max_jobs limit
+                    if max_jobs and len(jobs) >= max_jobs:
+                        logger.info(f"[{company_slug}] Reached max_jobs limit ({max_jobs}), stopping")
+                        return jobs
 
                 except Exception as e:
                     logger.warning(f"[{company_slug}] Failed to extract job: {str(e)[:100]}")

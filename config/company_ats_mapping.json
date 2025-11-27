@@ -1,172 +1,253 @@
 {
   "greenhouse": {
     "Stripe": {
-      "slug": "stripe",
-      "status": "verified",
-      "job_count": 65,
-      "avg_description_length": 11106,
-      "error": null
+      "slug": "stripe"
     },
     "Warby Parker": {
-      "slug": "warbyparker",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 9010,
-      "error": null
+      "slug": "warbyparker"
     },
     "Zocdoc": {
-      "slug": "zocdoc",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 5381,
-      "error": null
+      "slug": "zocdoc"
     },
     "Affirm": {
-      "slug": "affirm",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 11215,
-      "error": null
+      "slug": "affirm"
     },
     "Reddit": {
-      "slug": "reddit",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 11451,
-      "error": null
+      "slug": "reddit"
     },
     "Airtable": {
-      "slug": "airtable",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 14502,
-      "error": null
+      "slug": "airtable"
     },
     "Figma": {
-      "slug": "figma",
-      "status": "verified",
-      "job_count": 132,
-      "avg_description_length": 14831,
-      "error": null
+      "slug": "figma"
     },
     "Coursera": {
-      "slug": "coursera",
-      "status": "verified",
-      "job_count": 33,
-      "avg_description_length": 12322,
-      "error": null
+      "slug": "coursera"
     },
     "BuzzFeed": {
-      "slug": "buzzfeed",
-      "status": "verified",
-      "job_count": 2,
-      "avg_description_length": 16183,
-      "error": null
+      "slug": "buzzfeed"
     },
     "Rent the Runway": {
-      "slug": "renttherunway",
-      "status": "verified",
-      "job_count": 9,
-      "avg_description_length": 12784,
-      "error": null
+      "slug": "renttherunway"
     },
     "DoubleVerify": {
-      "slug": "doubleverify",
-      "status": "verified",
-      "job_count": 44,
-      "avg_description_length": 11596,
-      "error": null
+      "slug": "doubleverify"
     },
     "Harry's": {
-      "slug": "harrys",
-      "status": "verified",
-      "job_count": 12,
-      "avg_description_length": 14553,
-      "error": null
+      "slug": "harrys"
     },
     "Peloton": {
-      "slug": "peloton",
-      "status": "verified",
-      "job_count": 1,
-      "avg_description_length": 2977,
-      "error": null
+      "slug": "peloton"
     },
     "Vimeo": {
-      "slug": "vimeo",
-      "status": "verified",
-      "job_count": 11,
-      "avg_description_length": 8702,
-      "error": null
+      "slug": "vimeo"
     },
     "Instacart": {
-      "slug": "instacart",
-      "status": "verified",
-      "job_count": 1,
-      "avg_description_length": 297,
-      "error": null
+      "slug": "instacart"
     },
     "Twilio": {
-      "slug": "twilio",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 13461,
-      "error": null
+      "slug": "twilio"
     },
     "Monzo": {
-      "slug": "monzo",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 14214,
-      "error": null
+      "slug": "monzo"
     },
     "GoCardless": {
-      "slug": "gocardless",
-      "status": "verified",
-      "job_count": 46,
-      "avg_description_length": 11808,
-      "error": null
+      "slug": "gocardless"
     },
     "SonderMind": {
-      "slug": "sondermind",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 7125,
-      "error": null
+      "slug": "sondermind"
     },
     "Angi": {
-      "slug": "angi",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 11517,
-      "error": null
+      "slug": "angi"
     },
     "Checkr": {
-      "slug": "checkr",
-      "status": "verified",
-      "job_count": 46,
-      "avg_description_length": 9763,
-      "error": null
+      "slug": "checkr"
     },
     "Automox": {
-      "slug": "automox",
-      "status": "verified",
-      "job_count": 4,
-      "avg_description_length": 10330,
-      "error": null
+      "slug": "automox"
     },
     "GitLab": {
-      "slug": "gitlab",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 17205,
-      "error": null
+      "slug": "gitlab"
     },
     "Intercom": {
-      "slug": "intercom",
-      "status": "verified",
-      "job_count": 50,
-      "avg_description_length": 14322,
-      "error": null
+      "slug": "intercom"
+    },
+    "Sauce Labs": {
+      "slug": "sauce-labs"
+    },
+    "CFM Company": {
+      "slug": "cfm"
+    },
+    "Capital Rx (Judi Health)": {
+      "slug": "capitalrx"
+    },
+    "Clear Street": {
+      "slug": "clearstreet"
+    },
+    "Conductor": {
+      "slug": "conductor"
+    },
+    "Contentful": {
+      "slug": "contentful"
+    },
+    "Cribl": {
+      "slug": "cribl"
+    },
+    "Engine": {
+      "slug": "engine"
+    },
+    "EverDriven": {
+      "slug": "everdriven"
+    },
+    "GHX (Global Healthcare Exchange)": {
+      "slug": "globalhealthcareexchangeinc"
+    },
+    "Grafana Labs": {
+      "slug": "grafanalabs"
+    },
+    "Gusto": {
+      "slug": "gusto"
+    },
+    "Hudl": {
+      "slug": "hudl"
+    },
+    "Nimble Gravity": {
+      "slug": "nimblegravity"
+    },
+    "Orchard": {
+      "slug": "orchard"
+    },
+    "Ping Identity": {
+      "slug": "pingidentity"
+    },
+    "Prove": {
+      "slug": "prove"
+    },
+    "RedPeak": {
+      "slug": "redpeak"
+    },
+    "Reltio": {
+      "slug": "reltio"
+    },
+    "Sandstone Care - Denver": {
+      "slug": "sandstonedenver"
+    },
+    "Semgrep": {
+      "slug": "semgrep"
+    },
+    "Strive Health": {
+      "slug": "strivehealth"
+    },
+    "The Trade Desk": {
+      "slug": "thetradedesk"
+    },
+    "True Anomaly": {
+      "slug": "trueanomalyinc"
+    },
+    "Workato": {
+      "slug": "workato"
+    },
+    "Datadog": {
+      "slug": "datadog"
+    },
+    "The New York Times": {
+      "slug": "thenewyorktimes"
+    },
+    "Take-Two Interactive": {
+      "slug": "taketwo"
+    },
+    "Convene": {
+      "slug": "convene"
+    },
+    "iCapital": {
+      "slug": "icapitalnetwork"
+    },
+    "RippleMatch": {
+      "slug": "ripplematch"
+    },
+    "Superblocks": {
+      "slug": "superblocks"
+    },
+    "EvolutionIQ": {
+      "slug": "evolutioniq"
+    },
+    "Maven Clinic": {
+      "slug": "mavenclinic"
+    },
+    "Public": {
+      "slug": "public"
+    },
+    "Invisible Technologies": {
+      "slug": "invisibletech"
+    },
+    "Fireworks AI": {
+      "slug": "fireworksai"
+    },
+    "Biohub": {
+      "slug": "biohub"
+    },
+    "New York City Economic Development Corporation": {
+      "slug": "nycedc"
+    },
+    "GlossGenius": {
+      "slug": "glossgenius"
+    },
+    "PDT Partners": {
+      "slug": "pdtpartners"
+    },
+    "Scale AI": {
+      "slug": "scaleai"
+    },
+    "Uniswap Labs": {
+      "slug": "uniswaplabs"
+    },
+    "DoorDash": {
+      "slug": "doordashusa"
+    },
+    "Kalshi": {
+      "slug": "kalshi"
+    },
+    "Grow Therapy": {
+      "slug": "growtherapy"
+    },
+    "Sigma Computing": {
+      "slug": "sigmacomputing"
+    },
+    "Mercury": {
+      "slug": "mercury"
+    },
+    "Monstro": {
+      "slug": "monstro"
+    },
+    "Ava Labs": {
+      "slug": "avalabs"
+    },
+    "Bombas": {
+      "slug": "bombas"
+    },
+    "Known": {
+      "slug": "known"
+    },
+    "Clair": {
+      "slug": "clair"
+    },
+    "Galaxy": {
+      "slug": "galaxydigitalservices"
+    },
+    "VTS": {
+      "slug": "vts"
+    },
+    "Altana": {
+      "slug": "altanaai"
+    },
+    "Whop": {
+      "slug": "whop"
+    },
+    "Philo": {
+      "slug": "philo"
+    },
+    "Garner Health": {
+      "slug": "garnerhealth"
     }
   },
   "ashby": {
@@ -181,7 +262,6 @@
     "Midjourney": "midjourney",
     "Perplexity AI": "perplexity",
     "Vanta": "vanta",
-    "Mercury": "mercury",
     "Sourcegraph": "sourcegraph",
     "Hex (Hex Technologies)": "hex"
   },

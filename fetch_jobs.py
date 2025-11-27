@@ -120,7 +120,8 @@ async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
                 if mapping_file.exists():
                     with open(mapping_file) as f:
                         mapping = json.load(f)
-                    companies = list(mapping.get('greenhouse', {}).values())
+                    # Extract slug field from each company dict
+                    companies = [company_data['slug'] for company_data in mapping.get('greenhouse', {}).values()]
                     logger.info(f"Scraping all {len(companies)} Greenhouse companies from mapping")
                     jobs_dict = await scraper.scrape_all(companies)
                 else:

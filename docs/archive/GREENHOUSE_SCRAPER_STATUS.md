@@ -123,13 +123,21 @@ The scraper uses `config/company_ats_mapping.json` which contains:
 ```json
 {
   "greenhouse": {
-    "Stripe": "stripe",
-    "Figma": "figma",
-    "GitHub": "github",
+    "Stripe": {
+      "slug": "stripe"
+    },
+    "Figma": {
+      "slug": "figma"
+    },
+    "GitHub": {
+      "slug": "github"
+    },
     ... (91 companies total)
   }
 }
 ```
+
+**Note:** Only the `slug` field is required. The slug is used to build the Greenhouse URL: `https://job-boards.greenhouse.io/{slug}`
 
 ### Usage Example
 ```python

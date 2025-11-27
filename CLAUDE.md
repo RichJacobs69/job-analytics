@@ -191,7 +191,7 @@ streamlit_app.py (User-Facing Dashboards)
 **Phase 1: ATS Validation** ✅ (COMPLETE)
 - Test 91 companies in config to confirm which still use Greenhouse
 - Some companies may have migrated (e.g., Brex) - update mapping
-- Output: Updated `config/company_ats_mapping.json` with verified status
+- Output: Updated `config/company_ats_mapping.json` with company slugs
 
 **Phase 2: Create Unified Job Ingester** ✅ (COMPLETE)
 - ✅ File: `unified_job_ingester.py` implemented
@@ -244,7 +244,7 @@ job-analytics/
 │
 ├── config/
 │   ├── agency_blacklist.yaml           # Known recruitment agencies (hard filter)
-│   ├── company_ats_mapping.json        # Company → ATS platform mapping (verified status)
+│   ├── company_ats_mapping.json        # Company → ATS platform mapping (company slugs)
 │   └── greenhouse_title_patterns.yaml  # Title filter patterns for Data/Product roles
 │
 ├── docs/                       # Documentation (see docs/README.md for index)
