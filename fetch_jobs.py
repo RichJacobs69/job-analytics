@@ -215,6 +215,23 @@ async def classify_jobs(jobs: List) -> List:
                 # classify_job_with_claude is synchronous, not async
                 classification = classify_job_with_claude(description)
 
+                # Add agency detection via pattern matching (soft detection)
+                # This populates is_agency and agency_confidence fields that Claude no longer returns
+                from agency_detection import validate_agency_classification
+
+                is_agency, agency_conf = validate_agency_classification(
+                    employer_name=job.company,
+                    claude_is_agency=None,  # Claude no longer returns this field
+                    claude_confidence=None,
+                    job_description=description
+                )
+
+                # Inject agency flags into classification result
+                if 'employer' not in classification:
+                    classification['employer'] = {}
+                classification['employer']['is_agency'] = is_agency
+                classification['employer']['agency_confidence'] = agency_conf
+
                 # Add classification to job (now a proper dataclass field)
                 job.classification = classification
 
@@ -232,10 +249,15 @@ async def classify_jobs(jobs: List) -> List:
         return jobs  # Return original jobs if classification fails
 
 
-async def store_jobs(jobs: List, table: str = "enriched_jobs") -> bool:
+async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriched_jobs") -> bool:
     """Store jobs in Supabase database
-    
+
     Expects jobs to be UnifiedJob objects with classification data attached.
+
+    Args:
+        jobs: List of UnifiedJob objects with classification data
+        source_city: City code where jobs were fetched from (lon, nyc, den). Fallback if classification fails to extract.
+        table: Database table to store in (default: enriched_jobs)
     """
 
     try:
@@ -284,12 +306,14 @@ async def store_jobs(jobs: List, table: str = "enriched_jobs") -> bool:
                 employer = classification.get('employer', {})
 
                 # Step 3: Insert enriched job
+                # Use extracted location > source city > 'unk' (unknown)
+                # This way: Adzuna jobs use source_city if extraction fails, Greenhouse jobs use 'unk'
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company,
                     title_display=title,
                     job_family=role.get('job_family', 'out_of_scope'),
-                    city_code=location.get('city_code') or 'lon',  # Default to London
+                    city_code=location.get('city_code') or source_city or 'unk',
                     working_arrangement=location.get('working_arrangement') or 'onsite',
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
@@ -460,7 +484,7 @@ Examples:
 
     # Storage (optional)
     if not args.skip_storage:
-        await store_jobs(merged_jobs)
+        await store_jobs(merged_jobs, source_city=args.city)
 
     logger.info("\nPipeline complete!")
     logger.info(f"Final result: {len(merged_jobs)} jobs ready for analysis")

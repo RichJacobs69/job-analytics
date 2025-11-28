@@ -248,6 +248,84 @@
     },
     "Garner Health": {
       "slug": "garnerhealth"
+    },
+    "AutogenAI": {
+      "slug": "autogenai"
+    },
+    "Tripadvisor": {
+      "slug": "tripadvisor"
+    },
+    "Flagstone Group": {
+      "slug": "flagstone"
+    },
+    "WPP": {
+      "slug": "wpp"
+    },
+    "WPP Media": {
+      "slug": "wppmedia"
+    },
+    "Recorded Future": {
+      "slug": "recordedfuture"
+    },
+    "GWI": {
+      "slug": "globalwebindex"
+    },
+    "LiveScore Group": {
+      "slug": "livescore9"
+    },
+    "Ogilvy UK": {
+      "slug": "ogilvyuk"
+    },
+    "DEPT": {
+      "slug": "dept"
+    },
+    "Agilisys": {
+      "slug": "agilisys"
+    },
+    "DataCamp": {
+      "slug": "datacamp"
+    },
+    "HERE Technologies": {
+      "slug": "hereio"
+    },
+    "Schonfeld": {
+      "slug": "schonfeld"
+    },
+    "ApotheCom": {
+      "slug": "apothecom"
+    },
+    "PolyAI": {
+      "slug": "polyai"
+    },
+    "Graphcore": {
+      "slug": "graphcore"
+    },
+    "Goodnotes": {
+      "slug": "goodnotes"
+    },
+    "Algolia": {
+      "slug": "algolia"
+    },
+    "Isomorphic Labs": {
+      "slug": "isomorphiclabs"
+    },
+    "DRW": {
+      "slug": "drweng"
+    },
+    "Sayari": {
+      "slug": "sayari"
+    },
+    "StackAdapt": {
+      "slug": "stackadapt"
+    },
+    "RAPP": {
+      "slug": "rapp"
+    },
+    "Webflow": {
+      "slug": "webflow"
+    },
+    "Anthropic": {
+      "slug": "anthropic"
     }
   },
   "ashby": {
@@ -255,7 +333,6 @@
     "Vercel": "vercel",
     "Retool": "retool",
     "Rippling": "rippling",
-    "Webflow": "webflow",
     "OpenSea": "opensea",
     "Linear": "linear",
     "Replit": "replit",

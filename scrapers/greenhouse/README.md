@@ -34,6 +34,19 @@ python test_greenhouse_validation.py
 
 ## Key Features
 
+### Pre-Classification Filtering (Cost Optimization)
+- **Title filtering:** Filter jobs by role (Data/Product only) BEFORE fetching descriptions
+  - 60-70% cost reduction by skipping irrelevant roles (Sales, Marketing, HR, etc.)
+  - 20 regex patterns in `config/greenhouse_title_patterns.yaml`
+  - Enable/disable: `GreenhouseScraper(filter_titles=True/False)`
+- **Location filtering:** Filter jobs by target cities (London, NYC, Denver) BEFORE fetching descriptions
+  - 89% additional cost reduction on remaining jobs
+  - Combined: 96% total cost reduction (127 jobs → 1 job on Figma test)
+  - Patterns in `config/greenhouse_location_patterns.yaml`
+  - Enable/disable: `GreenhouseScraper(filter_locations=True/False)`
+- **Filter pipeline order:** Extract title + location → Title filter → Location filter → Fetch description
+- **See:** `tests/test_figma_location_filter.py` for validation
+
 ### Complete Job Descriptions
 - Captures main description (responsibilities, overview)
 - Extracts work arrangements (hybrid, remote policies)
@@ -62,9 +75,13 @@ Career page (e.g., job-boards.greenhouse.io/stripe)
     ↓ (Playwright browser)
 Query job listing elements (CSS selectors)
     ↓
-Extract job URL, title, location
-    ↓ (For each job)
-Navigate to detail page
+Extract job URL, title, location (from listing, no description fetch)
+    ↓
+Apply title filter (check against Data/Product patterns)
+    ↓ (If title passes filter)
+Apply location filter (check against London/NYC/Denver)
+    ↓ (If both filters pass)
+Navigate to detail page and fetch full description
 ```
 
 ### 2. Job Detail Extraction
@@ -116,7 +133,9 @@ Pass/Fail/Warning status + JSON report
 scraper = GreenhouseScraper(
     headless=True,              # No browser UI
     timeout_ms=30000,           # 30s per page
-    max_concurrent_pages=2      # 2 concurrent browsers
+    max_concurrent_pages=2,     # 2 concurrent browsers
+    filter_titles=True,         # Enable title filtering (default: True)
+    filter_locations=True       # Enable location filtering (default: True)
 )
 ```
 

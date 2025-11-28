@@ -67,6 +67,63 @@ def load_title_patterns(config_path: Optional[Path] = None) -> List[str]:
         return []
 
 
+def load_location_patterns(config_path: Optional[Path] = None) -> List[str]:
+    """
+    Load target location filter patterns from YAML config.
+
+    Args:
+        config_path: Path to YAML config file. If None, uses default location.
+
+    Returns:
+        List of location strings to match (case-insensitive substring matching)
+    """
+    if config_path is None:
+        # Default: config/greenhouse_location_patterns.yaml relative to project root
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / 'config' / 'greenhouse_location_patterns.yaml'
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+            patterns = config.get('target_locations', [])
+            logger.info(f"Loaded {len(patterns)} location filter patterns from {config_path}")
+            return patterns
+    except FileNotFoundError:
+        logger.warning(f"Location patterns config not found at {config_path}. Location filtering disabled.")
+        return []
+    except Exception as e:
+        logger.warning(f"Failed to load location patterns: {e}. Location filtering disabled.")
+        return []
+
+
+def matches_target_location(location: str, target_patterns: List[str]) -> bool:
+    """
+    Check if job location matches target cities (London, NYC, Denver).
+
+    Uses case-insensitive substring matching against target patterns.
+
+    Args:
+        location: Job location string (e.g., "London, UK" or "New York, NY")
+        target_patterns: List of location substrings to match against
+
+    Returns:
+        True if location matches any target pattern
+    """
+    if not location or not target_patterns:
+        return False
+
+    location_lower = location.lower()
+
+    # Special handling for "Remote" locations - exclude unless they specify target city
+    if 'remote' in location_lower:
+        # "Remote - London" or "Remote UK" should match
+        # But "Remote" alone or "Remote - France" should not
+        return any(pattern.lower() in location_lower for pattern in target_patterns)
+
+    # Standard substring matching
+    return any(pattern.lower() in location_lower for pattern in target_patterns)
+
+
 def is_relevant_role(title: str, patterns: List[str]) -> bool:
     """
     Check if job title matches Data/Product family patterns.
@@ -213,7 +270,9 @@ class GreenhouseScraper:
         timeout_ms: int = 30000,
         max_concurrent_pages: int = 2,
         filter_titles: bool = True,
-        pattern_config_path: Optional[Path] = None
+        filter_locations: bool = True,
+        pattern_config_path: Optional[Path] = None,
+        location_config_path: Optional[Path] = None
     ):
         """
         Initialize scraper.
@@ -223,7 +282,9 @@ class GreenhouseScraper:
             timeout_ms: Timeout for page operations in milliseconds
             max_concurrent_pages: Max number of concurrent pages to prevent browser crashes
             filter_titles: Enable title-based filtering to reduce classification costs (default: True)
+            filter_locations: Enable location-based filtering to reduce classification costs (default: True)
             pattern_config_path: Path to YAML config with title patterns (default: config/greenhouse_title_patterns.yaml)
+            location_config_path: Path to YAML config with location patterns (default: config/greenhouse_location_patterns.yaml)
         """
         self.headless = headless
         self.timeout_ms = timeout_ms
@@ -236,6 +297,10 @@ class GreenhouseScraper:
         self.filter_titles = filter_titles
         self.title_patterns = load_title_patterns(pattern_config_path) if filter_titles else []
 
+        # Location filtering configuration
+        self.filter_locations = filter_locations
+        self.location_patterns = load_location_patterns(location_config_path) if filter_locations else []
+
         # Filtering statistics (tracked per scrape)
         self.reset_filter_stats()
 
@@ -245,7 +310,10 @@ class GreenhouseScraper:
             'jobs_scraped': 0,
             'jobs_kept': 0,
             'jobs_filtered': 0,
+            'filtered_by_title': 0,
+            'filtered_by_location': 0,
             'filtered_titles': [],
+            'filtered_locations': [],
         }
 
     async def init(self):
@@ -342,13 +410,18 @@ class GreenhouseScraper:
                             'filter_rate': round(filter_rate, 1),
                             'cost_savings_estimate': f"${cost_savings_estimate:.2f}",
                             'filtered_titles_sample': self.filter_stats['filtered_titles'][:20],  # First 20 only
+                            'filtered_locations_sample': self.filter_stats['filtered_locations'][:20],  # First 20 only
                         }
 
                         logger.info(f"[{company_slug}] Successfully scraped {len(jobs)} jobs from {base_url}")
-                        if self.filter_titles:
+                        if self.filter_titles or self.filter_locations:
                             logger.info(f"[{company_slug}] Filtering: {self.filter_stats['jobs_scraped']} total, "
                                       f"{self.filter_stats['jobs_kept']} kept, "
                                       f"{self.filter_stats['jobs_filtered']} filtered ({filter_rate:.1f}%)")
+                            if self.filter_titles:
+                                logger.info(f"[{company_slug}]   - By title: {self.filter_stats['filtered_by_title']}")
+                            if self.filter_locations:
+                                logger.info(f"[{company_slug}]   - By location: {self.filter_stats['filtered_by_location']}")
 
                         return {
                             'jobs': jobs,
@@ -386,8 +459,15 @@ class GreenhouseScraper:
         """
         jobs = []
         seen_urls = set()
+        visited_page_urls = set()  # Track visited pagination pages to prevent loops
+        max_pagination_iterations = 50  # Safety limit to prevent infinite loops
+        pagination_iteration = 0
 
         while True:
+            pagination_iteration += 1
+            if pagination_iteration > max_pagination_iterations:
+                logger.warning(f"[{company_slug}] Reached max pagination iterations ({max_pagination_iterations}), stopping")
+                break
             # Extract jobs from current view - try multiple selectors
             job_elements = []
             selectors = self.SELECTORS['job_listing']
@@ -424,13 +504,24 @@ class GreenhouseScraper:
                     # STEP 2: Apply title filter
                     if self.filter_titles and self.title_patterns:
                         if not is_relevant_role(job.title, self.title_patterns):
-                            # Job filtered out - don't fetch description
+                            # Job filtered out by title - don't fetch description
                             self.filter_stats['jobs_filtered'] += 1
+                            self.filter_stats['filtered_by_title'] += 1
                             self.filter_stats['filtered_titles'].append(job.title)
-                            logger.debug(f"[{company_slug}] Filtered out: {job.title}")
+                            logger.debug(f"[{company_slug}] Filtered by title: {job.title}")
                             continue
 
-                    # STEP 3: Job passed filter - fetch full description (expensive)
+                    # STEP 3: Apply location filter
+                    if self.filter_locations and self.location_patterns:
+                        if not matches_target_location(job.location, self.location_patterns):
+                            # Job filtered out by location - don't fetch description
+                            self.filter_stats['jobs_filtered'] += 1
+                            self.filter_stats['filtered_by_location'] += 1
+                            self.filter_stats['filtered_locations'].append(job.location)
+                            logger.debug(f"[{company_slug}] Filtered by location: {job.title} ({job.location})")
+                            continue
+
+                    # STEP 4: Job passed all filters - fetch full description (expensive)
                     self.filter_stats['jobs_kept'] += 1
                     job.description = await self._get_job_description(job.url)
                     jobs.append(job)
@@ -501,6 +592,15 @@ class GreenhouseScraper:
                         # Usually the current page has an "active" class or aria-current
                         for link in page_links:
                             try:
+                                # Get the link href to track visited pages
+                                link_href = await link.get_attribute('href')
+                                if not link_href:
+                                    continue
+
+                                # Skip if we've already visited this page
+                                if link_href in visited_page_urls:
+                                    continue
+
                                 # Check if this is NOT the current page
                                 class_name = await link.get_attribute('class') or ''
                                 aria_current = await link.get_attribute('aria-current') or ''
@@ -517,6 +617,7 @@ class GreenhouseScraper:
 
                                 if is_visible and is_enabled:
                                     link_text = await link.text_content()
+                                    visited_page_urls.add(link_href)  # Mark as visited before clicking
                                     await link.click()
                                     await page.wait_for_timeout(2000)
                                     logger.info(f"[{company_slug}] Clicked page number: {link_text}")
@@ -558,21 +659,27 @@ class GreenhouseScraper:
                              If False, only extract title/location from listing.
         """
         try:
-            # Get title from the element text content (works for <a> tags)
-            title = await job_element.text_content()
-            title = title.strip() if title else "Unknown"
-
             # Get URL - try as href attribute (if it's an <a> tag)
             job_url = await job_element.get_attribute('href')
 
-            # If no href, try to find a link inside this element
+            # If no href, try to find a link inside this element (table row case)
+            link_element = None
             if not job_url:
                 try:
-                    link = await job_element.query_selector('a')
-                    if link:
-                        job_url = await link.get_attribute('href')
+                    link_element = await job_element.query_selector('a[href*="/jobs/"]')
+                    if link_element:
+                        job_url = await link_element.get_attribute('href')
                 except:
                     pass
+
+            # Get title from the link element (for table rows) or the element itself (for <a> tags)
+            if link_element:
+                # Table row case - get title from the link within the row
+                title = await link_element.text_content()
+            else:
+                # <a> tag case - get title from the element itself
+                title = await job_element.text_content()
+            title = title.strip() if title else "Unknown"
 
             if not job_url:
                 logger.debug(f"[{company_slug}] No job URL found for job element")
@@ -589,15 +696,39 @@ class GreenhouseScraper:
             job_id_match = re.search(r'/jobs/(\d+)', job_url)
             job_id = job_id_match.group(1) if job_id_match else None
 
-            # Try to get location from within the element
+            # Try to get location from within the element using proper selectors
             location = "Unspecified"
             try:
-                # For BEM-style structures, location might be a sibling or nearby element
-                # We'll be lenient here and just get what we can
-                location_elem = await job_element.query_selector('span')
-                if location_elem:
-                    location_text = await location_elem.text_content()
-                    location = location_text.strip() if location_text else "Unspecified"
+                # Method 1: Try location-specific HTML selectors first
+                location_selectors = self.SELECTORS['job_location']
+                if isinstance(location_selectors, str):
+                    location_selectors = [location_selectors]
+
+                for selector in location_selectors:
+                    try:
+                        location_elem = await job_element.query_selector(selector)
+                        if location_elem:
+                            location_text = await location_elem.text_content()
+                            if location_text and location_text.strip():
+                                location = location_text.strip()
+                                break
+                    except:
+                        continue
+
+                # Method 2: If no HTML element found, extract from concatenated text
+                # (Handles table layouts where title+location are in same element)
+                if location == "Unspecified" and self.location_patterns:
+                    title_lower = title.lower()
+                    for pattern in self.location_patterns:
+                        pattern_lower = pattern.lower()
+                        if pattern_lower in title_lower:
+                            # Found location pattern in text - extract surrounding context
+                            # This handles cases like "Product ManagerNYC Global HQ"
+                            idx = title_lower.find(pattern_lower)
+                            # Extract from pattern start to end of string as location
+                            location = title[idx:].strip()
+                            logger.debug(f"[{company_slug}] Extracted location from text: '{location}' using pattern '{pattern}'")
+                            break
             except:
                 pass
 

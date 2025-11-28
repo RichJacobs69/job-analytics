@@ -19,9 +19,9 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 - ✅ Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
 - ✅ Epic 3: Database & Data Layer - Schema and connections stable
 - ✅ Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
-  - **Production Data (2025-11-26):** 1,279 raw jobs + 1,044 enriched jobs (Adzuna only, all 3 cities)
-  - **Greenhouse:** Pending (deferred until analytics development begins)
-- ⏳ Epic 5: Analytics Query Layer - Ready to start (sufficient dataset available)
+  - **Adzuna Data (2025-11-26):** 1,279 raw jobs + 1,044 enriched jobs (all 3 cities)
+  - **Greenhouse Production Run (2025-11-28):** 109 companies processed, 62 with active jobs, 3,913 jobs scraped, 207 kept (94.7% filter rate), 184 stored
+- ⏳ Epic 5: Analytics Query Layer - Ready to start (combined dataset: 1,044 Adzuna + 184 Greenhouse = 1,228 total enriched jobs)
 - ⏳ Epic 6: Dashboard & Visualization - Blocked (depends on Epic 5)
 - ⏳ Epic 7: Automation & Operational - Ready after Epic 6
 
@@ -141,7 +141,7 @@ streamlit_app.py (User-Facing Dashboards)
 
 | Aspect | Adzuna API | Greenhouse Scraper |
 |--------|------------|-------------------|
-| **Coverage** | 1,500+ jobs/month (general market) | 91 premium companies (curated) |
+| **Coverage** | 1,500+ jobs/month (general market) | 109 premium companies (curated) |
 | **Description Length** | 100-200 chars (truncated) | 9,000-15,000+ chars (complete) |
 | **Content Sections** | Basic summary only | Full job posting: responsibilities, benefits, work arrangements |
 | **Update Frequency** | Continuous daily | On-demand by company |
@@ -154,9 +154,10 @@ streamlit_app.py (User-Facing Dashboards)
 **✅ GREENHOUSE SCRAPING IMPLEMENTED:**
 - **Full descriptions captured:** 9,000-15,000+ chars per job (vs. 4,000 from main description alone)
 - **Complete sections included:** Main responsibilities, Hybrid work arrangements, Pay & benefits, In-office expectations, Remote work policies
-- **Tested:** 66 Stripe jobs successfully extracted with all content sections
-- **Coverage:** 91 Greenhouse companies pre-configured for rapid expansion
+- **Production run (2025-11-28):** 109 companies processed, 62 with active jobs, 3,913 jobs scraped, 207 kept after filters, 184 stored (~58 min runtime)
+- **Coverage:** 109 Greenhouse companies configured
 - **Title filtering:** Pre-classification filtering reduces LLM costs by 60-70% (implemented 2025-11-26)
+- **Location filtering:** Combined with title filtering achieves 94.7% filter rate in production
 - **Pagination support:** Multi-page navigation (Load More, Next buttons, page numbers)
 
 **Example improvement:**
@@ -179,10 +180,23 @@ streamlit_app.py (User-Facing Dashboards)
 - **See:** `docs/testing/greenhouse_title_filter_implementation.md` for full details
 - **See:** `tests/README_TITLE_FILTER_TESTS.md` for test suite usage guide
 
+**Location Filtering & Additional Cost Optimization:**
+- **Purpose:** Filter jobs by location AFTER title filter, BEFORE expensive description fetching
+- **Configuration:** Target city patterns in `config/greenhouse_location_patterns.yaml`
+- **Target locations:** London, New York City, Denver (with variations and aliases)
+- **Filter rate:** 89% of title-filtered jobs filtered out (jobs outside target cities)
+- **Combined savings:** Title (60-70%) + Location (89% of remaining) = 96% total reduction
+- **Validation:** Tested on Figma (127 jobs → 15 after title filter → 1 after location filter = 99.2% filtered)
+- **Cost savings example:** Figma test saved $0.49 by avoiding 126 description fetches
+- **Usage:** Enabled by default, disable with `GreenhouseScraper(filter_locations=False)`
+- **Filter pipeline:** Extract title + location → Title filter → Location filter → Fetch description
+- **See:** `tests/test_figma_location_filter.py` for validation
+
 **✅ Phase 2 Integration Complete:**
-1. ✅ ATS mapping validated for 91 companies → 24 verified with active Greenhouse (captured 1,045 jobs)
+1. ✅ ATS mapping validated for 109 companies → 62 verified with active jobs in production run (2025-11-28)
 2. ✅ Greenhouse scraper integrated into `fetch_jobs.py` main pipeline orchestrator
 3. ✅ Deduplication logic implemented in `unified_job_ingester.py` (Adzuna + Greenhouse merge)
+4. ✅ Production validation: 3,913 jobs scraped, 94.7% filter rate, 184 jobs stored to database
 
 ### Implementation Roadmap: Dual Pipeline Integration
 
@@ -208,18 +222,19 @@ streamlit_app.py (User-Facing Dashboards)
 - ✅ Merges via unified_job_ingester.py
 - ✅ Passes merged jobs to classifier pipeline
 
-**Phase 4: Run Greenhouse Scraper at Scale** ✅ (COMPLETE)
-- ✅ Validated: 24 of 91 companies actively use Greenhouse
-- ✅ Extracted: 1,045 jobs from verified companies
-- ✅ Tested: Full descriptions processed through classifier
+**Phase 4: Run Greenhouse Scraper at Scale** ✅ (COMPLETE 2025-11-28)
+- ✅ Production run: 109 companies processed, 62 with active jobs
+- ✅ Extracted: 3,913 jobs scraped, 207 kept after filters (94.7% filter rate)
+- ✅ Stored: 184 jobs to database (20 flagged as recruitment agencies)
+- ✅ Runtime: ~58 minutes for full pipeline
 - ✅ Ready: For analytics queries and compensation benchmarking
 
 ### Key Implementation Notes
 
 - **Deduplication:** Same job may appear on both Adzuna (truncated) + Greenhouse (full). Prefer Greenhouse description if duplicate.
 - **Source tracking:** Raw table should include `source` field ('adzuna' or 'greenhouse') to enable source-specific analytics later
-- **Concurrent scraping:** `greenhouse_scraper.py` already supports multi-company scraping. Can run all 91 companies in ~2-3 hours with `max_concurrent_pages=2`
-- **Cost optimization:** Keep Adzuna for volume (1,500/month) + Greenhouse for depth (high-value companies). No need to scrape everything.
+- **Concurrent scraping:** `greenhouse_scraper.py` already supports multi-company scraping. Production run processed all 109 companies in ~58 minutes
+- **Cost optimization:** Combined title + location filtering achieves 94.7% filter rate, dramatically reducing LLM classification costs. Keep Adzuna for volume (1,500/month) + Greenhouse for depth (high-value companies).
 
 ### Directory Structure
 
@@ -230,8 +245,9 @@ job-analytics/
 ├── .gitignore                  # Git exclusions
 ├── requirements.txt            # Python dependencies
 ├── CLAUDE.md                   # This file: development guide
-├── greenhouse_validation_results.json  # Validated companies (24 verified, 90 tested)
+├── greenhouse_validation_results.json  # ATS validation results (109 companies configured)
 ├── greenhouse_validation_results.csv   # Validation export
+├── greenhouse_production_final.log     # Production run log (2025-11-28)
 │
 ├── [Core Pipeline Python Files]
 ├── classifier.py               # Claude LLM integration & classification
@@ -243,9 +259,10 @@ job-analytics/
 ├── validate_greenhouse_batched.py  # ATS company validation (COMPLETE)
 │
 ├── config/
-│   ├── agency_blacklist.yaml           # Known recruitment agencies (hard filter)
-│   ├── company_ats_mapping.json        # Company → ATS platform mapping (company slugs)
-│   └── greenhouse_title_patterns.yaml  # Title filter patterns for Data/Product roles
+│   ├── agency_blacklist.yaml              # Known recruitment agencies (hard filter)
+│   ├── company_ats_mapping.json           # Company → ATS platform mapping (company slugs)
+│   ├── greenhouse_title_patterns.yaml     # Title filter patterns for Data/Product roles
+│   └── greenhouse_location_patterns.yaml  # Location filter patterns for target cities (London/NYC/Denver)
 │
 ├── docs/                       # Documentation (see docs/README.md for index)
 │   ├── README.md               # Documentation index & reading guide (START HERE)
@@ -270,13 +287,14 @@ job-analytics/
 │       ├── greenhouse_scraper.py # Greenhouse web scraper (browser automation)
 │       └── README.md
 │
-├── tests/                       # Test suite (43 active tests)
+├── tests/                       # Test suite (44 active tests)
 │   ├── README_TITLE_FILTER_TESTS.md          # Full test usage guide
 │   ├── QUICK_REFERENCE.md                    # Quick reference card
 │   ├── test_greenhouse_title_filter_unit.py  # Unit tests (18 tests)
 │   ├── test_greenhouse_scraper_filtered.py   # Integration tests (13 tests)
 │   ├── test_e2e_greenhouse_filtered.py       # E2E tests (12 tests)
-│   ├── test_monzo_filtering.py               # Live validation script (Monzo)
+│   ├── test_monzo_filtering.py               # Live validation script (Monzo - title filtering)
+│   ├── test_figma_location_filter.py         # Live validation script (Figma - location filtering)
 │   ├── test_greenhouse_scraper_simple.py     # Legacy scraper tests
 │   ├── test_end_to_end.py                    # Legacy E2E tests
 │   ├── test_two_companies.py                 # Legacy company tests
@@ -716,17 +734,19 @@ The project is organized into discrete epics that can be addressed in any order 
 
 **Key Achievement:** Cost tracking now embedded in production pipeline via `classifier.py`, not just validation
 
-**Production Data Collection (2025-11-26):**
-- ✅ **Adzuna Pipeline:** COMPLETE for all 3 cities (London, NYC, Denver)
+**Production Data Collection:**
+- ✅ **Adzuna Pipeline (2025-11-26):** COMPLETE for all 3 cities (London, NYC, Denver)
   - **Total collected:** 1,279 raw jobs → 1,044 enriched jobs (18.4% filtering rate)
   - **London:** 500 jobs fetched, $1.94 cost, ~26 minutes
   - **NYC:** 503 jobs fetched, ~7% deduplication rate
   - **Denver:** 482 jobs fetched, ~14% deduplication rate
   - **All 11 role types covered:** Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM
   - **Storage:** All jobs successfully stored in Supabase (raw_jobs + enriched_jobs tables)
-- ⏸️ **Greenhouse Pipeline:** Deferred until analytics development begins
-  - **Reason:** Current dataset (1,044 jobs) sufficient for Epic 5 prototyping
-  - **Ready when needed:** 24 verified companies with active Greenhouse pages
+- ✅ **Greenhouse Pipeline (2025-11-28):** COMPLETE production run on all companies
+  - **Companies:** 109 processed, 62 with active jobs
+  - **Jobs:** 3,913 scraped, 207 kept after filters (94.7% filter rate), 184 stored
+  - **Runtime:** ~58 minutes for full pipeline
+  - **Combined dataset:** 1,044 Adzuna + 184 Greenhouse = 1,228 total enriched jobs ready for analytics
 
 **Validation Artifacts:**
 - `validation_actual_costs.json` - 7-job test with real API costs
@@ -835,9 +855,10 @@ Epic 4 validated the dual-source pipeline is economically viable and technically
 - Storage 100% success rate
 - Agency filtering blocking 10-15% of jobs pre-LLM
 
-**Production Data Collection (2025-11-26):**
-- ✅ **Adzuna:** 1,279 raw jobs → 1,044 enriched jobs (all 3 cities, 11 role types)
-- ⏸️ **Greenhouse:** Deferred until analytics development begins
+**Production Data Collection:**
+- ✅ **Adzuna (2025-11-26):** 1,279 raw jobs → 1,044 enriched jobs (all 3 cities, 11 role types)
+- ✅ **Greenhouse (2025-11-28):** 109 companies, 3,913 scraped, 207 kept (94.7% filter), 184 stored
+- ✅ **Combined dataset:** 1,228 total enriched jobs (1,044 + 184)
 
 **Key Innovation:**
 Cost tracking now embedded in production pipeline, not just validation scripts. Every classification returns actual token counts and costs for ongoing observability.
@@ -853,7 +874,7 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 - Classification achieves 93% accuracy on complete job descriptions (test cases)
 - Database schema stable and queries performant
 - Greenhouse scraper captures full job text (9,000-15,000+ chars)
-- ATS validation complete: 24 verified companies with Greenhouse
+- Greenhouse production run complete: 109 companies processed, 62 with active jobs, 184 jobs stored (2025-11-28)
 
 ### 🚨 Active Issues
 1. **Skills/Work Arrangement Classification:** Limited by Adzuna's truncated text
@@ -868,11 +889,11 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 ### 📋 Immediate Next Steps
 **Epic 5: Analytics Query Layer** (ready to start)
-- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, dataset collected (1,044 enriched jobs)
-- **Dataset:** 1,044 jobs across all 3 cities (London, NYC, Denver) and 11 role types
+- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, both data sources collected
+- **Dataset:** 1,228 enriched jobs (1,044 Adzuna + 184 Greenhouse) across all 3 cities and 11 role types
 - **Action:** Begin building `analytics.py` with query functions for marketplace questions
 - **Goal:** Programmatically answer questions like "Which skills are growing fastest for Data Engineers in NYC?"
-- **Greenhouse:** Deferred until analytics development begins - current Adzuna dataset sufficient for prototyping
+- **Data Quality:** Combined dataset provides both volume (Adzuna) and depth (Greenhouse full descriptions)
 - **See:** Epic 5 section in "Planned Epics" for full details
 
 ## Key Development Workflows
@@ -930,7 +951,8 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 4. ✅ Testing & Validation
    - 6 active test suites covering scraper, ingestion, and E2E flows
-   - Successfully extracted 1,045 jobs from 24 Greenhouse companies
+   - Production run (2025-11-28): 109 companies processed, 3,913 jobs scraped, 184 stored
+   - Validated 94.7% filter rate from combined title + location filtering
    - Tested classification on full Greenhouse text
    - Confirmed deduplication prevents duplicate processing
 
@@ -946,18 +968,24 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 ### Cost Optimization
 
+- **Title + Location filtering before LLM:** Production validated 94.7% filter rate (2025-11-28)
+  - Title filter: Removes 60-70% of jobs (non-Data/Product roles)
+  - Location filter: Removes 89% of remaining jobs (outside London/NYC/Denver)
+  - Production run: 3,913 jobs scraped → 207 kept (94.7% filtered)
+  - Individual examples: Figma 99.2% filtered, Stripe 97.8% filtered
+  - Avoids expensive description fetching AND classification costs
 - **Hard filtering before LLM:** Only valid jobs reach Claude, avoiding wasted API calls on known recruiters
 - **Cheap model selection:** Claude 3.5 Haiku used instead of Opus/Sonnet - much lower cost per classification
 - **Batch deduplication:** MD5 hash prevents re-classifying duplicate jobs
-- **Actual measured cost per job:** $0.00388/job for classifications (Haiku pricing) - **MEASURED 2025-11-25**
+- **Actual measured cost per classified job:** $0.00388/job for classifications (Haiku pricing) - **MEASURED 2025-11-25**
   - Based on actual Anthropic API token usage from Greenhouse full-text jobs (11K+ chars)
   - Input: ~4,156 tokens/job @ $0.80 per 1M tokens
   - Output: ~233 tokens/job @ $2.40 per 1M tokens
   - Cost tracking implemented in `classifier.py` using `response.usage` from Anthropic API
 - **Cost per unique merged job:** $0.00340/job (accounting for deduplication)
-- **Example cost:** 100 jobs × $0.00340 = $0.34 total
-- **Monthly estimate:** 1,500 jobs/month = ~$5.10 (well under $15-20/month budget)
-- **Budget:** $15-20/month → can process 4,400-5,900 jobs/month sustainably
+- **Example cost with filtering:** 127 jobs scraped → 1 classified → $0.00340 total (vs $0.43 without filtering)
+- **Monthly estimate:** With 94.7% filtering, production run classified 207 jobs from 3,913 scraped in single run
+- **Budget headroom:** $15-20/month supports 4,400-5,900 classified jobs/month (83,000-111,000 jobs scraped with 94.7% filtering)
 
 ### Deduplication Strategy
 

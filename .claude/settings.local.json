@@ -17,7 +17,12 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(python:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(tee:*)",
+      "Bash(timeout:*)",
+      "Bash(tasklist:*)",
+      "WebFetch(domain:job-boards.greenhouse.io)",
+      "Bash(sort:*)"
     ],
     "deny": [],
     "ask": []

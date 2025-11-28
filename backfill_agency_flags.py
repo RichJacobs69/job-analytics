@@ -27,26 +27,42 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
     HARD_FILTER = set(agency.lower().strip() for agency in AGENCY_CONFIG['hard_filter'])
     print(f"[PROTECT] Loaded hard filter: {len(HARD_FILTER)} agencies")
     
-    # Step 1: Get all jobs that need agency flags
+    # Step 1: Get all jobs that need agency flags (with pagination to handle >1000 records)
     print("\n[DATA] Fetching jobs from database...")
     
     try:
-        if force_reprocess:
-            # Reprocess ALL jobs (useful after updating blacklist)
-            result = supabase.table("enriched_jobs") \
-                .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
-                .execute()
-            print(f"[OK] Found {len(result.data)} jobs (FORCE REPROCESS mode)")
-        else:
-            # Only process jobs with NULL agency flags
-            result = supabase.table("enriched_jobs") \
-                .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
-                .is_("is_agency", "null") \
-                .execute()
-            print(f"[OK] Found {len(result.data)} jobs with NULL agency flags")
+        jobs = []
+        page_size = 1000
+        offset = 0
         
-        jobs = result.data
+        while True:
+            if force_reprocess:
+                # Reprocess ALL jobs (useful after updating blacklist)
+                result = supabase.table("enriched_jobs") \
+                    .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
+                    .range(offset, offset + page_size - 1) \
+                    .execute()
+            else:
+                # Only process jobs with NULL agency flags
+                result = supabase.table("enriched_jobs") \
+                    .select("id, raw_job_id, employer_name, is_agency, agency_confidence") \
+                    .is_("is_agency", "null") \
+                    .range(offset, offset + page_size - 1) \
+                    .execute()
+            
+            if not result.data:
+                break
+                
+            jobs.extend(result.data)
+            print(f"   [PAGE] Fetched {len(result.data)} jobs (total so far: {len(jobs)})")
+            
+            if len(result.data) < page_size:
+                break  # Last page
+            offset += page_size
+        
         total_jobs = len(jobs)
+        mode = "FORCE REPROCESS" if force_reprocess else "NULL agency flags"
+        print(f"[OK] Found {total_jobs} jobs ({mode})")
         
         if total_jobs == 0:
             print("\n[DONE] All jobs already have agency flags!")
@@ -56,19 +72,29 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
         print(f"[ERROR] Error fetching jobs: {e}")
         return
     
-    # Step 2: Also get raw job text for better detection
+    # Step 2: Also get raw job text for better detection (with pagination)
     print("\n[NOTE] Fetching raw job text for enhanced detection...")
     
     # Build a map of raw_job_id -> job text
     raw_job_ids = [job['raw_job_id'] for job in jobs]
+    raw_text_map = {}
     
     try:
-        raw_result = supabase.table("raw_jobs") \
-            .select("id, raw_text") \
-            .in_("id", raw_job_ids) \
-            .execute()
+        # Fetch in batches to handle large datasets
+        batch_size_raw = 500  # Supabase has limits on IN clause size
+        for i in range(0, len(raw_job_ids), batch_size_raw):
+            batch_ids = raw_job_ids[i:i + batch_size_raw]
+            raw_result = supabase.table("raw_jobs") \
+                .select("id, raw_text") \
+                .in_("id", batch_ids) \
+                .execute()
+            
+            for row in raw_result.data:
+                raw_text_map[row['id']] = row['raw_text']
+            
+            if len(raw_job_ids) > batch_size_raw:
+                print(f"   [PAGE] Fetched raw text batch {i//batch_size_raw + 1} ({len(raw_text_map)} total)")
         
-        raw_text_map = {row['id']: row['raw_text'] for row in raw_result.data}
         print(f"[OK] Retrieved raw text for {len(raw_text_map)} jobs")
     except Exception as e:
         print(f"[WARNING] Could not fetch raw text: {e}")
@@ -120,7 +146,9 @@ def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_rep
                     status = "[FIX]"
             
             # Show progress with status indicator
-            print(f"{status} [{i}/{total_jobs}] {employer_name[:40]:40} → is_agency={is_agency:5} ({confidence})")
+            # Use simple arrow to avoid Windows encoding issues
+            employer_display = employer_name[:40] if employer_name else "Unknown"
+            print(f"{status} [{i}/{total_jobs}] {employer_display:40} -> is_agency={is_agency:5} ({confidence})")
             
             if is_agency:
                 agency_count += 1
