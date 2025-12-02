@@ -58,6 +58,8 @@ def insert_raw_job(
     posting_url: str,
     raw_text: str,
     source_job_id: Optional[str] = None,
+    title: Optional[str] = None,
+    company: Optional[str] = None,
     metadata: Optional[Dict] = None,
     full_text: Optional[str] = None,
     text_source: Optional[str] = None
@@ -70,6 +72,8 @@ def insert_raw_job(
         posting_url: Full URL to job posting
         raw_text: Complete job description text/HTML
         source_job_id: Optional external ID from source
+        title: Optional job title from source (before classification)
+        company: Optional company name from source (before classification)
         metadata: Optional additional metadata (dict)
         full_text: Optional full job description (for enrichment from ATS scraping)
         text_source: Source of full_text ('adzuna_api', 'ats_scrape', 'company_website', etc.)
@@ -85,7 +89,11 @@ def insert_raw_job(
         "metadata": metadata or {},
     }
 
-    # Only add optional fields if they're provided
+    # Add optional metadata fields if provided
+    if title is not None:
+        data["title"] = title
+    if company is not None:
+        data["company"] = company
     if full_text is not None:
         data["full_text"] = full_text
     if text_source is not None:

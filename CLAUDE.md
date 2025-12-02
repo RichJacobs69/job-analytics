@@ -37,17 +37,27 @@ python -m venv .venv
 pip install -r requirements.txt
 
 # Running the dual-source pipeline (Adzuna + Greenhouse)
-python fetch_jobs.py [city] [max_jobs] --sources adzuna,greenhouse
+python wrapper/fetch_jobs.py [city] [max_jobs] --sources adzuna,greenhouse
 # Examples:
-# python fetch_jobs.py lon 100 --sources adzuna,greenhouse  # Dual pipeline
-# python fetch_jobs.py nyc 50 --sources adzuna              # Adzuna only
-# python fetch_jobs.py --sources greenhouse                # Greenhouse only
+# python wrapper/fetch_jobs.py lon 100 --sources adzuna,greenhouse  # Dual pipeline
+# python wrapper/fetch_jobs.py nyc 50 --sources adzuna              # Adzuna only
+# python wrapper/fetch_jobs.py --sources greenhouse                # Greenhouse only
+
+# Running multiple cities in parallel (SIMPLIFIED - single command!):
+python wrapper/run_all_cities.py
+# or with custom parameters:
+python wrapper/run_all_cities.py --max-jobs 100 --sources adzuna,greenhouse
+
+# See prod_run_plan_output/PARALLEL_EXECUTION_GUIDE.md for more examples
+
+# Check pipeline status (how many jobs have been classified):
+python wrapper/check_pipeline_status.py
 
 # Test the classifier module
-python classifier.py
+python pipeline/classifier.py
 
 # Backfill agency flags on existing data
-python backfill_agency_flags.py
+python wrapper/backfill_agency_flags.py
 
 # Validate pipeline health and economics
 python validate_pipeline.py --cities lon,nyc --max-jobs 100
@@ -238,76 +248,36 @@ streamlit_app.py (User-Facing Dashboards)
 
 ### Directory Structure
 
+See **[`REPOSITORY_STRUCTURE.md`](REPOSITORY_STRUCTURE.md)** for the detailed, up-to-date directory organization.
+
+Quick overview:
 ```
 job-analytics/
-├── .env                        # Secrets (API keys, DB credentials)
-├── .env.example                # Template for .env
-├── .gitignore                  # Git exclusions
-├── requirements.txt            # Python dependencies
-├── CLAUDE.md                   # This file: development guide
-├── greenhouse_validation_results.json  # ATS validation results (109 companies configured)
-├── greenhouse_validation_results.csv   # Validation export
-├── greenhouse_production_final.log     # Production run log (2025-11-28)
+├── wrapper/                       # User-facing entry points (thin wrappers)
+│   ├── fetch_jobs.py
+│   ├── run_all_cities.py
+│   ├── check_pipeline_status.py
+│   └── ... other utilities
 │
-├── [Core Pipeline Python Files]
-├── classifier.py               # Claude LLM integration & classification
-├── db_connection.py            # Supabase client and DB helpers
-├── agency_detection.py         # Hard/soft agency filtering
-├── backfill_agency_flags.py    # Retroactive agency flag updates
-├── fetch_jobs.py               # Main pipeline orchestrator (dual-source)
-├── unified_job_ingester.py     # Merge Adzuna + Greenhouse results with dedup
-├── validate_greenhouse_batched.py  # ATS company validation (COMPLETE)
+├── pipeline/                      # Core production code
+│   ├── fetch_jobs.py              # (implementation)
+│   ├── classifier.py              # (implementation)
+│   ├── db_connection.py           # (implementation)
+│   ├── unified_job_ingester.py    # (implementation)
+│   ├── agency_detection.py        # (implementation)
+│   └── utilities/                 # Maintenance scripts
+│       ├── check_pipeline_status.py
+│       ├── analyze_db_results.py
+│       └── ... backfill utilities
 │
-├── config/
-│   ├── agency_blacklist.yaml              # Known recruitment agencies (hard filter)
-│   ├── company_ats_mapping.json           # Company → ATS platform mapping (company slugs)
-│   ├── greenhouse_title_patterns.yaml     # Title filter patterns for Data/Product roles
-│   └── greenhouse_location_patterns.yaml  # Location filter patterns for target cities (London/NYC/Denver)
-│
-├── docs/                       # Documentation (see docs/README.md for index)
-│   ├── README.md               # Documentation index & reading guide (START HERE)
-│   ├── system_architecture.yaml # Complete system design & responsibilities
-│   ├── schema_taxonomy.yaml      # Job classification taxonomy & rules
-│   ├── product_brief.yaml        # Product requirements, KPIs, scope
-│   ├── blacklisting_process.md   # Agency detection methodology
-│   ├── pipline_flow              # ASCII/visual pipeline diagram
-│   ├── marketplace_questions.yaml # User research questionnaire
-│   ├── architecture/             # Architecture deep-dives
-│   ├── database/                 # Schema migrations & updates
-│   ├── testing/                  # Test documentation & validation results
-│   │   ├── greenhouse_title_filter_experiment.md      # Initial validation (Stripe)
-│   │   └── greenhouse_title_filter_implementation.md  # Full implementation docs
-│   └── archive/                  # Historical docs & legacy code
-│
-├── scrapers/
-│   ├── adzuna/
-│   │   ├── fetch_adzuna_jobs.py  # Adzuna API pipeline
-│   │   └── sample_adzuna_jobs.csv # Sample data
-│   └── greenhouse/
-│       ├── greenhouse_scraper.py # Greenhouse web scraper (browser automation)
-│       └── README.md
-│
-├── tests/                       # Test suite (44 active tests)
-│   ├── README_TITLE_FILTER_TESTS.md          # Full test usage guide
-│   ├── QUICK_REFERENCE.md                    # Quick reference card
-│   ├── test_greenhouse_title_filter_unit.py  # Unit tests (18 tests)
-│   ├── test_greenhouse_scraper_filtered.py   # Integration tests (13 tests)
-│   ├── test_e2e_greenhouse_filtered.py       # E2E tests (12 tests)
-│   ├── test_monzo_filtering.py               # Live validation script (Monzo - title filtering)
-│   ├── test_figma_location_filter.py         # Live validation script (Figma - location filtering)
-│   ├── test_greenhouse_scraper_simple.py     # Legacy scraper tests
-│   ├── test_end_to_end.py                    # Legacy E2E tests
-│   ├── test_two_companies.py                 # Legacy company tests
-│   └── [archived tests in docs/archive/tests/]
-│
-│
-├── output/                      # Generated outputs (gitignored)
-│   ├── stripe_job_page.html     # Test cache
-│   ├── ats_analysis_results.json
-│   └── ...other generated files
-│
-└── __pycache__/                # Python bytecode (auto-generated)
+├── config/                        # Configuration files
+├── docs/                          # Documentation (see docs/README.md)
+├── scrapers/                      # External data sources
+├── tests/                         # Test suite
+└── output/                        # Generated outputs (gitignored)
 ```
+
+**For detailed organization details, responsibilities, and import structure, see [`REPOSITORY_STRUCTURE.md`](REPOSITORY_STRUCTURE.md)**
 
 ### Core Module Responsibilities
 
@@ -349,7 +319,7 @@ job-analytics/
 **db_connection.py** (Data Layer)
 - Initializes Supabase PostgreSQL client
 - Helper functions: `generate_job_hash()` for deduplication
-- Insert functions: `insert_raw_job()`, `insert_enriched_job()`
+- Insert functions: `insert_raw_job()` (now accepts title & company parameters), `insert_enriched_job()`
 - Connection pooling and retry logic
 - Error handling with graceful degradation
 
@@ -702,10 +672,12 @@ The project is organized into discrete epics that can be addressed in any order 
 
 **Components:**
 - `db_connection.py` - Supabase PostgreSQL client with connection pooling
-- Schema: `raw_jobs` (original postings with source tracking) + `enriched_jobs` (classified results)
+- Schema: `raw_jobs` (original postings with source tracking + title/company metadata) + `enriched_jobs` (classified results with source tracking)
 - Helper functions: deduplication hashing, batch inserts, error handling
 
 **Status:** Stable - schema tested with 1,000+ jobs, queries performant
+
+**Recent Enhancement (2025-12-02):** Added `title` and `company` columns to raw_jobs table to preserve original source metadata before classification. Enables direct analysis of raw_jobs without joins and provides fallback data when classification fails. See `docs/database/SCHEMA_UPDATES.md` for details.
 
 ---
 

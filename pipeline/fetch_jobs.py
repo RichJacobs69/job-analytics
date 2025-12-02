@@ -52,7 +52,7 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
     """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects"""
     try:
         from scrapers.adzuna.fetch_adzuna_jobs import fetch_adzuna_jobs, DEFAULT_SEARCH_QUERIES
-        from unified_job_ingester import UnifiedJob, DataSource
+        from pipeline.unified_job_ingester import UnifiedJob, DataSource
 
         logger.info(f"Fetching jobs from Adzuna API for {city}")
         logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with {max_jobs_per_query} jobs per query")
@@ -160,7 +160,7 @@ async def merge_jobs(
 ) -> Dict:
     """Merge jobs from multiple sources with deduplication"""
 
-    from unified_job_ingester import UnifiedJobIngester
+    from pipeline.unified_job_ingester import UnifiedJobIngester
 
     logger.info("Merging jobs from all sources")
 
@@ -188,8 +188,8 @@ async def classify_jobs(jobs: List) -> List:
     """Classify jobs using Claude 3.5 Haiku"""
 
     try:
-        from classifier import classify_job_with_claude
-        from agency_detection import is_agency_job
+        from pipeline.classifier import classify_job_with_claude
+        from pipeline.agency_detection import is_agency_job
 
         logger.info(f"Classifying {len(jobs)} jobs")
 
@@ -217,7 +217,7 @@ async def classify_jobs(jobs: List) -> List:
 
                 # Add agency detection via pattern matching (soft detection)
                 # This populates is_agency and agency_confidence fields that Claude no longer returns
-                from agency_detection import validate_agency_classification
+                from pipeline.agency_detection import validate_agency_classification
 
                 is_agency, agency_conf = validate_agency_classification(
                     employer_name=job.company,
@@ -261,9 +261,9 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
     """
 
     try:
-        from db_connection import insert_raw_job, insert_enriched_job
+        from pipeline.db_connection import insert_raw_job, insert_enriched_job
         from datetime import date
-        from unified_job_ingester import UnifiedJob, DataSource
+        from pipeline.unified_job_ingester import UnifiedJob, DataSource
 
         logger.info(f"Storing {len(jobs)} jobs to {table}")
 
@@ -295,6 +295,8 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                 raw_job_id = insert_raw_job(
                     source=source,
                     posting_url=url,
+                    title=title,
+                    company=company,
                     raw_text=description,
                     source_job_id=job_id
                 )
@@ -312,7 +314,7 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     raw_job_id=raw_job_id,
                     employer_name=company,
                     title_display=title,
-                    job_family=role.get('job_family', 'out_of_scope'),
+                    job_family=role.get('job_family') or 'out_of_scope',
                     city_code=location.get('city_code') or source_city or 'unk',
                     working_arrangement=location.get('working_arrangement') or 'onsite',
                     position_type=role.get('position_type') or 'full_time',

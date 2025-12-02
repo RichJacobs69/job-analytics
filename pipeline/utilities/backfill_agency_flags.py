@@ -3,8 +3,10 @@ Backfill Agency Flags
 Reprocess all existing jobs in enriched_jobs table to add agency detection flags.
 """
 
-from db_connection import supabase
-from agency_detection import detect_agency
+import sys
+sys.path.insert(0, '.')
+from pipeline.db_connection import supabase
+from pipeline.agency_detection import detect_agency
 import time
 
 def backfill_agency_flags(batch_size: int = 50, dry_run: bool = False, force_reprocess: bool = False):

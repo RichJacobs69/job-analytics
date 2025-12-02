@@ -1,277 +1,289 @@
-# Schema Updates for Dual Pipeline
+# Database Schema Updates
 
-**Status:** Ready for migration
-**Date:** November 21, 2025
-**Purpose:** Add source tracking columns for Adzuna + Greenhouse dual pipeline
+**Last Updated:** December 2, 2025
+**Status:** All migrations complete and verified
+
+This document tracks all database schema changes for the job-analytics platform.
 
 ---
 
-## Summary
+## Table of Contents
+
+1. [Migration 1: Source Tracking (enriched_jobs)](#migration-1-source-tracking-enriched_jobs)
+2. [Migration 2: Title and Company Fields (raw_jobs)](#migration-2-title-and-company-fields-raw_jobs)
+3. [Current Schema Reference](#current-schema-reference)
+
+---
+
+## Migration 1: Source Tracking (enriched_jobs)
+
+**Date:** November 21, 2025
+**Purpose:** Add source tracking columns for Adzuna + Greenhouse dual pipeline
+**Status:** ✅ Complete
+
+### Summary
 
 The dual pipeline requires tracking which data source provided each job and which source provided the description used for classification. The existing schema already has `source` and `full_text` columns in `raw_jobs`, but we need to add source tracking to `enriched_jobs` for analytics and debugging.
 
----
+### Changes Applied
 
-## Changes Required
+#### New Columns in `enriched_jobs` Table
 
-### 1. Add Columns to `enriched_jobs` Table
+- **`data_source`** (VARCHAR 50) - Primary data source: 'adzuna', 'greenhouse', or 'hybrid'
+- **`description_source`** (VARCHAR 50) - Which source provided the description: 'adzuna' or 'greenhouse'
+- **`deduplicated`** (BOOLEAN) - Whether this job was deduplicated from multiple sources
+- **`original_url_secondary`** (VARCHAR 2048) - Secondary URL if merged from another source
+- **`merged_from_source`** (VARCHAR 50) - If deduplicated, which source was merged with this one
 
-**New columns:**
-- `data_source` (VARCHAR 50) - Primary data source: 'adzuna', 'greenhouse', or 'hybrid'
-- `description_source` (VARCHAR 50) - Which source provided the description: 'adzuna' or 'greenhouse'
-- `deduplicated` (BOOLEAN) - Whether this job was deduplicated from multiple sources
-- `original_url_secondary` (VARCHAR 2048) - Secondary URL if merged from another source
-- `merged_from_source` (VARCHAR 50) - If deduplicated, which source was merged with this one
+#### New Indexes
 
-### 2. Add Indexes for Performance
-
-**New indexes:**
 - `idx_enriched_jobs_data_source` - For filtering/grouping by source
 - `idx_enriched_jobs_deduplicated` - For finding merged jobs
 - `idx_enriched_jobs_description_source` - For quality analysis by source
 
+### Benefits
+
+- ✅ Track deduplication rate between Adzuna and Greenhouse
+- ✅ Measure classification quality by description source
+- ✅ Enable source-specific analytics
+- ✅ Support cost-benefit analysis of each pipeline
+
 ---
 
-## Migration Steps
+## Migration 2: Title and Company Fields (raw_jobs)
 
-### Step 1: Run SQL Migration
+**Date:** December 2, 2025
+**Purpose:** Preserve original source metadata before classification
+**Status:** ✅ Complete and verified
 
-Execute the migration file in your Supabase SQL editor:
+### Summary
 
-```bash
-# File: migrations/001_add_source_tracking.sql
+The `raw_jobs` table was missing key source metadata:
+- **Title**: Original job title from source (lost after classification)
+- **Company**: Original company name from source (lost after classification)
+
+This enhancement preserves the original title and company from Adzuna API responses, enabling:
+- Direct analysis of raw_jobs without joining enriched_jobs
+- Fallback data when classification fails
+- Better audit trail for data lineage
+- Comparison of source titles vs classified titles
+
+### Changes Applied
+
+#### New Columns in `raw_jobs` Table
+
+```sql
+ALTER TABLE raw_jobs
+ADD COLUMN IF NOT EXISTS title TEXT;
+
+ALTER TABLE raw_jobs
+ADD COLUMN IF NOT EXISTS company TEXT;
+
+COMMENT ON COLUMN raw_jobs.title IS 'Original job title from source (before classification)';
+COMMENT ON COLUMN raw_jobs.company IS 'Original company name from source (before classification)';
 ```
 
-**Or manually in Supabase:**
+#### New Indexes
 
-1. Go to Supabase Dashboard → SQL Editor
-2. Create new query
-3. Copy and paste content from `migrations/001_add_source_tracking.sql`
-4. Click "Run" button
-5. Verify success (no errors)
-
-### Step 2: Update Python Code
-
-The `db_connection.py` file has already been updated with:
-- New parameters in `insert_enriched_job()` function
-- Defaults for backward compatibility (data_source defaults to 'adzuna')
-
-**No further code changes needed** - the database code is ready to use.
-
-### Step 3: Verify Migration
-
-```bash
-# Connect to Supabase and verify columns exist
-SELECT column_name, data_type
-FROM information_schema.columns
-WHERE table_name = 'enriched_jobs'
-AND column_name IN ('data_source', 'description_source', 'deduplicated');
+```sql
+CREATE INDEX IF NOT EXISTS idx_raw_jobs_title ON raw_jobs(title);
+CREATE INDEX IF NOT EXISTS idx_raw_jobs_company ON raw_jobs(company);
 ```
 
----
+### Code Changes
 
-## Schema Details
+**Modified:** `pipeline/db_connection.py` (insert_raw_job function)
+- Added optional `title` and `company` parameters
+- Null-safe handling with conditional insertion
 
-### Column Descriptions
+**Modified:** `pipeline/fetch_jobs.py` (store_jobs function)
+- Now passes title and company from UnifiedJob to insert_raw_job()
 
-#### `data_source` (VARCHAR 50)
-- **Purpose:** Track primary data source for the job
-- **Values:**
-  - 'adzuna' - Job came from Adzuna API only
-  - 'greenhouse' - Job came from Greenhouse scraper only
-  - 'hybrid' - Job merged from both sources
-- **Default:** 'adzuna'
-- **Used for:** Analytics, filtering, understanding data coverage
+### Verification
 
-#### `description_source` (VARCHAR 50)
-- **Purpose:** Track which source provided the description used for classification
-- **Values:**
-  - 'adzuna' - Using Adzuna's truncated description (~100-200 chars)
-  - 'greenhouse' - Using Greenhouse's full description (~9,000-15,000 chars)
-- **Default:** 'adzuna'
-- **Used for:** Quality metrics, classification confidence scoring
-- **Impact:** Jobs with 'greenhouse' descriptions are expected to have better classification accuracy
+**Test completed:** December 2, 2025
+- Fetched 11 Adzuna jobs from London
+- ✅ 6/7 jobs successfully stored with title and company populated
+- ✅ 1 duplicate URL rejected (expected behavior)
+- ✅ Fields automatically populated from Adzuna API responses
 
-#### `deduplicated` (BOOLEAN)
-- **Purpose:** Flag indicating if this job was merged from multiple sources
-- **Values:**
-  - FALSE (default) - Job from single source only
-  - TRUE - Job found in both Adzuna and Greenhouse, merged as one
-- **Used for:** Understanding deduplication rate, finding merged jobs
-- **Example query:** "How many Greenhouse jobs also appeared on Adzuna?"
+### Benefits
 
-#### `original_url_secondary` (VARCHAR 2048)
-- **Purpose:** Store secondary URL if job was merged from another source
-- **Example:** If Adzuna job was merged with Greenhouse job:
-  - `url` = Greenhouse URL (primary)
-  - `original_url_secondary` = Adzuna URL
-- **Used for:** Traceability, comparing job postings from both sources
-- **Nullable:** Yes (NULL if not deduplicated)
+- ✅ Preserve source title and company without classification
+- ✅ Fallback data when classification fails
+- ✅ Better audit trail (what did Adzuna say vs what did Claude classify?)
+- ✅ Query raw_jobs directly (no join to enriched_jobs needed)
+- ✅ Analyze company name variations across sources
+- ✅ Track data lineage
 
-#### `merged_from_source` (VARCHAR 50)
-- **Purpose:** Track which source was merged into this job
-- **Values:**
-  - NULL (default) - Not a merged job
-  - 'adzuna' - Adzuna job was merged into this (Greenhouse primary)
-  - 'greenhouse' - Greenhouse job was merged into this (Adzuna primary, rare)
-- **Used for:** Understanding merge direction and source priority decisions
+### Backward Compatibility
+
+✅ **Fully backward compatible**
+- Existing code continues to work (parameters are optional)
+- Existing data is unchanged (new columns are nullable)
+- New jobs will populate title and company
+- Old jobs will have NULL values (can be backfilled if needed)
 
 ---
 
-## Example Usage in Code
+## Current Schema Reference
 
-### Storing a Greenhouse Job
+### `raw_jobs` Table
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| id | bigint | NO | Primary key |
+| source | text | NO | 'adzuna', 'greenhouse', etc |
+| posting_url | text | NO | Unique constraint |
+| raw_text | text | NO | Full job description |
+| source_job_id | text | YES | External ID |
+| **title** | **text** | **YES** | **Original job title (NEW)** |
+| **company** | **text** | **YES** | **Original company (NEW)** |
+| metadata | jsonb | YES | Additional metadata |
+| full_text | text | YES | Greenhouse full description |
+| text_source | text | YES | Where full_text came from |
+| scraped_at | timestamp | NO | When job was scraped |
+| created_at | timestamp | NO | When record was created |
+| updated_at | timestamp | NO | Last update |
+
+**Indexes:**
+- `idx_raw_jobs_posting_url` (UNIQUE)
+- `idx_raw_jobs_source`
+- `idx_raw_jobs_scraped_at`
+- `idx_raw_jobs_title` **(NEW)**
+- `idx_raw_jobs_company` **(NEW)**
+
+### `enriched_jobs` Table
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| id | bigint | NO | Primary key |
+| raw_job_id | bigint | NO | Foreign key to raw_jobs |
+| job_hash | text | NO | Deduplication hash (UNIQUE) |
+| employer_name | text | NO | Classified company name |
+| title_display | text | NO | Original job title from posting |
+| job_family | text | NO | 'product', 'data', 'out_of_scope' |
+| job_subfamily | text | YES | Specific role type |
+| seniority | text | YES | Junior, Mid-Level, Senior, Staff+ |
+| city_code | text | NO | 'lon', 'nyc', 'den' |
+| working_arrangement | text | NO | onsite, hybrid, remote, flexible |
+| **data_source** | **text** | **YES** | **'adzuna', 'greenhouse', 'hybrid' (NEW)** |
+| **description_source** | **text** | **YES** | **Which source provided description (NEW)** |
+| **deduplicated** | **boolean** | **YES** | **Whether job was merged from multiple sources (NEW)** |
+| **original_url_secondary** | **text** | **YES** | **Secondary URL if merged (NEW)** |
+| **merged_from_source** | **text** | **YES** | **Which source was merged in (NEW)** |
+| ... | ... | ... | (plus compensation, skills, dates, etc.) |
+
+**Indexes:**
+- `idx_enriched_jobs_job_hash` (UNIQUE)
+- `idx_enriched_jobs_city_code`
+- `idx_enriched_jobs_job_family`
+- `idx_enriched_jobs_data_source` **(NEW)**
+- `idx_enriched_jobs_deduplicated` **(NEW)**
+- `idx_enriched_jobs_description_source` **(NEW)**
+
+---
+
+## Example Usage
+
+### Storing a Job with Full Metadata
 
 ```python
-from db_connection import insert_enriched_job
+from pipeline.db_connection import insert_raw_job, insert_enriched_job
 from datetime import date
 
-insert_enriched_job(
-    raw_job_id=123,
-    employer_name="Stripe",
-    title_display="Backend Engineer, Data",
+# Step 1: Insert raw job with original title and company
+raw_job_id = insert_raw_job(
+    source="adzuna",
+    posting_url="https://www.adzuna.com/jobs/details/...",
+    title="Senior Data Engineer",          # Original Adzuna title
+    company="Stripe",                      # Original Adzuna company
+    raw_text="Job description...",
+    source_job_id="12345678"
+)
+
+# Step 2: Insert enriched job with classification and source tracking
+enriched_job_id = insert_enriched_job(
+    raw_job_id=raw_job_id,
+    employer_name="Stripe",                # Classified company name
+    title_display="Senior Data Engineer",   # Classified title
     job_family="data",
-    city_code="lon",
-    working_arrangement="hybrid",
-    position_type="full_time",
-    posted_date=date.today(),
-    last_seen_date=date.today(),
     job_subfamily="data_engineer",
     seniority="senior",
-    # New parameters for dual pipeline
-    data_source="greenhouse",
-    description_source="greenhouse",
-    deduplicated=False,
-    original_url_secondary=None,
-    merged_from_source=None
-)
-```
-
-### Storing a Deduplicated Job
-
-```python
-# Job found in both Adzuna and Greenhouse - we chose Greenhouse
-insert_enriched_job(
-    raw_job_id=456,
-    employer_name="Figma",
-    title_display="Product Manager",
-    job_family="product",
-    city_code="nyc",
-    working_arrangement="remote",
-    position_type="full_time",
-    posted_date=date.today(),
-    last_seen_date=date.today(),
-    # New parameters for dual pipeline
-    data_source="hybrid",  # From both sources
-    description_source="greenhouse",  # Used Greenhouse's better description
-    deduplicated=True,  # This was a merge
-    original_url_secondary="https://www.adzuna.com/...",  # Original Adzuna URL
-    merged_from_source="adzuna"  # We merged Adzuna into this
-)
-```
-
-### Querying by Source in Analytics
-
-```sql
--- How many jobs came from each source?
-SELECT data_source, COUNT(*) as job_count
-FROM enriched_jobs
-GROUP BY data_source;
-
--- How many jobs were deduplicated?
-SELECT COUNT(*) as deduplicated_count
-FROM enriched_jobs
-WHERE deduplicated = TRUE;
-
--- How many jobs have full Greenhouse descriptions?
-SELECT COUNT(*) as greenhouse_desc_count
-FROM enriched_jobs
-WHERE description_source = 'greenhouse';
-
--- Classification quality by description source
-SELECT
-    description_source,
-    COUNT(*) as total_jobs,
-    ROUND(AVG(CASE WHEN is_agency = FALSE THEN 1 ELSE 0 END), 2) as non_agency_rate
-FROM enriched_jobs
-GROUP BY description_source;
-```
-
----
-
-## Backward Compatibility
-
-✓ **Fully backward compatible**
-
-- All new columns are nullable (default values provided)
-- Existing code without source parameters still works
-- Jobs stored without source info will default to 'adzuna' source
-- No breaking changes to existing functionality
-
----
-
-## Testing the Migration
-
-### Quick Verification
-
-After running the migration, verify in Supabase SQL Editor:
-
-```sql
--- Check columns exist
-SELECT
-    column_name,
-    data_type,
-    is_nullable
-FROM information_schema.columns
-WHERE table_name = 'enriched_jobs'
-AND column_name LIKE '%source%' OR column_name = 'deduplicated';
-
--- Should see 5 new columns:
--- - data_source
--- - description_source
--- - deduplicated
--- - original_url_secondary
--- - merged_from_source
-
--- Check indexes exist
-SELECT indexname
-FROM pg_indexes
-WHERE tablename = 'enriched_jobs'
-AND indexname LIKE 'idx_enriched_jobs_%source%'
-OR indexname = 'idx_enriched_jobs_deduplicated';
-```
-
-### Test Insertion
-
-After migration, test inserting a job with source tracking:
-
-```python
-from db_connection import insert_enriched_job
-from datetime import date
-
-# Test insertion with new fields
-result = insert_enriched_job(
-    raw_job_id=999,
-    employer_name="Test Company",
-    title_display="Test Job",
-    job_family="data",
     city_code="lon",
     working_arrangement="hybrid",
     position_type="full_time",
     posted_date=date.today(),
     last_seen_date=date.today(),
-    data_source="greenhouse",
-    description_source="greenhouse",
+    # Source tracking (Migration 1)
+    data_source="adzuna",
+    description_source="adzuna",
     deduplicated=False
 )
-print(f"Job inserted with ID: {result}")
+```
+
+### Querying with New Fields
+
+```sql
+-- Get original source metadata for a job
+SELECT
+    r.title AS adzuna_title,
+    r.company AS adzuna_company,
+    e.title_display AS classified_title,
+    e.employer_name AS classified_company,
+    e.data_source,
+    e.description_source
+FROM enriched_jobs e
+JOIN raw_jobs r ON e.raw_job_id = r.id
+WHERE e.city_code = 'lon'
+LIMIT 10;
+
+-- Find jobs where source title differs from classified title
+SELECT
+    r.title AS original_title,
+    e.title_display AS classified_title,
+    r.company AS original_company,
+    e.employer_name AS classified_company
+FROM enriched_jobs e
+JOIN raw_jobs r ON e.raw_job_id = r.id
+WHERE r.title IS NOT NULL
+  AND r.title != e.title_display
+LIMIT 20;
+
+-- Analyze deduplication rate by source
+SELECT
+    data_source,
+    COUNT(*) AS total_jobs,
+    SUM(CASE WHEN deduplicated THEN 1 ELSE 0 END) AS deduplicated_jobs,
+    ROUND(100.0 * SUM(CASE WHEN deduplicated THEN 1 ELSE 0 END) / COUNT(*), 2) AS dedup_rate_percent
+FROM enriched_jobs
+GROUP BY data_source;
 ```
 
 ---
 
-## Rollback Plan (If Needed)
+## Migration Scripts
 
-If you need to revert the migration:
+### Migration 1: Source Tracking
+
+**File:** `migrations/001_add_source_tracking.sql`
+**Applied:** November 21, 2025
+**Status:** Complete
+
+### Migration 2: Raw Jobs Metadata
+
+**Generator Script:** `pipeline/utilities/migrate_raw_jobs_schema.py`
+**Wrapper:** `wrapper/migrate_raw_jobs_schema.py`
+**Applied:** December 2, 2025
+**Status:** Complete and verified
+
+**Documentation:** See `docs/archive/session_2025-12-02_backfill/SCHEMA_ENHANCEMENT_SUMMARY.md` for detailed implementation notes.
+
+---
+
+## Rollback Procedures
+
+### Rollback Migration 1 (Source Tracking)
 
 ```sql
 -- Drop indexes
@@ -288,31 +300,32 @@ DROP COLUMN IF EXISTS original_url_secondary,
 DROP COLUMN IF EXISTS merged_from_source;
 ```
 
-**Note:** This would lose any source tracking data already stored. Only use in emergencies.
+### Rollback Migration 2 (Raw Jobs Metadata)
+
+```sql
+-- Drop indexes
+DROP INDEX IF EXISTS idx_raw_jobs_title;
+DROP INDEX IF EXISTS idx_raw_jobs_company;
+
+-- Drop columns
+ALTER TABLE raw_jobs
+DROP COLUMN IF EXISTS title,
+DROP COLUMN IF EXISTS company;
+```
+
+**Note:** Rollbacks will lose any data stored in these columns. Only use in emergencies.
 
 ---
 
-## Implementation Timeline
+## Next Planned Migrations
 
-1. **Before Phase 4:** Run migration (5 minutes)
-2. **During Phase 4:** Greenhouse scraping stores jobs with source tracking
-3. **Post-Phase 4:** Analytics can filter by source and measure deduplication
+No migrations currently planned. Future schema changes will be documented here.
 
 ---
 
-## Analytics Benefits
+## References
 
-With source tracking, you can now:
-
-✓ **Measure deduplication rate:** "Of X Adzuna jobs, Y% also appeared on Greenhouse"
-✓ **Understand coverage:** "60% of final dataset came from Greenhouse, 40% from Adzuna"
-✓ **Quality analysis:** "Jobs with Greenhouse descriptions have 85%+ F1 score vs 60% for Adzuna"
-✓ **Source-specific insights:** "Analyze trends separately by data source"
-✓ **Cost optimization:** "Track cost-benefit of Greenhouse vs Adzuna scraping"
-
----
-
-**Migration Status:** READY
-**Backward Compatible:** YES
-**Implementation Time:** < 5 minutes
-**No code changes required:** Uses updated db_connection.py
+- **Code:** `pipeline/db_connection.py` - Database interface implementation
+- **Specs:** `docs/schema_taxonomy.yaml` - Job classification taxonomy
+- **Architecture:** `docs/system_architecture.yaml` - System design document
+- **Implementation Notes:** `docs/archive/session_2025-12-02_backfill/SCHEMA_ENHANCEMENT_SUMMARY.md`
