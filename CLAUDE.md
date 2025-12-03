@@ -74,6 +74,39 @@ python tests/test_monzo_filtering.py
 
 **Valid cities:** `lon` (London), `nyc` (New York), `den` (Denver)
 
+## 🚨 CRITICAL: Long-Running Command Protocol
+
+**WHEN EXECUTING LONG-RUNNING COMMANDS (>5 minutes), ALWAYS:**
+
+1. **Use `run_in_background: true`** parameter in Bash tool
+2. **IMMEDIATELY capture and save the shell ID** returned
+3. **Store shell ID in a variable or comment** for later reference
+4. **Use `BashOutput` tool with the shell ID** to check progress periodically
+5. **Create a TodoWrite entry** to track the long-running task
+
+**Example:**
+```python
+# CORRECT - Running long pipeline with shell ID tracking
+bash_result = Bash(
+    command="python fetch_jobs.py --sources greenhouse",
+    run_in_background=True,
+    description="Run full Greenhouse scraper on all companies"
+)
+# SAVE THE SHELL ID: shell_id = bash_result.shell_id (example)
+# Then use: BashOutput(bash_id=shell_id) to check progress
+```
+
+**Why this matters:**
+- Without shell ID, we cannot monitor progress
+- Terminal buffers clear, losing all output history
+- No way to check status after conversation compaction
+- Hours of work can be lost with no visibility
+
+**If a long-running job is started without shell ID:**
+- ❌ Cannot check progress
+- ❌ Cannot determine if stuck or still running
+- ❌ Must kill and restart to regain control
+
 **Environment setup:**
 Create `.env` file in project root with:
 ```

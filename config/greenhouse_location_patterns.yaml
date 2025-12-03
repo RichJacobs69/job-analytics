@@ -1,5 +1,5 @@
 # Location filter patterns for Greenhouse scraper
-# Only scrape jobs in these target cities to reduce classification costs
+# Only scrape jobs in these target locations to reduce classification costs
 #
 # Format: List of location patterns to match (case-insensitive substring matching)
 #
@@ -9,6 +9,23 @@
 # Cost savings: ~89% of jobs filtered out (based on validation test)
 
 target_locations:
+  # Remote variations (added 2025-12-03)
+  - remote
+  - remote - us
+  - remote - usa
+  - remote - united states
+  - remote - americas
+  - remote - emea
+  - remote - global
+  - remote - uk
+  - remote - united kingdom
+  - remote - england
+  - remote - gb
+  - remote - great britain
+  - work from home
+  - wfh
+  - anywhere
+
   # London variations
   - london
   - uk

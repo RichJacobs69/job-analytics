@@ -98,12 +98,12 @@ def load_location_patterns(config_path: Optional[Path] = None) -> List[str]:
 
 def matches_target_location(location: str, target_patterns: List[str]) -> bool:
     """
-    Check if job location matches target cities (London, NYC, Denver).
+    Check if job location matches target locations (London, NYC, Denver, Remote).
 
     Uses case-insensitive substring matching against target patterns.
 
     Args:
-        location: Job location string (e.g., "London, UK" or "New York, NY")
+        location: Job location string (e.g., "London, UK", "New York, NY", "Remote")
         target_patterns: List of location substrings to match against
 
     Returns:
@@ -114,10 +114,9 @@ def matches_target_location(location: str, target_patterns: List[str]) -> bool:
 
     location_lower = location.lower()
 
-    # Special handling for "Remote" locations - exclude unless they specify target city
+    # Remote locations: match if "remote" is in target_patterns or if remote + target city
     if 'remote' in location_lower:
-        # "Remote - London" or "Remote UK" should match
-        # But "Remote" alone or "Remote - France" should not
+        # "Remote", "Remote - US", "Remote - London" all match if remote is in patterns
         return any(pattern.lower() in location_lower for pattern in target_patterns)
 
     # Standard substring matching
@@ -187,9 +186,12 @@ class GreenhouseScraper:
     # Greenhouse has migrated to job-boards.greenhouse.io for some companies
     # Try both domains to find the correct one
     # Some companies (MongoDB, Databricks, etc.) only work with embed URLs
+    # EU companies use job-boards.eu.greenhouse.io
     BASE_URLS = [
         "https://job-boards.greenhouse.io",                    # New domain (try first)
+        "https://job-boards.eu.greenhouse.io",                 # EU domain
         "https://boards.greenhouse.io",                        # Legacy domain (fallback)
+        "https://board.greenhouse.io",                         # Singular legacy variant
         "https://boards.greenhouse.io/embed/job_board?for=",   # Embed pattern (fallback for custom career sites)
     ]
 
@@ -272,7 +274,8 @@ class GreenhouseScraper:
         filter_titles: bool = True,
         filter_locations: bool = True,
         pattern_config_path: Optional[Path] = None,
-        location_config_path: Optional[Path] = None
+        location_config_path: Optional[Path] = None,
+        company_timeout_seconds: int = 300
     ):
         """
         Initialize scraper.
@@ -285,10 +288,12 @@ class GreenhouseScraper:
             filter_locations: Enable location-based filtering to reduce classification costs (default: True)
             pattern_config_path: Path to YAML config with title patterns (default: config/greenhouse_title_patterns.yaml)
             location_config_path: Path to YAML config with location patterns (default: config/greenhouse_location_patterns.yaml)
+            company_timeout_seconds: Maximum time (in seconds) to spend scraping a single company (default: 300 = 5 min)
         """
         self.headless = headless
         self.timeout_ms = timeout_ms
         self.max_concurrent_pages = max_concurrent_pages
+        self.company_timeout_seconds = company_timeout_seconds
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.active_pages = 0
@@ -396,7 +401,9 @@ class GreenhouseScraper:
 
                         if not listings_found:
                             logger.warning(f"[{company_slug}] No job listings found with any selector on {base_url}")
-                            continue  # Try next base URL
+                            if page:
+                                await page.close()
+                            break  # Break retry loop, try next base URL (not a transient error)
 
                         # Extract jobs (with filtering if enabled)
                         jobs = await self._extract_all_jobs(page, company_slug, max_jobs)
@@ -460,7 +467,7 @@ class GreenhouseScraper:
         jobs = []
         seen_urls = set()
         visited_page_urls = set()  # Track visited pagination pages to prevent loops
-        max_pagination_iterations = 50  # Safety limit to prevent infinite loops
+        max_pagination_iterations = 200  # Safety limit to prevent infinite loops
         pagination_iteration = 0
 
         while True:
@@ -897,22 +904,91 @@ class GreenhouseScraper:
 
     async def scrape_all(
         self,
-        company_slugs: List[str]
+        company_slugs: List[str],
+        on_company_complete=None
     ) -> Dict[str, Dict]:
         """
-        Scrape multiple companies sequentially.
+        Scrape multiple companies sequentially with timeout protection.
+
+        Supports incremental processing via callback - enables writing data
+        to database after each company instead of waiting for all to complete.
 
         Args:
             company_slugs: List of company slugs
+            on_company_complete: Optional callback function(company_slug, result)
+                                called after each company completes.
+                                Enables incremental database writes for resilience.
+                                If callback raises exception, company is marked as failed.
 
         Returns:
             Dict mapping company_slug to dict with 'jobs' and 'stats'
+
+        Example with incremental writes:
+            async def process_company(company_slug, result):
+                # Write raw jobs to DB
+                for job in result['jobs']:
+                    insert_raw_job_upsert(...)
+                # Classify and store enriched jobs
+                ...
+
+            results = await scraper.scrape_all(companies, on_company_complete=process_company)
         """
         results = {}
+        skipped_companies = []
 
         for company_slug in company_slugs:
-            results[company_slug] = await self.scrape_company(company_slug)
-            await asyncio.sleep(1)  # Rate limit between companies
+            try:
+                # Wrap scrape_company call with timeout
+                result = await asyncio.wait_for(
+                    self.scrape_company(company_slug),
+                    timeout=self.company_timeout_seconds
+                )
+                results[company_slug] = result
+
+                # INCREMENTAL PROCESSING: Call callback after company completes
+                # This enables writing to DB immediately instead of waiting for all companies
+                if on_company_complete:
+                    try:
+                        # Support both sync and async callbacks
+                        if asyncio.iscoroutinefunction(on_company_complete):
+                            await on_company_complete(company_slug, result)
+                        else:
+                            on_company_complete(company_slug, result)
+                    except Exception as callback_error:
+                        logger.error(f"[{company_slug}] Callback failed: {str(callback_error)[:100]}")
+                        # Mark company as failed if callback fails
+                        results[company_slug]['stats']['callback_error'] = str(callback_error)[:100]
+                        skipped_companies.append(f"{company_slug} (callback failed)")
+
+                await asyncio.sleep(1)  # Rate limit between companies
+
+            except asyncio.TimeoutError:
+                logger.warning(f"[{company_slug}] TIMEOUT after {self.company_timeout_seconds}s - skipping company")
+                skipped_companies.append(company_slug)
+                results[company_slug] = {
+                    'jobs': [],
+                    'stats': {
+                        'jobs_scraped': 0,
+                        'jobs_kept': 0,
+                        'jobs_filtered': 0,
+                        'error': f'TIMEOUT after {self.company_timeout_seconds}s'
+                    }
+                }
+            except Exception as e:
+                logger.error(f"[{company_slug}] Unexpected error: {str(e)[:100]} - skipping company")
+                skipped_companies.append(company_slug)
+                results[company_slug] = {
+                    'jobs': [],
+                    'stats': {
+                        'jobs_scraped': 0,
+                        'jobs_kept': 0,
+                        'jobs_filtered': 0,
+                        'error': str(e)[:100]
+                    }
+                }
+
+        if skipped_companies:
+            logger.warning(f"Skipped {len(skipped_companies)} companies due to timeout/error: {skipped_companies}")
 
         return results
 

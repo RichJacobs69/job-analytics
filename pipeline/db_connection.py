@@ -103,6 +103,114 @@ def insert_raw_job(
     return result.data[0]["id"]
 
 
+def insert_raw_job_upsert(
+    source: str,
+    posting_url: str,
+    title: str,
+    company: str,
+    raw_text: str,
+    city_code: str = 'unk',
+    source_job_id: Optional[str] = None,
+    metadata: Optional[Dict] = None,
+    full_text: Optional[str] = None,
+    text_source: Optional[str] = None
+) -> Dict:
+    """
+    Insert or update a raw job posting using UPSERT (incremental pipeline mode).
+
+    Uses hash-based deduplication to handle duplicate jobs across sources.
+    If same job already exists (same company+title+city), updates it instead
+    of creating duplicate.
+
+    **Source Priority for Descriptions:**
+    - Greenhouse descriptions (9K+ chars) preferred over Adzuna (100-200 chars)
+    - If Adzuna job exists and Greenhouse version scraped, updates with better text
+
+    Args:
+        source: Source identifier ('adzuna', 'greenhouse', 'manual')
+        posting_url: Full URL to job posting
+        title: Job title (REQUIRED for hash generation)
+        company: Company name (REQUIRED for hash generation)
+        raw_text: Job description text
+        city_code: City code for deduplication ('lon', 'nyc', 'den', or 'unk')
+        source_job_id: Optional external ID from source
+        metadata: Optional additional metadata (dict)
+        full_text: Optional full job description (for enrichment)
+        text_source: Source of full_text ('adzuna_api', 'greenhouse', etc.)
+
+    Returns:
+        Dict with:
+            - 'id': raw_job_id (existing or newly created)
+            - 'action': 'inserted' or 'updated'
+            - 'was_duplicate': boolean
+    """
+    # Generate hash for deduplication
+    job_hash = generate_job_hash(company, title, city_code)
+
+    from datetime import datetime
+
+    data = {
+        "source": source,
+        "posting_url": posting_url,
+        "raw_text": raw_text,
+        "hash": job_hash,
+        "title": title,
+        "company": company,
+        "source_job_id": source_job_id,
+        "metadata": metadata or {},
+        "last_seen": datetime.utcnow().isoformat(),  # Update on every encounter
+    }
+
+    # Add optional enrichment fields
+    if full_text is not None:
+        data["full_text"] = full_text
+    if text_source is not None:
+        data["text_source"] = text_source
+
+    try:
+        # UPSERT: Insert new or update existing based on hash
+        # on_conflict='hash' means: if hash already exists, update that row
+        result = supabase.table("raw_jobs").upsert(
+            data,
+            on_conflict='hash'
+        ).execute()
+
+        # Determine if this was insert or update
+        # Supabase doesn't return this info directly, so we infer it
+        raw_job_id = result.data[0]["id"]
+
+        # Check if this was a duplicate by comparing scraped_at timestamps
+        # If scraped_at was just now, it's new; if older, it was updated
+        from datetime import datetime, timedelta
+        job_record = result.data[0]
+        scraped_at = datetime.fromisoformat(job_record['scraped_at'].replace('Z', '+00:00'))
+        now = datetime.now(scraped_at.tzinfo)
+        was_just_created = (now - scraped_at) < timedelta(seconds=2)
+
+        return {
+            'id': raw_job_id,
+            'action': 'inserted' if was_just_created else 'updated',
+            'was_duplicate': not was_just_created
+        }
+
+    except Exception as e:
+        # If error is NOT about unique constraint, re-raise
+        if 'duplicate key' not in str(e).lower() and 'unique constraint' not in str(e).lower():
+            raise
+
+        # If we hit unique constraint despite upsert, query existing record
+        # This can happen if constraint exists but upsert config wrong
+        existing = supabase.table('raw_jobs').select('id').eq('hash', job_hash).execute()
+        if existing.data:
+            return {
+                'id': existing.data[0]['id'],
+                'action': 'skipped',
+                'was_duplicate': True
+            }
+        else:
+            raise  # Unexpected error
+
+
 def insert_enriched_job(
     raw_job_id: int,
     employer_name: str,

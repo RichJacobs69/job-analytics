@@ -106,7 +106,7 @@ fields:
       type: enum
       enum: location_city
       required: true
-      extraction_note: "Map location to one of: lon, nyc, den using aliases if needed"
+      extraction_note: "Map location to one of: lon, nyc, den, remote, unk. Use 'remote' for WFH/remote-first jobs. Use 'unk' only if location truly cannot be determined."
     
     working_arrangement: 
       type: enum
@@ -226,6 +226,24 @@ enums:
       country_code: "US"
       default_currency: "USD"
       aliases: ["Denver, CO", "DEN", "Denver Metro", "Boulder, CO", "Colorado"]
+
+    - code: remote
+      label: "Remote"
+      description: "Remote/work from home position, no specific office location"
+      region: "N/A"
+      country: "Various"
+      country_code: "N/A"
+      default_currency: null
+      aliases: ["Remote", "WFH", "Work from Home", "Anywhere", "Remote - US", "Remote - UK", "Remote - EMEA", "Remote - Global"]
+
+    - code: unk
+      label: "Unknown"
+      description: "Location could not be determined from job posting"
+      region: "N/A"
+      country: "N/A"
+      country_code: "N/A"
+      default_currency: null
+      aliases: []
 
   working_arrangement:
     - {code: onsite, label: "Onsite", description: "Must work from office location full-time"}

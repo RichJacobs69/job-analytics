@@ -115,7 +115,7 @@ Return JSON with this EXACT structure:
     "experience_range": "string or null (ONLY if explicitly stated, e.g. '5-7 years')"
   }},
   "location": {{
-    "city_code": "lon|nyc|den (required - map using context)",
+    "city_code": "lon|nyc|den|remote|unk (required - map using context, use 'remote' for WFH/remote-first jobs, 'unk' only if truly unknown)",
     "working_arrangement": "onsite|hybrid|remote|flexible (required - default: onsite if not stated)"
   }},
   "compensation": {{
@@ -136,6 +136,8 @@ Return JSON with this EXACT structure:
 - London, UK / London, England / Greater London → lon
 - New York, NY / NYC / New York City / Manhattan / Brooklyn → nyc  
 - Denver, CO / Denver Metro / Boulder, CO → den
+- Remote / Work from Home / WFH / Remote-first / Anywhere → remote
+- If location cannot be determined → unk
 
 # WORKING ARRANGEMENT GUIDANCE
 - "Remote or hybrid" → flexible

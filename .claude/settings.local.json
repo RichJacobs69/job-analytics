@@ -1,28 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell:*)",
-      "Bash(git rm:*)",
       "Bash(python fetch_jobs.py:*)",
-      "Bash(python test_greenhouse_scraper_simple.py:*)",
-      "Bash(python -m tests.test_greenhouse_scraper_simple:*)",
-      "Bash(python -m pytest:*)",
-      "Bash(pip install:*)",
-      "Bash(python test_monzo_filtering.py:*)",
-      "Bash(find:*)",
-      "Bash(for file in \"docs/README.md\" \"docs/testing/greenhouse_title_filter_implementation.md\" \"docs/schema_taxonomy.yaml\" \"docs/marketplace_questions.yaml\" \"docs/archive/FIXES_APPLIED_2025-11-24.md\" \"docs/product_brief.yaml\" \"docs/system_architecture.yaml\" \"tests/README_TITLE_FILTER_TESTS.md\")",
-      "Bash(do if [ -f \"$file\" ])",
-      "Bash(then echo \"[OK] $file\")",
-      "Bash(else echo \"[MISSING] $file\")",
-      "Bash(fi)",
-      "Bash(done)",
       "Bash(python:*)",
-      "Bash(git add:*)",
-      "Bash(tee:*)",
-      "Bash(timeout:*)",
-      "Bash(tasklist:*)",
+      "Bash(powershell:*)",
       "WebFetch(domain:job-boards.greenhouse.io)",
-      "Bash(sort:*)"
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(dir \"C:\\Cursor Projects\\job-analytics\\output\" /s /b /O:D)",
+      "Bash(dir \"C:\\Cursor Projects\\job-analytics\\prod_run_plan_output\" /s /b /O:D)",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 30)",
+      "Bash(ping:*)",
+      "Bash(timeout /t 10)"
     ],
     "deny": [],
     "ask": []
