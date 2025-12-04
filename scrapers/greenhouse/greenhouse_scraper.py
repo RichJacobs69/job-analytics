@@ -700,8 +700,17 @@ class GreenhouseScraper:
             logger.debug(f"[{company_slug}] Extracted job: {title} -> {job_url}")
 
             # Extract job ID from URL
-            job_id_match = re.search(r'/jobs/(\d+)', job_url)
-            job_id = job_id_match.group(1) if job_id_match else None
+            # Patterns: /jobs/listing/{slug}/7306915 (Stripe) or /jobs/7306915 (standard Greenhouse)
+            # Try to find a trailing numeric ID at the end of the URL path
+            job_id = None
+            # First try: numeric ID at end of URL path (handles /listing/slug/7306915)
+            job_id_match = re.search(r'/(\d{6,})(?:\?|$)', job_url)  # 6+ digit ID at end
+            if job_id_match:
+                job_id = job_id_match.group(1)
+            else:
+                # Fallback: standard /jobs/ID pattern
+                job_id_match = re.search(r'/jobs/(\d+)', job_url)
+                job_id = job_id_match.group(1) if job_id_match else None
 
             # Try to get location from within the element using proper selectors
             location = "Unspecified"
