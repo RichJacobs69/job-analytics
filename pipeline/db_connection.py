@@ -118,21 +118,19 @@ def insert_raw_job_upsert(
     """
     Insert or update a raw job posting using UPSERT (incremental pipeline mode).
 
-    Uses hash-based deduplication to handle duplicate jobs across sources.
-    If same job already exists (same company+title+city), updates it instead
-    of creating duplicate.
-
-    **Source Priority for Descriptions:**
-    - Greenhouse descriptions (9K+ chars) preferred over Adzuna (100-200 chars)
-    - If Adzuna job exists and Greenhouse version scraped, updates with better text
+    Uses posting_url as the unique identifier for upserts. This handles the case
+    where the same job URL appears in different search results with slightly
+    different metadata (title/company variations).
+    
+    Also stores a hash (company+title+city) for potential cross-source deduplication.
 
     Args:
         source: Source identifier ('adzuna', 'greenhouse', 'manual')
-        posting_url: Full URL to job posting
-        title: Job title (REQUIRED for hash generation)
-        company: Company name (REQUIRED for hash generation)
+        posting_url: Full URL to job posting (UNIQUE - used for upsert conflict)
+        title: Job title
+        company: Company name
         raw_text: Job description text
-        city_code: City code for deduplication ('lon', 'nyc', 'den', or 'unk')
+        city_code: City code ('lon', 'nyc', 'den', or 'unk')
         source_job_id: Optional external ID from source
         metadata: Optional additional metadata (dict)
         full_text: Optional full job description (for enrichment)
@@ -144,7 +142,7 @@ def insert_raw_job_upsert(
             - 'action': 'inserted' or 'updated'
             - 'was_duplicate': boolean
     """
-    # Generate hash for deduplication
+    # Generate hash for cross-source deduplication (stored but not used for upsert)
     job_hash = generate_job_hash(company, title, city_code)
 
     from datetime import datetime
@@ -168,11 +166,12 @@ def insert_raw_job_upsert(
         data["text_source"] = text_source
 
     try:
-        # UPSERT: Insert new or update existing based on hash
-        # on_conflict='hash' means: if hash already exists, update that row
+        # UPSERT: Insert new or update existing based on posting_url
+        # on_conflict='posting_url' means: if URL already exists, update that row
+        # This handles same job appearing with different metadata variations
         result = supabase.table("raw_jobs").upsert(
             data,
-            on_conflict='hash'
+            on_conflict='posting_url'
         ).execute()
 
         # Determine if this was insert or update
@@ -199,8 +198,8 @@ def insert_raw_job_upsert(
             raise
 
         # If we hit unique constraint despite upsert, query existing record
-        # This can happen if constraint exists but upsert config wrong
-        existing = supabase.table('raw_jobs').select('id').eq('hash', job_hash).execute()
+        # This shouldn't happen now that we use posting_url, but keep as fallback
+        existing = supabase.table('raw_jobs').select('id').eq('posting_url', posting_url).execute()
         if existing.data:
             return {
                 'id': existing.data[0]['id'],
