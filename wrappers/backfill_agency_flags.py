@@ -17,8 +17,14 @@ Arguments:
 Note: This is a wrapper around pipeline/utilities/backfill_agency_flags.py
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to Python path for module imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 if __name__ == "__main__":
-    import sys
     from pipeline.utilities.backfill_agency_flags import backfill_agency_flags
 
     import argparse
