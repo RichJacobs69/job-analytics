@@ -642,8 +642,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dic
             if was_duplicate:
                 stats['jobs_duplicate'] += 1
                 stats['cost_saved_duplicates'] += 0.00388  # Cost of one classification
-                if i % 25 == 0 or i == len(jobs):
-                    logger.info(f"  [{i}/{len(jobs)}] Progress: {stats['jobs_duplicate']} duplicates, {stats['jobs_written_enriched']} new")
+                logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {title[:50]}... (skipped)")
                 continue
             
             stats['jobs_written_raw'] += 1
