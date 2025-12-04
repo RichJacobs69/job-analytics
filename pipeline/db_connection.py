@@ -194,11 +194,15 @@ def insert_raw_job_upsert(
 
     except Exception as e:
         # If error is NOT about unique constraint, re-raise
-        if 'duplicate key' not in str(e).lower() and 'unique constraint' not in str(e).lower():
+        error_str = str(e).lower()
+        if 'duplicate key' not in error_str and 'unique constraint' not in error_str and '23505' not in str(e):
             raise
 
-        # If we hit unique constraint despite upsert, query existing record
-        # This shouldn't happen now that we use posting_url, but keep as fallback
+        # Handle two types of duplicate conflicts:
+        # 1. Same posting_url (shouldn't happen with on_conflict='posting_url')
+        # 2. Same hash but different URL (same job via different aggregator URLs)
+        
+        # First try to find by posting_url
         existing = supabase.table('raw_jobs').select('id').eq('posting_url', posting_url).execute()
         if existing.data:
             return {
@@ -206,8 +210,18 @@ def insert_raw_job_upsert(
                 'action': 'skipped',
                 'was_duplicate': True
             }
-        else:
-            raise  # Unexpected error
+        
+        # If not found by URL, it's a hash conflict (same company+title+city, different URL)
+        # This means it's the same job posted via a different aggregator URL - treat as duplicate
+        existing_by_hash = supabase.table('raw_jobs').select('id').eq('hash', job_hash).execute()
+        if existing_by_hash.data:
+            return {
+                'id': existing_by_hash.data[0]['id'],
+                'action': 'skipped',
+                'was_duplicate': True
+            }
+        
+        raise  # Unexpected error if neither found
 
 
 def insert_enriched_job(
