@@ -7,5 +7,7 @@
 -- We now rely solely on posting_url for deduplication.
 -- The hash column is still stored for potential cross-source deduplication queries.
 
+-- Try both possible constraint names to ensure it's dropped
 ALTER TABLE raw_jobs DROP CONSTRAINT IF EXISTS raw_jobs_hash_key;
+ALTER TABLE raw_jobs DROP CONSTRAINT IF EXISTS raw_jobs_hash_unique;
 

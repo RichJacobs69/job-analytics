@@ -118,20 +118,20 @@ def insert_raw_job_upsert(
     """
     Insert or update a raw job posting using UPSERT (incremental pipeline mode).
 
-    Uses posting_url as the unique identifier for upserts. This handles the case
-    where the same job URL appears in different search results with slightly
-    different metadata (title/company variations).
+    Uses (source, source_job_id) as the unique identifier for upserts when source_job_id
+    is provided. This correctly handles Adzuna URLs that contain session tracking 
+    parameters (same job appears with different URLs but same source_job_id).
     
     Also stores a hash (company+title+city) for potential cross-source deduplication.
 
     Args:
         source: Source identifier ('adzuna', 'greenhouse', 'manual')
-        posting_url: Full URL to job posting (UNIQUE - used for upsert conflict)
+        posting_url: Full URL to job posting (stored but not used for deduplication)
         title: Job title
         company: Company name
         raw_text: Job description text
         city_code: City code ('lon', 'nyc', 'den', or 'unk')
-        source_job_id: Optional external ID from source
+        source_job_id: External ID from source (REQUIRED for deduplication)
         metadata: Optional additional metadata (dict)
         full_text: Optional full job description (for enrichment)
         text_source: Source of full_text ('adzuna_api', 'greenhouse', etc.)
@@ -166,13 +166,33 @@ def insert_raw_job_upsert(
         data["text_source"] = text_source
 
     try:
-        # UPSERT: Insert new or update existing based on posting_url
-        # on_conflict='posting_url' means: if URL already exists, update that row
-        # This handles same job appearing with different metadata variations
-        result = supabase.table("raw_jobs").upsert(
-            data,
-            on_conflict='posting_url'
-        ).execute()
+        # Check if job already exists by (source, source_job_id)
+        # This handles Adzuna URLs that change session parameters
+        if source_job_id:
+            existing = supabase.table("raw_jobs").select("id, scraped_at").eq(
+                "source", source
+            ).eq("source_job_id", source_job_id).execute()
+            
+            if existing.data:
+                # Job exists - update it
+                raw_job_id = existing.data[0]["id"]
+                supabase.table("raw_jobs").update({
+                    "last_seen": datetime.utcnow().isoformat(),
+                    "posting_url": posting_url,  # Update URL in case it changed
+                    "raw_text": raw_text,
+                    "title": title,
+                    "company": company,
+                    "metadata": metadata or {},
+                }).eq("id", raw_job_id).execute()
+                
+                return {
+                    "id": raw_job_id,
+                    "action": "updated",
+                    "was_duplicate": True
+                }
+        
+        # No existing job found or no source_job_id - insert new
+        result = supabase.table("raw_jobs").insert(data).execute()
 
         # Determine if this was insert or update
         # Supabase doesn't return this info directly, so we infer it
@@ -198,14 +218,17 @@ def insert_raw_job_upsert(
         if 'duplicate key' not in error_str and 'unique constraint' not in error_str and '23505' not in str(e):
             raise
 
-        # posting_url conflict - shouldn't happen with on_conflict='posting_url', but handle as fallback
-        existing = supabase.table('raw_jobs').select('id').eq('posting_url', posting_url).execute()
-        if existing.data:
-            return {
-                'id': existing.data[0]['id'],
-                'action': 'skipped',
-                'was_duplicate': True
-            }
+        # Unique constraint conflict - try to find existing job by source_job_id first
+        if source_job_id:
+            existing = supabase.table('raw_jobs').select('id').eq(
+                'source', source
+            ).eq('source_job_id', source_job_id).execute()
+            if existing.data:
+                return {
+                    'id': existing.data[0]['id'],
+                    'action': 'skipped',
+                    'was_duplicate': True
+                }
         
         raise  # Unexpected error
 
