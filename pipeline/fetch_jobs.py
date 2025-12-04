@@ -53,13 +53,29 @@ logger = logging.getLogger(__name__)
 
 
 async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
-    """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects"""
+    """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects
+    
+    Now supports pagination with rate limiting to fetch more than 50 jobs per query.
+    Rate limited to ~24 calls/minute to stay within Adzuna's 25 calls/minute limit.
+    """
     try:
-        from scrapers.adzuna.fetch_adzuna_jobs import fetch_adzuna_jobs, DEFAULT_SEARCH_QUERIES
+        from scrapers.adzuna.fetch_adzuna_jobs import (
+            fetch_adzuna_jobs_paginated, 
+            DEFAULT_SEARCH_QUERIES,
+            calculate_api_calls
+        )
         from pipeline.unified_job_ingester import UnifiedJob, DataSource
 
         logger.info(f"Fetching jobs from Adzuna API for {city}")
-        logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with {max_jobs_per_query} jobs per query")
+        logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with up to {max_jobs_per_query} jobs per query")
+        
+        # Show API call estimate
+        estimate = calculate_api_calls(
+            num_queries=len(DEFAULT_SEARCH_QUERIES),
+            num_cities=1,  # This function handles one city at a time
+            results_per_query=max_jobs_per_query
+        )
+        logger.info(f"  API calls needed: {estimate['total_api_calls']} (ETA: ~{estimate['estimated_time_minutes']} min)")
 
         all_unified_jobs = []
 
@@ -67,11 +83,12 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
         for query in DEFAULT_SEARCH_QUERIES:
             logger.info(f"  Searching: '{query}' in {city}")
 
-            # Fetch raw dicts from Adzuna for this query
-            raw_jobs = fetch_adzuna_jobs(
+            # Fetch raw dicts from Adzuna with pagination and rate limiting
+            raw_jobs = fetch_adzuna_jobs_paginated(
                 city_code=city,
                 search_query=query,
-                results_per_page=max_jobs_per_query
+                max_results=max_jobs_per_query,
+                verbose=True
             )
 
             logger.info(f"    Found {len(raw_jobs)} jobs for '{query}'")
