@@ -79,6 +79,14 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
             # Convert dicts to UnifiedJob objects
             for job_dict in raw_jobs:
                 try:
+                    # Extract Adzuna-specific metadata for classifier context
+                    category_info = job_dict.get("category", {})
+                    category_label = category_info.get("label") if isinstance(category_info, dict) else None
+                    
+                    salary_min = job_dict.get("salary_min")
+                    salary_max = job_dict.get("salary_max")
+                    salary_predicted = job_dict.get("salary_is_predicted") == "1"
+                    
                     unified_job = UnifiedJob(
                         company=job_dict.get("company", {}).get("display_name", "Unknown Company"),
                         title=job_dict.get("title", "Unknown Title"),
@@ -89,7 +97,12 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
                         job_type=job_dict.get("contract_type"),
                         source=DataSource.ADZUNA,
                         description_source=DataSource.ADZUNA,
-                        adzuna_description=job_dict.get("description", "")
+                        adzuna_description=job_dict.get("description", ""),
+                        # New: Adzuna metadata for classifier
+                        adzuna_category=category_label,
+                        adzuna_salary_min=salary_min,
+                        adzuna_salary_max=salary_max,
+                        adzuna_salary_predicted=salary_predicted
                     )
                     all_unified_jobs.append(unified_job)
                 except Exception as e:
@@ -654,14 +667,29 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dic
                 logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
                 continue
             
-            # Step 3: Check description length
-            if not description or len(description.strip()) < 50:
-                logger.warning(f"  [{i}/{len(jobs)}] Skipping - insufficient description (<50 chars)")
+            # Step 3: Check description length (relaxed - we now have structured input)
+            if not description or len(description.strip()) < 20:
+                logger.warning(f"  [{i}/{len(jobs)}] Skipping - insufficient description (<20 chars)")
                 continue
             
-            # Step 4: Classify the job
+            # Step 4: Classify the job with STRUCTURED INPUT
+            # Pass title, company, category, and other metadata to help the classifier
             try:
-                classification = classify_job_with_claude(description)
+                # Build structured input for classifier
+                structured_input = {
+                    'title': title,
+                    'company': company,
+                    'description': description,
+                    'location': job.location if hasattr(job, 'location') else None,
+                    'category': job.adzuna_category if hasattr(job, 'adzuna_category') else None,
+                    'salary_min': job.adzuna_salary_min if hasattr(job, 'adzuna_salary_min') else None,
+                    'salary_max': job.adzuna_salary_max if hasattr(job, 'adzuna_salary_max') else None,
+                }
+                
+                classification = classify_job_with_claude(
+                    job_text=description,  # Fallback
+                    structured_input=structured_input
+                )
                 stats['jobs_classified'] += 1
                 
                 # Track classification cost

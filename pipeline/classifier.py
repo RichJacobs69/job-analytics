@@ -30,9 +30,20 @@ with open('docs/schema_taxonomy.yaml', 'r') as f:
 # Prompt Building
 # ============================================
 
-def build_classification_prompt(job_text: str) -> str:
+def build_classification_prompt(job_text: str, structured_input: dict = None) -> str:
     """
     Build classification prompt for Claude.
+    
+    Args:
+        job_text: Raw job description text (for backwards compatibility)
+        structured_input: Optional dict with structured fields:
+            - title: Job title (from API)
+            - company: Company name (from API)
+            - category: Job category (from Adzuna API, e.g., "IT Jobs")
+            - location: Location string
+            - salary_min: Minimum salary (if available)
+            - salary_max: Maximum salary (if available)
+            - description: Job description text
     
     NOTE: Agency detection is NOT included here - it's handled by Python
     pattern matching after Claude classification completes.
@@ -58,14 +69,59 @@ def build_classification_prompt(job_text: str) -> str:
     seniority_guidance = taxonomy['classification_guidance']['seniority']
     subfamily_guidance = taxonomy['classification_guidance']['job_subfamily']
     
+    # Build the job input section based on whether we have structured input
+    if structured_input:
+        job_input_section = "# JOB TO CLASSIFY\n\n"
+        job_input_section += f"**Job Title:** {structured_input.get('title', 'Unknown')}\n"
+        job_input_section += f"**Company:** {structured_input.get('company', 'Unknown')}\n"
+        
+        if structured_input.get('category'):
+            job_input_section += f"**Category:** {structured_input.get('category')}\n"
+        
+        if structured_input.get('location'):
+            job_input_section += f"**Location:** {structured_input.get('location')}\n"
+        
+        if structured_input.get('salary_min') or structured_input.get('salary_max'):
+            salary_min = structured_input.get('salary_min', 'N/A')
+            salary_max = structured_input.get('salary_max', 'N/A')
+            job_input_section += f"**Salary Range:** {salary_min} - {salary_max}\n"
+        
+        job_input_section += f"\n**Job Description:**\n{structured_input.get('description', job_text)}"
+    else:
+        job_input_section = f"# JOB POSTING TO CLASSIFY\n\n{job_text}"
+    
     prompt = f"""You are a precise job posting classifier. Analyze the job posting below and return structured JSON.
 
 # CRITICAL INSTRUCTIONS
-1. Extract ONLY information explicitly stated in the posting - DO NOT infer or guess
+1. **JOB TITLE IS THE PRIMARY SIGNAL** for job_family classification - use it first
 2. For seniority: PRIORITIZE TITLE over years of experience
 3. For skills: Extract ONLY skills explicitly mentioned by name (no inference from context)
 4. Return valid JSON matching the exact schema provided below
-5. Use null for any field where information is not explicitly stated
+5. Use null for any field where information is not explicitly stated in title OR description
+
+# JOB FAMILY CLASSIFICATION (MOST IMPORTANT)
+
+**How to classify job_family - USE THE JOB TITLE FIRST:**
+
+→ **product** - Classify as 'product' if the job title contains:
+  - "Product Manager", "PM", "Product Owner", "PO"
+  - "Product Lead", "Head of Product", "VP Product", "CPO"
+  - "Product Director", "Group Product Manager", "GPM"
+  - "Technical Product Manager", "TPM"
+  - "Growth PM", "Platform PM", "AI/ML PM"
+  
+→ **data** - Classify as 'data' if the job title contains:
+  - "Data Scientist", "Data Engineer", "Data Analyst"
+  - "Machine Learning Engineer", "ML Engineer", "MLE"
+  - "Analytics Engineer", "Data Architect"
+  - "Research Scientist", "AI Researcher"
+  - "Product Analyst" (when focused on data/analytics)
+  
+→ **out_of_scope** - Classify as 'out_of_scope' ONLY if:
+  - Title is clearly NOT product or data (e.g., "Software Engineer", "Marketing Manager", "Sales Rep")
+  - Title contains: "Product Marketing", "Product Designer", "Product Support" (these are NOT PM roles)
+
+**IMPORTANT:** When in doubt between product/data vs out_of_scope, lean towards product or data if the title suggests it. The title is authoritative.
 
 # SENIORITY CLASSIFICATION RULES
 
@@ -101,13 +157,13 @@ Return JSON with this EXACT structure:
 
 {{
   "employer": {{
-    "name": "string (required - exact company name)",
+    "name": "string (required - exact company name from input)",
     "department": "product|data|null (only if explicitly stated)",
     "company_size_estimate": "startup|scaleup|enterprise|null (infer from context if clear)"
   }},
   "role": {{
-    "title_display": "string (required - exact title from posting)",
-    "job_family": "product|data|out_of_scope (required - MUST classify)",
+    "title_display": "string (required - exact title from input)",
+    "job_family": "product|data|out_of_scope (required - USE TITLE TO DECIDE)",
     "job_subfamily": "string from subfamilies above (null only if out_of_scope)",
     "seniority": "junior|mid|senior|staff_principal|director_plus|null",
     "track": "ic|management|null",
@@ -151,9 +207,7 @@ Return JSON with this EXACT structure:
 - If skill family unclear, leave family_code as null
 - DO NOT infer skills from job requirements (e.g., don't add "Python" because it's a data job)
 
-# JOB POSTING TO CLASSIFY
-
-{job_text}
+{job_input_section}
 
 Return ONLY valid JSON with no markdown formatting or explanations."""
 
@@ -164,7 +218,7 @@ Return ONLY valid JSON with no markdown formatting or explanations."""
 # Classification Function
 # ============================================
 
-def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
+def classify_job_with_claude(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """
     Classify a job posting using Claude 3.5 Haiku.
     
@@ -172,14 +226,22 @@ def classify_job_with_claude(job_text: str, verbose: bool = False) -> Dict:
     Those are added by Python pattern matching after this function returns.
     
     Args:
-        job_text: Full job posting text
+        job_text: Full job posting text (used if structured_input not provided)
         verbose: If True, print prompt and raw response
+        structured_input: Optional dict with structured fields from API:
+            - title: Job title (CRITICAL for job_family classification)
+            - company: Company name
+            - category: Job category (e.g., "IT Jobs" from Adzuna)
+            - location: Location string
+            - salary_min: Minimum salary
+            - salary_max: Maximum salary
+            - description: Job description text
     
     Returns:
         Dictionary with classified job data matching schema
         (is_agency and agency_confidence will be null - added later by pattern matching)
     """
-    prompt = build_classification_prompt(job_text)
+    prompt = build_classification_prompt(job_text, structured_input=structured_input)
     
     if verbose:
         print("\n" + "="*60)

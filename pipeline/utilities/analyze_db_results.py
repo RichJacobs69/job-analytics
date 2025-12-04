@@ -1,6 +1,6 @@
 """
 Analyze database results for today's pipeline run and overall totals.
-Shows breakdown by city and job family.
+Shows comprehensive breakdown by all dimensions in enriched_jobs table.
 """
 
 import sys
@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from collections import defaultdict
+import pandas as pd
+from tabulate import tabulate
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +20,137 @@ load_dotenv()
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
+
+def analyze_enriched_jobs_dimensions():
+    """Analyze all dimensions in enriched_jobs table and create tabulated breakdowns."""
+
+    print("\n" + "=" * 100)
+    print("COMPREHENSIVE ENRICHED JOBS DIMENSION ANALYSIS")
+    print("=" * 100)
+
+    # Get all enriched jobs data using pagination
+    print("Fetching ALL enriched jobs data using pagination...")
+    all_data = []
+    page_size = 1000
+    offset = 0
+
+    while True:
+        jobs_page = supabase.table("enriched_jobs").select(
+            "city_code, job_family, job_subfamily, seniority, working_arrangement, "
+            "data_source, description_source, deduplicated"
+        ).range(offset, offset + page_size - 1).execute()
+
+        if not jobs_page.data:
+            break
+
+        all_data.extend(jobs_page.data)
+        offset += page_size
+
+        print(f"Fetched {len(all_data)} records so far...")
+
+        # Safety check to prevent infinite loops
+        if len(jobs_page.data) < page_size:
+            break
+
+    print(f"Total records fetched: {len(all_data)}")
+    all_jobs = type('obj', (object,), {'data': all_data})
+
+    if not all_jobs.data:
+        print("No enriched jobs data found!")
+        return
+
+    # Convert to DataFrame for easier analysis
+    df = pd.DataFrame(all_jobs.data)
+    total_jobs = len(df)
+
+    print(f"\nTotal enriched jobs analyzed: {total_jobs:,}")
+    print("\n" + "-" * 100)
+
+    # Define dimensions to analyze
+    dimensions = [
+        ('city_code', 'City'),
+        ('job_family', 'Job Family'),
+        ('job_subfamily', 'Job Subfamily'),
+        ('seniority', 'Seniority Level'),
+        ('working_arrangement', 'Working Arrangement'),
+        ('data_source', 'Data Source'),
+        ('description_source', 'Description Source'),
+        ('deduplicated', 'Deduplicated')
+    ]
+
+    # Analyze each dimension
+    for column, display_name in dimensions:
+        if column not in df.columns:
+            print(f"\n⚠️  Warning: Column '{column}' not found in data")
+            continue
+
+        print(f"\n{chr(9654)} {display_name} Breakdown")
+        print("-" * 50)
+
+        # Get value counts
+        counts = df[column].value_counts(dropna=False)
+        percentages = (counts / total_jobs * 100).round(2)
+
+        # Create table data
+        table_data = []
+        for value, count in counts.items():
+            # Handle None/NaN values
+            display_value = str(value) if pd.notna(value) else 'NULL/None'
+            table_data.append([
+                display_value,
+                f"{count:,}",
+                f"{percentages[value]:.2f}%"
+            ])
+
+        # Print tabulated results
+        headers = ['Value', 'Count', 'Percentage']
+        print(tabulate(table_data, headers=headers, tablefmt='grid'))
+
+        # Summary stats
+        unique_values = counts.count()
+        most_common = counts.index[0] if len(counts) > 0 else 'N/A'
+        most_common_count = counts.iloc[0] if len(counts) > 0 else 0
+
+        print(f"\nSummary: {unique_values} unique values, most common: '{most_common}' ({most_common_count:,} jobs)")
+
+    print("\n" + "=" * 100)
+    print("CROSS-DIMENSION ANALYSIS")
+    print("=" * 100)
+
+    # Cross-analysis: Job Family by City
+    print(f"\n{chr(9654)} Job Family by City")
+    print("-" * 30)
+    cross_city_family = pd.crosstab(df['city_code'], df['job_family'], margins=True)
+    print(tabulate(cross_city_family, headers='keys', tablefmt='grid'))
+
+    # Cross-analysis: Seniority by Job Family
+    print(f"\n{chr(9654)} Seniority by Job Family")
+    print("-" * 30)
+    cross_family_seniority = pd.crosstab(df['job_family'], df['seniority'], margins=True)
+    print(tabulate(cross_family_seniority, headers='keys', tablefmt='grid'))
+
+    # Cross-analysis: Working Arrangement by City
+    print(f"\n{chr(9654)} Working Arrangement by City")
+    print("-" * 35)
+    cross_city_arrangement = pd.crosstab(df['city_code'], df['working_arrangement'], margins=True)
+    print(tabulate(cross_city_arrangement, headers='keys', tablefmt='grid'))
+
+    # Data Source Analysis
+    print(f"\n{chr(9654)} Data Source Quality Analysis")
+    print("-" * 35)
+
+    # Deduplication analysis
+    dedup_by_source = pd.crosstab(df['data_source'], df['deduplicated'], margins=True)
+    print("Deduplication by Data Source:")
+    print(tabulate(dedup_by_source, headers='keys', tablefmt='grid'))
+
+    # Description source analysis
+    if 'description_source' in df.columns:
+        desc_source_by_data_source = pd.crosstab(df['data_source'], df['description_source'], margins=True)
+        print("\nDescription Source by Data Source:")
+        print(tabulate(desc_source_by_data_source, headers='keys', tablefmt='grid'))
+
+    print("\n" + "=" * 100)
 
 def analyze_database():
     """Analyze database for today's run and overall totals."""
@@ -168,6 +301,9 @@ def analyze_database():
         print(f"  Overall classification rate: {overall_rate:.1f}%")
 
     print("\n" + "=" * 80)
+
+    # Run comprehensive dimension analysis
+    analyze_enriched_jobs_dimensions()
 
 if __name__ == "__main__":
     analyze_database()
