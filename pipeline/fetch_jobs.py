@@ -558,6 +558,210 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     return stats
 
 
+async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dict:
+    """
+    Process Adzuna jobs incrementally with upsert pattern.
+    
+    Follows the same pattern as process_greenhouse_incremental():
+    1. Fetch jobs from Adzuna API
+    2. For each job: upsert to raw_jobs (updates last_seen for existing)
+    3. If new job: classify with Claude
+    4. Write to enriched_jobs
+    
+    This avoids paying for classification of jobs that already exist in the database.
+    
+    Args:
+        city_code: City to fetch jobs for (lon, nyc, den)
+        max_jobs: Maximum jobs to fetch
+        
+    Returns:
+        Stats dictionary with processing metrics
+    """
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.classifier import classify_job_with_claude
+    from pipeline.agency_detection import is_agency_job, validate_agency_classification
+    from pipeline.unified_job_ingester import UnifiedJob, DataSource
+    from datetime import date
+    import time
+    
+    logger.info(f"\n{'='*80}")
+    logger.info(f"ADZUNA INCREMENTAL PIPELINE - {city_code.upper()}")
+    logger.info(f"{'='*80}\n")
+    
+    # Initialize stats
+    stats = {
+        'start_time': time.time(),
+        'jobs_fetched': 0,
+        'jobs_written_raw': 0,
+        'jobs_duplicate': 0,
+        'jobs_classified': 0,
+        'jobs_written_enriched': 0,
+        'jobs_agency_filtered': 0,
+        'cost_classification': 0.0,
+        'cost_saved_duplicates': 0.0,
+    }
+    
+    # Fetch jobs from Adzuna
+    jobs = await fetch_from_adzuna(city_code, max_jobs)
+    
+    if not jobs:
+        logger.warning(f"No Adzuna jobs fetched for {city_code}")
+        return stats
+    
+    stats['jobs_fetched'] = len(jobs)
+    logger.info(f"Fetched {len(jobs)} jobs from Adzuna for {city_code.upper()}")
+    logger.info(f"{'-'*80}")
+    
+    # Process each job incrementally
+    for i, job in enumerate(jobs, 1):
+        try:
+            # Extract job data
+            company = job.company
+            title = job.title
+            description = job.description
+            url = job.url
+            job_id = job.job_id
+            source = job.source.value if isinstance(job.source, DataSource) else str(job.source)
+            
+            # Step 1: Upsert to raw_jobs (updates last_seen for existing jobs)
+            upsert_result = insert_raw_job_upsert(
+                source='adzuna',
+                posting_url=url,
+                title=title,
+                company=company,
+                raw_text=description,
+                city_code=city_code,
+                source_job_id=job_id,
+                metadata={'adzuna_city': city_code}
+            )
+            
+            raw_job_id = upsert_result['id']
+            action = upsert_result['action']
+            was_duplicate = upsert_result['was_duplicate']
+            
+            if was_duplicate:
+                stats['jobs_duplicate'] += 1
+                stats['cost_saved_duplicates'] += 0.00388  # Cost of one classification
+                if i % 25 == 0 or i == len(jobs):
+                    logger.info(f"  [{i}/{len(jobs)}] Progress: {stats['jobs_duplicate']} duplicates, {stats['jobs_written_enriched']} new")
+                continue
+            
+            stats['jobs_written_raw'] += 1
+            logger.info(f"  [{i}/{len(jobs)}] NEW: {title[:50]}... (classifying...)")
+            
+            # Step 2: Hard filter - check if agency before classification
+            if is_agency_job(company):
+                stats['jobs_agency_filtered'] += 1
+                logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
+                continue
+            
+            # Step 3: Check description length
+            if not description or len(description.strip()) < 50:
+                logger.warning(f"  [{i}/{len(jobs)}] Skipping - insufficient description (<50 chars)")
+                continue
+            
+            # Step 4: Classify the job
+            try:
+                classification = classify_job_with_claude(description)
+                stats['jobs_classified'] += 1
+                
+                # Track classification cost
+                if '_cost_data' in classification and 'cost_usd' in classification['_cost_data']:
+                    cost = classification['_cost_data']['cost_usd']
+                    stats['cost_classification'] += cost
+                    
+            except Exception as e:
+                logger.warning(f"  [{i}/{len(jobs)}] Classification FAILED: {str(e)[:100]}")
+                continue
+            
+            # Step 5: Soft agency detection
+            is_agency, agency_conf = validate_agency_classification(
+                employer_name=company,
+                claude_is_agency=None,
+                claude_confidence=None,
+                job_description=description
+            )
+            
+            if is_agency:
+                stats['jobs_agency_filtered'] += 1
+                logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
+            
+            # Inject agency flags
+            if 'employer' not in classification:
+                classification['employer'] = {}
+            classification['employer']['is_agency'] = is_agency
+            classification['employer']['agency_confidence'] = agency_conf
+            
+            # Step 6: Write to enriched_jobs
+            role = classification.get('role', {})
+            location = classification.get('location', {})
+            compensation = classification.get('compensation', {})
+            employer = classification.get('employer', {})
+            
+            # Use extracted city_code, fall back to source city
+            extracted_city = location.get('city_code')
+            final_city = extracted_city if extracted_city and extracted_city != 'unk' else city_code
+            
+            enriched_job_id = insert_enriched_job(
+                raw_job_id=raw_job_id,
+                employer_name=company,
+                title_display=title,
+                job_family=role.get('job_family') or 'out_of_scope',
+                city_code=final_city,
+                working_arrangement=location.get('working_arrangement') or 'onsite',
+                position_type=role.get('position_type') or 'full_time',
+                posted_date=date.today(),
+                last_seen_date=date.today(),
+                job_subfamily=role.get('job_subfamily'),
+                seniority=role.get('seniority'),
+                track=role.get('track'),
+                experience_range=role.get('experience_range'),
+                employer_department=employer.get('department'),
+                employer_size=employer.get('company_size_estimate'),
+                is_agency=employer.get('is_agency'),
+                agency_confidence=employer.get('agency_confidence'),
+                currency=compensation.get('currency'),
+                salary_min=compensation.get('base_salary_range', {}).get('min'),
+                salary_max=compensation.get('base_salary_range', {}).get('max'),
+                equity_eligible=compensation.get('equity_eligible'),
+                skills=classification.get('skills', []),
+                data_source='adzuna',
+                description_source='adzuna',
+                deduplicated=False
+            )
+            
+            stats['jobs_written_enriched'] += 1
+            logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
+            
+        except Exception as e:
+            logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
+            continue
+    
+    # Final summary
+    elapsed = time.time() - stats['start_time']
+    
+    logger.info(f"\n{'='*80}")
+    logger.info(f"ADZUNA {city_code.upper()} COMPLETE - {elapsed:.1f}s")
+    logger.info(f"{'='*80}")
+    
+    logger.info(f"\nJobs:")
+    logger.info(f"  - Fetched: {stats['jobs_fetched']}")
+    logger.info(f"  - New (written to raw): {stats['jobs_written_raw']}")
+    logger.info(f"  - Duplicates (last_seen updated): {stats['jobs_duplicate']}")
+    logger.info(f"  - Classified: {stats['jobs_classified']}")
+    logger.info(f"  - Enriched: {stats['jobs_written_enriched']}")
+    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
+    
+    logger.info(f"\nCost Analysis:")
+    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
+    logger.info(f"  - Saved (duplicates skipped): ${stats['cost_saved_duplicates']:.2f}")
+    logger.info(f"  - Cost per new job: ${stats['cost_classification']/stats['jobs_written_enriched'] if stats['jobs_written_enriched'] > 0 else 0:.4f}")
+    
+    logger.info("="*80)
+    
+    return stats
+
+
 async def merge_jobs(
     adzuna_jobs: List,
     greenhouse_jobs: List,
@@ -878,45 +1082,11 @@ Examples:
         greenhouse_stats = await process_greenhouse_incremental(companies, resume_hours=args.resume_hours)
         total_stats['greenhouse'] = greenhouse_stats
 
-    # ADZUNA PIPELINE: Batch processing (fetch all → classify all → store all)
+    # ADZUNA PIPELINE: Incremental processing (same pattern as Greenhouse)
+    # Upserts to raw_jobs first, only classifies NEW jobs to save API costs
     if 'adzuna' in sources:
-        logger.info("\n" + "="*80)
-        logger.info("STARTING ADZUNA BATCH PIPELINE")
-        logger.info("="*80 + "\n")
-
-        adzuna_jobs = await fetch_from_adzuna(args.city, args.max_jobs)
-
-        if adzuna_jobs:
-            logger.info(f"Fetched {len(adzuna_jobs)} Adzuna jobs")
-
-            # Filter by minimum description length if specified
-            if args.min_description_length > 0:
-                original_count = len(adzuna_jobs)
-                adzuna_jobs = [j for j in adzuna_jobs if len(j.description) >= args.min_description_length]
-                logger.info(f"Filtered to {len(adzuna_jobs)} jobs with >={args.min_description_length} chars (removed {original_count - len(adzuna_jobs)})")
-
-            # Classification
-            if not args.skip_classification:
-                adzuna_jobs = await classify_jobs(adzuna_jobs)
-                logger.info(f"Classified {len(adzuna_jobs)} Adzuna jobs")
-
-            # Storage
-            if not args.skip_storage:
-                await store_jobs(adzuna_jobs, source_city=args.city)
-                logger.info(f"Stored {len(adzuna_jobs)} Adzuna jobs")
-
-            total_stats['adzuna'] = {
-                'jobs_fetched': len(adzuna_jobs),
-                'jobs_classified': len(adzuna_jobs) if not args.skip_classification else 0,
-                'jobs_stored': len(adzuna_jobs) if not args.skip_storage else 0
-            }
-        else:
-            logger.warning("No Adzuna jobs fetched")
-            total_stats['adzuna'] = {
-                'jobs_fetched': 0,
-                'jobs_classified': 0,
-                'jobs_stored': 0
-            }
+        adzuna_stats = await process_adzuna_incremental(args.city, args.max_jobs)
+        total_stats['adzuna'] = adzuna_stats
 
     # FINAL SUMMARY
     logger.info("\n" + "="*80)
@@ -938,14 +1108,18 @@ Examples:
     if total_stats['adzuna']:
         logger.info("\nAdzuna Pipeline:")
         logger.info(f"  Jobs fetched: {total_stats['adzuna']['jobs_fetched']}")
+        logger.info(f"  New jobs (written to raw): {total_stats['adzuna']['jobs_written_raw']}")
+        logger.info(f"  Duplicates (last_seen updated): {total_stats['adzuna']['jobs_duplicate']}")
         logger.info(f"  Jobs classified: {total_stats['adzuna']['jobs_classified']}")
-        logger.info(f"  Jobs stored: {total_stats['adzuna']['jobs_stored']}")
+        logger.info(f"  Jobs written to enriched_jobs: {total_stats['adzuna']['jobs_written_enriched']}")
+        logger.info(f"  Cost of classification: ${total_stats['adzuna']['cost_classification']:.2f}")
+        logger.info(f"  Cost saved (duplicates): ${total_stats['adzuna']['cost_saved_duplicates']:.2f}")
 
     total_jobs = 0
     if total_stats['greenhouse']:
         total_jobs += total_stats['greenhouse']['jobs_written_enriched']
     if total_stats['adzuna']:
-        total_jobs += total_stats['adzuna']['jobs_stored']
+        total_jobs += total_stats['adzuna']['jobs_written_enriched']
 
     logger.info(f"\nTotal jobs processed: {total_jobs}")
     logger.info("="*80)
