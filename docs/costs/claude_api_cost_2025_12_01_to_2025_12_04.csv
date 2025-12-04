@@ -1,0 +1,10 @@
+usage_date_utc,model,workspace,api_key,usage_type,context_window,token_type,cost_usd,cost_type
+2025-12-02,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,0.05,token
+2025-12-02,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,3.98,token
+2025-12-02,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,output,2.06,token
+2025-12-03,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,0.03,token
+2025-12-03,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,output,0.01,token
+2025-12-04,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,6.02,token
+2025-12-04,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,0.57,token
+2025-12-04,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,output,2.79,token
+

@@ -374,8 +374,8 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     company_jobs_classified += 1
 
                     # Track classification cost (if available)
-                    if '_cost_data' in classification and 'cost_usd' in classification['_cost_data']:
-                        cost = classification['_cost_data']['cost_usd']
+                    if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
+                        cost = classification['_cost_data']['total_cost']
                         stats['cost_classification'] += cost
                         logger.info(f"  [{i}/{len(jobs)}] Classified (${cost:.4f})")
                     else:
@@ -710,8 +710,8 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dic
                 stats['jobs_classified'] += 1
                 
                 # Track classification cost
-                if '_cost_data' in classification and 'cost_usd' in classification['_cost_data']:
-                    cost = classification['_cost_data']['cost_usd']
+                if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
+                    cost = classification['_cost_data']['total_cost']
                     stats['cost_classification'] += cost
                     
             except Exception as e:

@@ -1,0 +1,9 @@
+usage_date_utc,model_version,api_key,workspace,usage_type,context_window,usage_input_tokens_no_cache,usage_input_tokens_cache_write_5m,usage_input_tokens_cache_write_1h,usage_input_tokens_cache_read,usage_output_tokens,web_search_count
+2025-12-04 10:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,1889515,0,0,0,189386,0
+2025-12-04 11:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,494164,0,0,0,48287,0
+2025-12-04 12:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,1554667,0,0,0,84923,0
+2025-12-04 13:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,2114634,0,0,0,174849,0
+2025-12-04 18:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,185448,0,0,0,17733,0
+2025-12-04 19:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,1990954,0,0,0,182825,0
+2025-12-04 20:00,claude-3-5-haiku-20241022,job-classification-evaluation-key,Default,standard,≤ 200k,2621,0,0,0,229,0
+

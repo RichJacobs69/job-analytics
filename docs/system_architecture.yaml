@@ -1,13 +1,13 @@
 # Job Market Intelligence Platform - System Architecture
-# Version: 1.0
-# Last Updated: 2025-11-11
+# Version: 1.1
+# Last Updated: 2025-12-04
 # Purpose: Document the complete data pipeline and system dependencies
 
 metadata:
-  version: 1.0
-  last_updated: "2025-11-11"
+  version: 1.1
+  last_updated: "2025-12-04"
   project_name: "Job Market Intelligence Platform"
-  primary_pipeline: "Adzuna → Claude → Supabase"
+  primary_pipeline: "Adzuna + Greenhouse → Claude 3.5 Haiku → Supabase"
 
 # ============================================
 # PROJECT FILES
@@ -278,19 +278,19 @@ execution_patterns:
     cost: "~$0.05"
     
   scale_up:
-    command: "python fetch_adzuna_jobs.py lon 50"
-    description: "Fetch 50 jobs per query from London (250 total)"
+    command: "python wrappers/fetch_jobs.py lon 100 --sources adzuna"
+    description: "Fetch 100 jobs per query from London (~1100 total)"
     duration: "~15-20 minutes"
-    cost: "~$0.25"
+    cost: "~$6 (at $0.006/job)"
     
   multi_city:
     commands:
-      - "python fetch_adzuna_jobs.py lon 50"
-      - "python fetch_adzuna_jobs.py nyc 50"
-      - "python fetch_adzuna_jobs.py den 50"
-    description: "Fetch from all 3 cities (750 total jobs)"
+      - "python wrappers/fetch_jobs.py lon 150 --sources adzuna"
+      - "python wrappers/fetch_jobs.py nyc 150 --sources adzuna"
+      - "python wrappers/fetch_jobs.py den 150 --sources adzuna"
+    description: "Fetch from all 3 cities (~1650 new jobs/day)"
     duration: "~45-60 minutes"
-    cost: "~$0.75"
+    cost: "~$10 (depends on new job rate)"
     
   re_run_safety:
     description: "Re-running same command skips duplicate jobs"
@@ -366,20 +366,52 @@ validation:
 
 current_state:
   status: "Production pipeline operational - Epic 4 COMPLETE"
-  last_updated: "2025-11-26"
+  last_updated: "2025-12-04"
   data_collection:
     adzuna:
-      status: "Complete"
-      jobs_processed: "1,279 raw jobs"
+      status: "Active - Daily runs"
+      jobs_processed: "8,600+ raw jobs"
+      jobs_enriched: "6,000+ enriched jobs"
       cities: "London, NYC, Denver"
       role_types: "11 (Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM)"
     greenhouse:
-      status: "Deferred until analytics development"
-      verified_companies: "24"
-      reason: "Current Adzuna dataset sufficient for Epic 5 prototyping"
-  tables_populated:
-    - "raw_jobs: 1,279 rows"
-    - "enriched_jobs: 1,044 rows (18.4% filtering rate)"
+      status: "Active - Incremental pipeline"
+      verified_companies: "24+"
+      notes: "Dual pipeline with Adzuna"
   accuracy: "93% on ground truth"
-  cost_per_job: "$0.00388 (measured)"
   ready_for: "Epic 5: Analytics Query Layer"
+
+# ============================================
+# COST METRICS (Updated 2025-12-04)
+# ============================================
+
+cost_metrics:
+  model: "Claude 3.5 Haiku"
+  pricing:
+    input_per_1m_tokens: "$0.80"
+    output_per_1m_tokens: "$4.00"
+  
+  measured_costs:
+    date: "2025-12-04"
+    raw_jobs_inserted: 1654
+    jobs_classified: 961
+    total_api_cost: "$9.38"
+    cost_per_raw_insert: "$0.00567"
+    cost_per_classified_job: "$0.00976"
+    classification_rate: "58.1%"
+    
+  token_usage:
+    avg_input_tokens_per_job: "~8,500"
+    avg_output_tokens_per_job: "~700"
+    
+  optimization_strategies:
+    implemented:
+      - "Duplicate detection (skip already-seen jobs)"
+      - "Agency filtering (blacklist before API call)"
+      - "Description quality filter"
+    potential:
+      - "Prompt caching (50-90% input cost reduction)"
+      - "Batch classification"
+      - "Title-based pre-filtering"
+      
+  documentation: "docs/costs/COST_METRICS.md"

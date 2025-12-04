@@ -4,6 +4,14 @@ This directory contains all specifications, guides, and architectural documentat
 
 > **⚙️ For development setup, architecture implementation, and troubleshooting, see [`../CLAUDE.md`](../CLAUDE.md)** - It provides development commands, code walkthroughs, key implementation details, and solutions to common issues.
 
+## License
+
+This project is provided for **portfolio viewing only**.
+
+You are welcome to browse the code and run it locally to understand how it works, but **you may not copy, reuse, modify, or distribute any part of this code** without my prior written permission.
+
+See [`LICENSE.md`](./LICENSE.md) for full details.
+
 ## Quick Start for New Developers
 
 ### First Steps
@@ -65,6 +73,25 @@ This directory contains all specifications, guides, and architectural documentat
   - Current tables: raw_jobs, enriched_jobs
   - Column definitions & constraints
   - Indexes for query performance
+
+## Cost Tracking & Metrics
+
+### directory: `costs/`
+- **COST_METRICS.md** - Classification cost analysis and optimization strategies
+  - Current cost per job: ~$0.006 per raw insert, ~$0.01 per classified job
+  - Token usage breakdowns
+  - Historical cost data
+  
+- **claude_api_cost_*.csv** - Daily cost exports from Anthropic dashboard
+- **claude_api_tokens_*.csv** - Hourly token usage exports
+
+**Key Metrics (as of 2025-12-04):**
+| Metric | Value |
+|--------|-------|
+| Cost per raw insert | $0.00567 |
+| Cost per classified job | $0.00976 |
+| Classification rate | 58% |
+| Model | Claude 3.5 Haiku |
 
 ## Testing Documentation
 

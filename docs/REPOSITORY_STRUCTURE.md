@@ -89,6 +89,9 @@ docs/                  # Documentation
   ├── architecture/    # Architecture design docs
   │   ├── DUAL_PIPELINE.md
   │   └── INCREMENTAL_UPSERT_DESIGN.md  # IMPLEMENTED 2025-12-03
+  ├── costs/           # Cost tracking and metrics (NEW 2025-12-04)
+  │   ├── COST_METRICS.md              # Cost analysis & optimization
+  │   └── claude_api_*.csv             # Anthropic usage exports
   ├── database/        # Database documentation
   │   └── SCHEMA_UPDATES.md
   ├── testing/         # Test documentation
@@ -227,6 +230,7 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 
 ---
 
-**Last Updated:** 2025-12-03
-**Changes:** Implemented incremental upsert architecture, cleaned up orphaned files, consolidated migrations, updated directory structure
-**Status:** Ready for production use with incremental pipeline
+**Last Updated:** 2025-12-04
+**Changes:** Added `docs/costs/` directory with cost metrics, API usage tracking, and optimization documentation
+**Previous (2025-12-03):** Implemented incremental upsert architecture, cleaned up orphaned files, consolidated migrations
+**Status:** Ready for production use with incremental pipeline and cost tracking
