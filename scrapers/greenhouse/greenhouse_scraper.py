@@ -940,7 +940,11 @@ class GreenhouseScraper:
             link_element = None
             if not job_url:
                 try:
-                    link_element = await job_element.query_selector('a[href*="/jobs/"]')
+                    # Try multiple selectors to handle different job board layouts:
+                    # - Stripe/Greenhouse: a[href*="/jobs/"]
+                    # - Datadog/Greenhouse embed: a[href*="/detail/"]
+                    # - Fallback: any <a> tag (for other variations)
+                    link_element = await job_element.query_selector('a[href*="/jobs/"], a[href*="/detail/"], a[href*="careers."], a')
                     if link_element:
                         job_url = await link_element.get_attribute('href')
                 except:
