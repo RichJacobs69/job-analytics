@@ -6,6 +6,9 @@ Usage:
 # Dry run (no database changes):
 python pipeline/utilities/backfill_out_of_scope.py --dry-run --limit 10
 
+# Filter by classified_at window (inclusive lower bound, exclusive upper):
+python pipeline/utilities/backfill_out_of_scope.py --dry-run --classified-after 2025-01-01 --classified-before 2025-01-08
+
 # Full run with database updates:
 python pipeline/utilities/backfill_out_of_scope.py --live
 """
@@ -25,7 +28,21 @@ load_dotenv()
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
 
-def get_out_of_scope_jobs(limit: int = None):
+def parse_iso_datetime(value: str) -> str:
+    """Validate and normalize ISO-8601 datetime/date strings for queries."""
+    try:
+        return datetime.fromisoformat(value).isoformat()
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "Invalid date/datetime format. Use ISO-8601, e.g. 2025-01-01 or 2025-01-01T00:00:00"
+        ) from exc
+
+
+def get_out_of_scope_jobs(
+    limit: int = None,
+    classified_after: str = None,
+    classified_before: str = None,
+):
     """Get all jobs currently classified as out_of_scope."""
     print("Fetching out_of_scope jobs...")
     
@@ -33,6 +50,11 @@ def get_out_of_scope_jobs(limit: int = None):
         'id, raw_job_id, employer_name, title_display, job_family, job_subfamily, '
         'seniority, city_code, working_arrangement, data_source'
     ).eq('job_family', 'out_of_scope').eq('is_agency', False)
+
+    if classified_after:
+        query = query.gte('classified_at', classified_after)
+    if classified_before:
+        query = query.lt('classified_at', classified_before)
     
     if limit:
         query = query.limit(limit)
@@ -117,16 +139,29 @@ def update_enriched_job(enriched_id: int, classification: dict):
     supabase.table('enriched_jobs').update(update_data).eq('id', enriched_id).execute()
 
 
-def run_backfill(dry_run: bool = True, limit: int = None):
+def run_backfill(
+    dry_run: bool = True,
+    limit: int = None,
+    classified_after: str = None,
+    classified_before: str = None,
+):
     """Main backfill function."""
     start_time = time.time()
     
     print("="*80)
     print("BACKFILL: Re-classify out_of_scope jobs")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE (will update DB)'}")
+    if classified_after:
+        print(f"Filter: classified_at >= {classified_after}")
+    if classified_before:
+        print(f"Filter: classified_at < {classified_before}")
     print("="*80)
     
-    jobs = get_out_of_scope_jobs(limit=limit)
+    jobs = get_out_of_scope_jobs(
+        limit=limit,
+        classified_after=classified_after,
+        classified_before=classified_before,
+    )
     
     if not jobs:
         print("\nNo jobs to process.")
@@ -215,9 +250,18 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', action='store_true', help='No DB changes')
     parser.add_argument('--live', action='store_true', help='Update database')
     parser.add_argument('--limit', type=int, default=None, help='Limit jobs')
+    parser.add_argument('--classified-after', type=parse_iso_datetime, default=None,
+                        help='Only process jobs with classified_at >= this ISO date/datetime')
+    parser.add_argument('--classified-before', type=parse_iso_datetime, default=None,
+                        help='Only process jobs with classified_at < this ISO date/datetime')
     
     args = parser.parse_args()
     dry_run = not args.live
     
-    run_backfill(dry_run=dry_run, limit=args.limit)
+    run_backfill(
+        dry_run=dry_run,
+        limit=args.limit,
+        classified_after=args.classified_after,
+        classified_before=args.classified_before,
+    )
 
