@@ -315,6 +315,10 @@ class GreenhouseScraper:
         self.filter_locations = filter_locations
         self.location_patterns = load_location_patterns(location_config_path) if filter_locations else []
 
+        # Pagination state tracking (prevent selector cycling)
+        self.last_successful_next_selector: Optional[str] = None
+        self.last_successful_load_more_selector: Optional[str] = None
+
         # Filtering statistics (tracked per scrape)
         self.reset_filter_stats()
 
@@ -329,6 +333,11 @@ class GreenhouseScraper:
             'filtered_titles': [],
             'filtered_locations': [],
         }
+
+    def reset_pagination_state(self):
+        """Reset pagination tracking for a new company scrape."""
+        self.last_successful_next_selector = None
+        self.last_successful_load_more_selector = None
 
     async def init(self):
         """Initialize browser instance. Call before scraping."""
@@ -374,6 +383,8 @@ class GreenhouseScraper:
 
         # Reset filter stats for this company
         self.reset_filter_stats()
+        # Reset pagination state for this company
+        self.reset_pagination_state()
 
         page = None
 
@@ -576,7 +587,14 @@ class GreenhouseScraper:
             pagination_found = False
 
             # Method 1: Try "Load More" or "Show More" buttons
-            for selector in self.SELECTORS['pagination']['load_more_btn']:
+            # Prioritize last successful selector if available
+            load_more_selectors = self.SELECTORS['pagination']['load_more_btn'].copy()
+            if self.last_successful_load_more_selector and self.last_successful_load_more_selector in load_more_selectors:
+                # Move successful selector to front
+                load_more_selectors.remove(self.last_successful_load_more_selector)
+                load_more_selectors.insert(0, self.last_successful_load_more_selector)
+
+            for selector in load_more_selectors:
                 try:
                     load_more = await page.query_selector(selector)
                     if load_more:
@@ -586,10 +604,15 @@ class GreenhouseScraper:
 
                         if is_visible and is_enabled:
                             await load_more.click()
-                            await self._wait_for_listings(page, company_slug)
-                            logger.info(f"[{company_slug}] Clicked Load More using selector: {selector}")
-                            pagination_found = True
-                            break
+                            # Retry wait_for_listings with exponential backoff if it fails
+                            wait_success = await self._wait_for_listings_with_retry(page, company_slug, max_retries=2)
+                            if wait_success:
+                                logger.info(f"[{company_slug}] Clicked Load More using selector: {selector}")
+                                self.last_successful_load_more_selector = selector
+                                pagination_found = True
+                                break
+                            else:
+                                logger.warning(f"[{company_slug}] Load More clicked but listings failed to appear with selector: {selector}")
                 except Exception as e:
                     logger.debug(f"[{company_slug}] Load More selector '{selector}' failed: {str(e)[:50]}")
                     continue
@@ -598,7 +621,14 @@ class GreenhouseScraper:
                 continue
 
             # Method 2: Try "Next" button/link
-            for selector in self.SELECTORS['pagination']['next_btn']:
+            # Prioritize last successful selector if available
+            next_selectors = self.SELECTORS['pagination']['next_btn'].copy()
+            if self.last_successful_next_selector and self.last_successful_next_selector in next_selectors:
+                # Move successful selector to front
+                next_selectors.remove(self.last_successful_next_selector)
+                next_selectors.insert(0, self.last_successful_next_selector)
+
+            for selector in next_selectors:
                 try:
                     next_btn = await page.query_selector(selector)
                     if next_btn:
@@ -607,11 +637,17 @@ class GreenhouseScraper:
                         is_enabled = await next_btn.is_enabled()
 
                         if is_visible and is_enabled:
+                            logger.debug(f"[{company_slug}] Attempting Next with selector: {selector}")
                             await next_btn.click()
-                            await self._wait_for_listings(page, company_slug)
-                            logger.info(f"[{company_slug}] Clicked Next button using selector: {selector}")
-                            pagination_found = True
-                            break
+                            # Retry wait_for_listings with exponential backoff if it fails
+                            wait_success = await self._wait_for_listings_with_retry(page, company_slug, max_retries=2)
+                            if wait_success:
+                                logger.info(f"[{company_slug}] Clicked Next button using selector: {selector}")
+                                self.last_successful_next_selector = selector
+                                pagination_found = True
+                                break
+                            else:
+                                logger.warning(f"[{company_slug}] Next button clicked but listings failed to appear with selector: {selector}")
                 except Exception as e:
                     logger.debug(f"[{company_slug}] Next button selector '{selector}' failed: {str(e)[:50]}")
                     continue
@@ -758,6 +794,51 @@ class GreenhouseScraper:
                 return
             except Exception:
                 continue
+
+    async def _wait_for_listings_with_retry(self, page: Page, company_slug: str, max_retries: int = 2, base_timeout_ms: int = 5000) -> bool:
+        """
+        Wait for job listings to appear after pagination, with retry and exponential backoff.
+
+        Args:
+            page: Playwright page object
+            company_slug: Company identifier
+            max_retries: Number of retry attempts
+            base_timeout_ms: Initial timeout in milliseconds
+
+        Returns:
+            True if listings appeared, False if all retries failed
+        """
+        selectors = self.SELECTORS['job_listing']
+        if isinstance(selectors, str):
+            selectors = [selectors]
+
+        for attempt in range(max_retries):
+            timeout_ms = base_timeout_ms * (2 ** attempt)  # Exponential backoff: 5000ms, 10000ms, etc.
+
+            for selector in selectors:
+                try:
+                    await page.wait_for_selector(selector, timeout=timeout_ms)
+                    logger.debug(f"[{company_slug}] Listings appeared with selector {selector} (attempt {attempt + 1})")
+                    return True
+                except Exception as e:
+                    logger.debug(f"[{company_slug}] Timeout waiting for selector {selector} (attempt {attempt + 1}, timeout={timeout_ms}ms): {str(e)[:60]}")
+                    continue
+
+            if attempt < max_retries - 1:
+                logger.debug(f"[{company_slug}] Retry {attempt + 1}/{max_retries - 1}: waiting before next attempt...")
+                await page.wait_for_timeout(1000)  # Wait 1 second before retry
+
+        # Log detailed failure info
+        logger.warning(f"[{company_slug}] Failed to find job listings after {max_retries} attempts. Possible causes: navigation failed, page structure changed, or timeout too short.")
+
+        # Try to get current URL for debugging
+        try:
+            current_url = page.url
+            logger.warning(f"[{company_slug}] Current page URL: {current_url}")
+        except:
+            pass
+
+        return False
 
     async def _extract_job_listing(
         self,
