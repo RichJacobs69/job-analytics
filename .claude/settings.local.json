@@ -12,7 +12,12 @@
       "Bash(taskkill:*)",
       "Bash(timeout /t 30)",
       "Bash(ping:*)",
-      "Bash(timeout /t 10)"
+      "Bash(timeout /t 10)",
+      "Bash(cat:*)",
+      "Bash(dir \"C:\\Cursor Projects\\job-analytics\")",
+      "Bash(tee:*)",
+      "Bash(dir:*)",
+      "Bash(ls -lh C:Cursor Projectsjob-analytics*50*)"
     ],
     "deny": [],
     "ask": []

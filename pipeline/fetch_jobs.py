@@ -367,9 +367,21 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
                     continue
 
-                # Step 3: Classify the job
+                # Step 3: Classify the job with structured input (including title)
                 try:
-                    classification = classify_job_with_claude(job.description)
+                    structured_input = {
+                        'title': job.title,
+                        'company': job.company,
+                        'description': job.description,
+                        'location': None,
+                        'category': None,
+                        'salary_min': None,
+                        'salary_max': None,
+                    }
+                    classification = classify_job_with_claude(
+                        job_text=job.description,
+                        structured_input=structured_input
+                    )
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
 
@@ -866,7 +878,19 @@ async def classify_jobs(jobs: List) -> List:
                     continue
 
                 # classify_job_with_claude is synchronous, not async
-                classification = classify_job_with_claude(description)
+                structured_input = {
+                    'title': job.title,
+                    'company': job.company,
+                    'description': description,
+                    'location': None,
+                    'category': None,
+                    'salary_min': None,
+                    'salary_max': None,
+                }
+                classification = classify_job_with_claude(
+                    job_text=description,
+                    structured_input=structured_input
+                )
 
                 # Add agency detection via pattern matching (soft detection)
                 # This populates is_agency and agency_confidence fields that Claude no longer returns

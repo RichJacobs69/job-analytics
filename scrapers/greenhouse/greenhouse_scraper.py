@@ -233,14 +233,23 @@ class GreenhouseScraper:
                 'a:has-text("Next")',
                 'button:has-text("Next")',
                 'a[aria-label="Next"]',
+                'a[aria-label*="Next"]',
                 'button[aria-label="Next"]',
+                'button[aria-label*="Next"]',
                 'a.next',
                 'button.next',
+                'a[rel="next"]',
             ],
             'page_numbers': [
                 'a[class*="pagination"]',
                 'button[class*="pagination"]',
                 'nav[class*="pagination"] a',
+                'nav[aria-label*="Pagination"] a',
+                'nav[role="navigation"] a',
+                'ul[class*="pagination"] a',
+                'ul[aria-label*="Pagination"] a',
+                'ol[class*="pagination"] a',
+                'li[class*="page"] a',
             ]
         },
 
@@ -475,6 +484,11 @@ class GreenhouseScraper:
             if pagination_iteration > max_pagination_iterations:
                 logger.warning(f"[{company_slug}] Reached max pagination iterations ({max_pagination_iterations}), stopping")
                 break
+            # Track the current page URL to avoid loops when pagination links point back
+            try:
+                visited_page_urls.add(page.url)
+            except Exception:
+                pass
             # Extract jobs from current view - try multiple selectors
             job_elements = []
             selectors = self.SELECTORS['job_listing']
@@ -489,8 +503,20 @@ class GreenhouseScraper:
                     break
 
             if not job_elements:
+                # Give the page an extra chance to render after navigation
+                await self._wait_for_listings(page, company_slug)
+                for selector in selectors:
+                    elements = await page.query_selector_all(selector)
+                    if elements:
+                        job_elements = elements
+                        logger.info(f"[{company_slug}] Found {len(job_elements)} job listings after wait using selector: {selector}")
+                        break
+
+            if not job_elements:
                 logger.warning(f"[{company_slug}] No job listings found with any selector")
                 break
+
+            current_dom_job_count = len(job_elements)
 
             for job_element in job_elements:
                 try:
@@ -542,6 +568,10 @@ class GreenhouseScraper:
                     logger.warning(f"[{company_slug}] Failed to extract job: {str(e)[:100]}")
                     continue
 
+            # Some modern Greenhouse boards lazy-load on scroll (no explicit pagination)
+            if await self._try_infinite_scroll(page, company_slug, current_dom_job_count):
+                continue
+
             # Check for pagination controls (try multiple methods)
             pagination_found = False
 
@@ -556,7 +586,7 @@ class GreenhouseScraper:
 
                         if is_visible and is_enabled:
                             await load_more.click()
-                            await page.wait_for_timeout(1500)  # Wait for new jobs to load
+                            await self._wait_for_listings(page, company_slug)
                             logger.info(f"[{company_slug}] Clicked Load More using selector: {selector}")
                             pagination_found = True
                             break
@@ -578,7 +608,7 @@ class GreenhouseScraper:
 
                         if is_visible and is_enabled:
                             await next_btn.click()
-                            await page.wait_for_timeout(2000)  # Wait for page to load
+                            await self._wait_for_listings(page, company_slug)
                             logger.info(f"[{company_slug}] Clicked Next button using selector: {selector}")
                             pagination_found = True
                             break
@@ -626,7 +656,7 @@ class GreenhouseScraper:
                                     link_text = await link.text_content()
                                     visited_page_urls.add(link_href)  # Mark as visited before clicking
                                     await link.click()
-                                    await page.wait_for_timeout(2000)
+                                    await self._wait_for_listings(page, company_slug)
                                     logger.info(f"[{company_slug}] Clicked page number: {link_text}")
                                     pagination_found = True
                                     break
@@ -642,11 +672,92 @@ class GreenhouseScraper:
             if pagination_found:
                 continue
 
+            # Method 4: Fallback - click any visible numeric page link that isn't active
+            try:
+                generic_links = await page.query_selector_all('a, button')
+                for link in generic_links:
+                    try:
+                        text = (await link.text_content() or '').strip()
+                        if not text or not text.isdigit():
+                            continue
+
+                        link_href = await link.get_attribute('href') or ''
+                        class_name = await link.get_attribute('class') or ''
+                        aria_current = await link.get_attribute('aria-current') or ''
+                        aria_disabled = await link.get_attribute('aria-disabled') or ''
+
+                        if link_href and link_href in visited_page_urls:
+                            continue
+                        if 'active' in class_name.lower() or 'current' in class_name.lower():
+                            continue
+                        if aria_current == 'page' or aria_disabled == 'true':
+                            continue
+
+                        is_visible = await link.is_visible()
+                        is_enabled = await link.is_enabled()
+                        if not (is_visible and is_enabled):
+                            continue
+
+                        if link_href:
+                            visited_page_urls.add(link_href)
+                        await link.click()
+                        await self._wait_for_listings(page, company_slug)
+                        logger.info(f"[{company_slug}] Clicked numeric page link via fallback: {text}")
+                        pagination_found = True
+                        break
+                    except Exception:
+                        continue
+            except Exception as e:
+                logger.debug(f"[{company_slug}] Fallback numeric pagination failed: {str(e)[:50]}")
+
+            if pagination_found:
+                continue
+
             # No pagination found - we've reached the end
             logger.info(f"[{company_slug}] No more pagination controls found, scraping complete")
             break
 
         return jobs
+
+    async def _try_infinite_scroll(self, page: Page, company_slug: str, previous_count: int) -> bool:
+        """
+        Handle boards that load additional jobs when scrolling to the bottom.
+
+        Returns True if new job elements appear after scrolling.
+        """
+        try:
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1500)
+
+            selectors = self.SELECTORS['job_listing']
+            if isinstance(selectors, str):
+                selectors = [selectors]
+
+            for selector in selectors:
+                new_elements = await page.query_selector_all(selector)
+                if new_elements and len(new_elements) > previous_count:
+                    logger.info(f"[{company_slug}] Detected infinite scroll, loaded {len(new_elements) - previous_count} more jobs via {selector}")
+                    return True
+        except Exception as e:
+            logger.debug(f"[{company_slug}] Infinite scroll detection failed: {str(e)[:80]}")
+
+        return False
+
+    async def _wait_for_listings(self, page: Page, company_slug: str, timeout_ms: int = 5000):
+        """
+        Wait for any job listing selector to appear after navigation/pagination.
+        """
+        selectors = self.SELECTORS['job_listing']
+        if isinstance(selectors, str):
+            selectors = [selectors]
+
+        for selector in selectors:
+            try:
+                await page.wait_for_selector(selector, timeout=timeout_ms)
+                logger.debug(f"[{company_slug}] Listings appeared with selector {selector}")
+                return
+            except Exception:
+                continue
 
     async def _extract_job_listing(
         self,

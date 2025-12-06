@@ -8,3 +8,5 @@ usage_date_utc,model,workspace,api_key,usage_type,context_window,token_type,cost
 2025-12-04,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,input_no_cache,0.57,token
 2025-12-04,Claude Haiku 3.5,Default,job-classification-evaluation-key,message,≤ 200k,output,2.79,token
 
+
+

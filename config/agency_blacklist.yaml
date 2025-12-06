@@ -1,12 +1,12 @@
 # Agency Blacklist Configuration
-# Version: 1.0
-# Last Updated: 2025-11-13
+# Version: 1.1
+# Last Updated: 2025-12-04
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.0
-  last_updated: "2025-11-13"
-  total_agencies: 53
+  version: 1.1
+  last_updated: "2025-12-04"
+  total_agencies: 72
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -74,6 +74,29 @@ hard_filter:
   - arc it recruitment
   - anderson knight
   - cathcart associates
+  
+  # Added 2025-12-04 from orphan analysis
+  - itol recruit
+  - itol
+  - sanderson recruitment
+  - sanderson
+  - viqu it recruitment
+  - viqu
+  - rise technical recruitment
+  - rise technical
+  - method-resourcing
+  - method resourcing
+  - faraday recruitment
+  - faraday recruitment limited
+  - emporia consulting group
+  - emporia consulting
+  - morson edge
+  - morson
+  - kinetech recruitment
+  - kinetech
+  - singular recruitment
+  - carrington recruitment solutions
+  - carrington recruitment
 
 # =========================
 # PATTERN DETECTION

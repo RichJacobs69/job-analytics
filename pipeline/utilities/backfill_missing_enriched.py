@@ -163,24 +163,41 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
         # Note: We can't easily get company name from raw_text alone
         # So we'll skip this check for backfill and rely on soft detection
 
-        # Classify the job
+        # Classify the job with structured input (including title and company)
         logger.debug(f"Classifying job {raw_job_id}...")
-        classification = classify_job_with_claude(raw_text)
+        structured_input = {
+            'title': raw_job.get('title', 'Unknown Title'),
+            'company': raw_job.get('company', 'Unknown Company'),
+            'description': raw_text,
+            'location': inferred_city,
+            'category': None,
+            'salary_min': None,
+            'salary_max': None,
+        }
+        classification = classify_job_with_claude(
+            job_text=raw_text,
+            structured_input=structured_input
+        )
 
         if not classification:
             logger.warning(f"Skipping job {raw_job_id}: classification returned None")
             return False
 
         # Add agency detection
-        employer_name = classification.get('employer', {}).get('name') or 'Unknown Company'
+        # Get employer name: prefer classification, fall back to raw_job's company field
+        employer_name = classification.get('employer', {}).get('name')
+        if not employer_name or employer_name == 'Unknown Company':
+            employer_name = raw_job.get('company') or 'Unknown Company'
+
+        # Get title: prefer classification's title_display, fall back to raw_job's title field
+        title_from_classification = classification.get('role', {}).get('title_display')
+        title_from_raw = raw_job.get('title')
+        job_title = title_from_classification or title_from_raw or 'Unknown Title'
 
         # Skip jobs without employer info (can't create proper enriched record)
-        if not employer_name or employer_name == 'Unknown Company':
-            # Try to extract from role title if available
-            title = classification.get('role', {}).get('title')
-            if not title or title == 'Unknown Title':
-                logger.warning(f"Skipping job {raw_job_id}: no employer or title info")
-                return False
+        if employer_name == 'Unknown Company' and job_title == 'Unknown Title':
+            logger.warning(f"Skipping job {raw_job_id}: no employer or title info")
+            return False
 
         is_agency, agency_conf = validate_agency_classification(
             employer_name=employer_name,
@@ -203,7 +220,9 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
 
         # Determine final city code (prefer classification, then inferred, then default)
         final_city = location.get('city_code') or inferred_city
-        if final_city not in ['lon', 'nyc', 'den']:
+        # Accept all valid city codes: lon, nyc, den, remote, unk
+        valid_city_codes = ['lon', 'nyc', 'den', 'remote', 'unk']
+        if final_city not in valid_city_codes:
             logger.warning(f"Skipping job {raw_job_id}: invalid city code '{final_city}'")
             return False
 
@@ -211,7 +230,7 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
         enriched_job_id = insert_enriched_job(
             raw_job_id=raw_job_id,
             employer_name=employer_name,
-            title_display=role.get('title') or 'Unknown Title',
+            title_display=job_title,
             job_family=role.get('job_family') or 'out_of_scope',  # NULL-SAFE
             city_code=final_city,
             working_arrangement=location.get('working_arrangement') or 'onsite',

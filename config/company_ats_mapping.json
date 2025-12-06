@@ -971,6 +971,90 @@
     },
     "The Dot Collective": {
       "slug": "thedotcollective"
+    },
+    "AssemblyAI": {
+      "slug": "assemblyai"
+    },
+    "Awin": {
+      "slug": "awin"
+    },
+    "AWS BDISI": {
+      "slug": "aws-bdisi"
+    },
+    "Blis": {
+      "slug": "blisjobs"
+    },
+    "Bryant Park Consulting": {
+      "slug": "bryantparkconsulting"
+    },
+    "Dolby": {
+      "slug": "dolby"
+    },
+    "English Jobs": {
+      "slug": "englishjobs"
+    },
+    "Etsy Labs": {
+      "slug": "etsylabs"
+    },
+    "Everbridge": {
+      "slug": "everbridge"
+    },
+    "Finson Jobs": {
+      "slug": "finsonjobs"
+    },
+    "Greenlight": {
+      "slug": "greenlight"
+    },
+    "Gumtree": {
+      "slug": "gumtree"
+    },
+    "Human Security": {
+      "slug": "humansecurity"
+    },
+    "Justworks": {
+      "slug": "justworks"
+    },
+    "Ken Plotkin Jobs": {
+      "slug": "kenplotkinjobs"
+    },
+    "Later": {
+      "slug": "later"
+    },
+    "Linear Foundation": {
+      "slug": "linearfoundation"
+    },
+    "Materialize": {
+      "slug": "materialize"
+    },
+    "Midia": {
+      "slug": "midia"
+    },
+    "Overdrive": {
+      "slug": "overdrive"
+    },
+    "PagerDuty": {
+      "slug": "pagerduty"
+    },
+    "Runwise": {
+      "slug": "runwise"
+    },
+    "Spotify": {
+      "slug": "spotify"
+    },
+    "Storyblocks": {
+      "slug": "storyblocks"
+    },
+    "Tatari": {
+      "slug": "tatari"
+    },
+    "Uniform Force": {
+      "slug": "uniformforce"
+    },
+    "Vivun": {
+      "slug": "vivun"
+    },
+    "Watchmaker Genomics": {
+      "slug": "watchmakergenomics"
     }
   },
   "ashby": {
@@ -997,7 +1081,9 @@
     "DonorsChoose": "donorschoose",
     "Opendoor": "opendoor",
     "Khan Academy": "khanacademy",
-    "Loom": "loom"
+    "Loom": "loom",
+    "Verition": "verition",
+    "Wise": "wise"
   },
   "workable": {
     "Starling Bank": "starling-bank",

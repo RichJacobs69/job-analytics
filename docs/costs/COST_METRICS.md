@@ -131,3 +131,5 @@ The classifier returns cost data in `_cost_data`:
 - **Model**: Using Claude 3.5 Haiku for cost efficiency (~10x cheaper than Sonnet)
 - **Quality**: Haiku achieves ~93% accuracy on job classification tasks
 
+
+
