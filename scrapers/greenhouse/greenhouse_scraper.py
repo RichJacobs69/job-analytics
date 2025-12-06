@@ -872,13 +872,53 @@ class GreenhouseScraper:
                     pass
 
             # Get title from the link element (for table rows) or the element itself (for <a> tags)
-            if link_element:
-                # Table row case - get title from the link within the row
-                title = await link_element.text_content()
-            else:
-                # <a> tag case - get title from the element itself
-                title = await job_element.text_content()
+            title = "Unknown"
+
+            # Determine which element to search for title
+            search_element = link_element if link_element else job_element
+
+            # Try 1: Get title from job_title selector (more specific)
+            job_title_selectors = self.SELECTORS.get('job_title', [])
+            if isinstance(job_title_selectors, str):
+                job_title_selectors = [job_title_selectors]
+
+            for selector in job_title_selectors:
+                try:
+                    title_elem = await search_element.query_selector(selector)
+                    if title_elem:
+                        title = await title_elem.text_content()
+                        break
+                except:
+                    continue
+
+            # Try 2: If not found, get title from first <p> tag (handles Warby Parker table layout)
+            if title == "Unknown" or not title:
+                try:
+                    p_elem = await search_element.query_selector('p:first-of-type')
+                    if p_elem:
+                        title = await p_elem.text_content()
+                except:
+                    pass
+
+            # Try 3: Fallback to text_content() of first paragraph only (not entire element)
+            if title == "Unknown" or not title:
+                try:
+                    first_p_text = await search_element.text_content()
+                    # Split on double newline to separate title from location
+                    if '\n\n' in first_p_text:
+                        title = first_p_text.split('\n\n')[0]
+                    else:
+                        title = first_p_text
+                except:
+                    pass
+
+            # Clean up title: remove "New" badge text and trailing whitespace
             title = title.strip() if title else "Unknown"
+            # Remove " New" or "New" badge that appears after title in Greenhouse (with or without space)
+            # Handles: "Manager New", "ManagerNew", "Center New", "CenterNew"
+            title = re.sub(r'\s*New\s*$', '', title)
+            # Remove any remaining newlines within title and normalize whitespace
+            title = ' '.join(title.split())
 
             if not job_url:
                 logger.debug(f"[{company_slug}] No job URL found for job element")
