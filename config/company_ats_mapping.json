@@ -1,1164 +1,858 @@
 {
-  "greenhouse": {
-    "Stripe": {
-      "slug": "stripe"
-    },
-    "Warby Parker": {
-      "slug": "warbyparker"
-    },
-    "Zocdoc": {
-      "slug": "zocdoc"
-    },
-    "Affirm": {
-      "slug": "affirm"
-    },
-    "Reddit": {
-      "slug": "reddit"
-    },
-    "Airtable": {
-      "slug": "airtable"
-    },
-    "Figma": {
-      "slug": "figma"
-    },
-    "Coursera": {
-      "slug": "coursera"
-    },
-    "BuzzFeed": {
-      "slug": "buzzfeed"
-    },
-    "Rent the Runway": {
-      "slug": "renttherunway"
-    },
-    "DoubleVerify": {
-      "slug": "doubleverify"
-    },
-    "Harry's": {
-      "slug": "harrys"
-    },
-    "Peloton": {
-      "slug": "peloton"
-    },
-    "Vimeo": {
-      "slug": "vimeo"
-    },
-    "Instacart": {
-      "slug": "instacart"
-    },
-    "Twilio": {
-      "slug": "twilio"
-    },
-    "Monzo": {
-      "slug": "monzo"
-    },
-    "GoCardless": {
-      "slug": "gocardless"
-    },
-    "SonderMind": {
-      "slug": "sondermind"
-    },
-    "Angi": {
-      "slug": "angi"
-    },
-    "Checkr": {
-      "slug": "checkr"
-    },
-    "Automox": {
-      "slug": "automox"
-    },
-    "GitLab": {
-      "slug": "gitlab"
-    },
-    "Intercom": {
-      "slug": "intercom"
-    },
-    "Sauce Labs": {
-      "slug": "sauce-labs"
-    },
-    "CFM Company": {
-      "slug": "cfm"
-    },
-    "Capital Rx (Judi Health)": {
-      "slug": "capitalrx"
-    },
-    "Clear Street": {
-      "slug": "clearstreet"
-    },
-    "Conductor": {
-      "slug": "conductor"
-    },
-    "Contentful": {
-      "slug": "contentful"
-    },
-    "Cribl": {
-      "slug": "cribl"
-    },
-    "Engine": {
-      "slug": "engine"
-    },
-    "EverDriven": {
-      "slug": "everdriven"
-    },
-    "GHX (Global Healthcare Exchange)": {
-      "slug": "globalhealthcareexchangeinc"
-    },
-    "Grafana Labs": {
-      "slug": "grafanalabs"
-    },
-    "Gusto": {
-      "slug": "gusto"
-    },
-    "Hudl": {
-      "slug": "hudl"
-    },
-    "Nimble Gravity": {
-      "slug": "nimblegravity"
-    },
-    "Orchard": {
-      "slug": "orchard"
-    },
-    "Ping Identity": {
-      "slug": "pingidentity"
-    },
-    "Prove": {
-      "slug": "prove"
-    },
-    "RedPeak": {
-      "slug": "redpeak"
-    },
-    "Reltio": {
-      "slug": "reltio"
-    },
-    "Sandstone Care - Denver": {
-      "slug": "sandstonedenver"
-    },
-    "Semgrep": {
-      "slug": "semgrep"
-    },
-    "Strive Health": {
-      "slug": "strivehealth"
-    },
-    "The Trade Desk": {
-      "slug": "thetradedesk"
-    },
-    "True Anomaly": {
-      "slug": "trueanomalyinc"
-    },
-    "Workato": {
-      "slug": "workato"
-    },
-    "Datadog": {
-      "slug": "datadog"
-    },
-    "The New York Times": {
-      "slug": "thenewyorktimes"
-    },
-    "Take-Two Interactive": {
-      "slug": "taketwo"
-    },
-    "Convene": {
-      "slug": "convene"
-    },
-    "iCapital": {
-      "slug": "icapitalnetwork"
-    },
-    "RippleMatch": {
-      "slug": "ripplematch"
-    },
-    "Superblocks": {
-      "slug": "superblocks"
-    },
-    "EvolutionIQ": {
-      "slug": "evolutioniq"
-    },
-    "Maven Clinic": {
-      "slug": "mavenclinic"
-    },
-    "Public": {
-      "slug": "public"
-    },
-    "Invisible Technologies": {
-      "slug": "invisibletech"
-    },
-    "Fireworks AI": {
-      "slug": "fireworksai"
-    },
-    "Biohub": {
-      "slug": "biohub"
-    },
-    "New York City Economic Development Corporation": {
-      "slug": "nycedc"
-    },
-    "GlossGenius": {
-      "slug": "glossgenius"
-    },
-    "PDT Partners": {
-      "slug": "pdtpartners"
-    },
-    "Scale AI": {
-      "slug": "scaleai"
-    },
-    "Uniswap Labs": {
-      "slug": "uniswaplabs"
-    },
-    "DoorDash": {
-      "slug": "doordashusa"
-    },
-    "Kalshi": {
-      "slug": "kalshi"
-    },
-    "Grow Therapy": {
-      "slug": "growtherapy"
-    },
-    "Sigma Computing": {
-      "slug": "sigmacomputing"
-    },
-    "Mercury": {
-      "slug": "mercury"
-    },
-    "Monstro": {
-      "slug": "monstro"
-    },
-    "Ava Labs": {
-      "slug": "avalabs"
-    },
-    "Bombas": {
-      "slug": "bombas"
-    },
-    "Known": {
-      "slug": "known"
-    },
-    "Clair": {
-      "slug": "clair"
-    },
-    "Galaxy": {
-      "slug": "galaxydigitalservices"
-    },
-    "VTS": {
-      "slug": "vts"
-    },
-    "Altana": {
-      "slug": "altanaai"
-    },
-    "Whop": {
-      "slug": "whop"
-    },
-    "Philo": {
-      "slug": "philo"
-    },
-    "Garner Health": {
-      "slug": "garnerhealth"
-    },
-    "AutogenAI": {
-      "slug": "autogenai"
-    },
-    "Tripadvisor": {
-      "slug": "tripadvisor"
-    },
-    "Flagstone Group": {
-      "slug": "flagstone"
-    },
-    "WPP": {
-      "slug": "wpp"
-    },
-    "WPP Media": {
-      "slug": "wppmedia"
-    },
-    "Recorded Future": {
-      "slug": "recordedfuture"
-    },
-    "GWI": {
-      "slug": "globalwebindex"
-    },
-    "LiveScore Group": {
-      "slug": "livescore9"
-    },
-    "Ogilvy UK": {
-      "slug": "ogilvyuk"
-    },
-    "DEPT": {
-      "slug": "dept"
-    },
-    "Agilisys": {
-      "slug": "agilisys"
-    },
-    "DataCamp": {
-      "slug": "datacamp"
-    },
-    "HERE Technologies": {
-      "slug": "hereio"
-    },
-    "Schonfeld": {
-      "slug": "schonfeld"
-    },
-    "ApotheCom": {
-      "slug": "apothecom"
-    },
-    "PolyAI": {
-      "slug": "polyai"
-    },
-    "Graphcore": {
-      "slug": "graphcore"
-    },
-    "Goodnotes": {
-      "slug": "goodnotes"
-    },
-    "Algolia": {
-      "slug": "algolia"
-    },
-    "Isomorphic Labs": {
-      "slug": "isomorphiclabs"
-    },
-    "DRW": {
-      "slug": "drweng"
-    },
-    "Sayari": {
-      "slug": "sayari"
-    },
-    "StackAdapt": {
-      "slug": "stackadapt"
-    },
-    "RAPP": {
-      "slug": "rapp"
-    },
-    "Webflow": {
-      "slug": "webflow"
-    },
-    "Anthropic": {
-      "slug": "anthropic"
-    },
-    "TurboTenant": {
-      "slug": "turbotenant"
-    },
-    "Sovrn": {
-      "slug": "sovrn"
-    },
-    "Launch2": {
-      "slug": "launch2"
-    },
-    "Caribou": {
-      "slug": "caribou"
-    },
-    "Simplifed": {
-      "slug": "simplifed"
-    },
-    "System": {
-      "slug": "system"
-    },
-    "Sage49": {
-      "slug": "sage49"
-    },
-    "Beacon Software": {
-      "slug": "beaconsoftware"
-    },
-    "Wingspan": {
-      "slug": "wingspan"
-    },
-    "Litify": {
-      "slug": "litify"
-    },
-    "The Knot Worldwide": {
-      "slug": "theknotworldwide"
-    },
-    "Impiricus": {
-      "slug": "impiricus"
-    },
-    "Spring Health": {
-      "slug": "springhealth66"
-    },
-    "YipitData": {
-      "slug": "yipitdata"
-    },
-    "Cara Medical": {
-      "slug": "caramedicalltd"
-    },
-    "Clear": {
-      "slug": "clear"
-    },
-    "Stensul": {
-      "slug": "stensul"
-    },
-    "Hone Health": {
-      "slug": "honehealth"
-    },
-    "Sixfold": {
-      "slug": "sixfold"
-    },
-    "Recursion Pharmaceuticals": {
-      "slug": "recursionpharmaceuticals"
-    },
-    "Palantir": {
-      "slug": "palantir"
-    },
-    "Modulr": {
-      "slug": "modulr"
-    },
-    "Rho": {
-      "slug": "rho"
-    },
-    "Hippo": {
-      "slug": "hippo"
-    },
-    "Samsara": {
-      "slug": "samsara"
-    },
-    "Yext": {
-      "slug": "yext"
-    },
-    "Paxos": {
-      "slug": "paxos"
-    },
-    "Epic Games": {
-      "slug": "epicgames"
-    },
-    "InsidePacket": {
-      "slug": "insidepacket"
-    },
-    "Virgo Healthcare": {
-      "slug": "virgohealthcare"
-    },
-    "SocarX": {
-      "slug": "socarx"
-    },
-    "Aurora Innovation": {
-      "slug": "aurorainnovation"
-    },
-    "Diligent Corporation": {
-      "slug": "diligentcorporation"
-    },
-    "Oodle Finance": {
-      "slug": "oodlefinance"
-    },
-    "CreativeX": {
-      "slug": "creativex"
-    },
-    "NetBrain Tech": {
-      "slug": "netbraintech"
-    },
-    "QA": {
-      "slug": "qa"
-    },
-    "Commvault": {
-      "slug": "commvault"
-    },
-    "Rapyd": {
-      "slug": "rapyd"
-    },
-    "TrueLayer": {
-      "slug": "truelayer"
-    },
-    "Netskope": {
-      "slug": "netskope"
-    },
-    "Robinhood": {
-      "slug": "robinhood"
-    },
-    "OneNet": {
-      "slug": "onenet"
-    },
-    "Airwallex": {
-      "slug": "airwallex"
-    },
-    "RingCentral": {
-      "slug": "ringcentral"
-    },
-    "Pretio": {
-      "slug": "pretio"
-    },
-    "Segment": {
-      "slug": "segment"
-    },
-    "Paddle": {
-      "slug": "paddle"
-    },
-    "ActiveCampaign": {
-      "slug": "activecampaign"
-    },
-    "Avast": {
-      "slug": "avast"
-    },
-    "Gong": {
-      "slug": "gong"
-    },
-    "Snyk": {
-      "slug": "snyk"
-    },
-    "HelloSign": {
-      "slug": "hellosign"
-    },
-    "HubSpot": {
-      "slug": "hubspot"
-    },
-    "Mollie": {
-      "slug": "mollie"
-    },
-    "Quantexa": {
-      "slug": "quantexa"
-    },
-    "Remote": {
-      "slug": "remotecom"
-    },
-    "Doit International": {
-      "slug": "doitintl"
-    },
-    "SharkNinja": {
-      "slug": "sharkninjaoperatingllc"
-    },
-    "Butternut Box": {
-      "slug": "butternutbox"
-    },
-    "Smartsheet": {
-      "slug": "smartsheet"
-    },
-    "OpenTable": {
-      "slug": "opentable"
-    },
-    "Unybrands": {
-      "slug": "unybrands"
-    },
-    "PayFit": {
-      "slug": "payfit"
-    },
-    "Zendesk": {
-      "slug": "zendesk"
-    },
-    "Ekar": {
-      "slug": "ekar"
-    },
-    "Next Energy Group": {
-      "slug": "nextenergygroup"
-    },
-    "Dice FM": {
-      "slug": "dicefm-careers"
-    },
-    "Vivenu": {
-      "slug": "vivenu"
-    },
-    "Lightricks": {
-      "slug": "lightricks"
-    },
-    "Beamery": {
-      "slug": "beamery"
-    },
-    "Similarweb": {
-      "slug": "similarweb"
-    },
-    "Prolific": {
-      "slug": "prolific"
-    },
-    "Workable": {
-      "slug": "workable"
-    },
-    "Adjust": {
-      "slug": "adjust"
-    },
-    "Ledgy": {
-      "slug": "ledgy"
-    },
-    "Risk Ledger": {
-      "slug": "riskledger"
-    },
-    "Valtech": {
-      "slug": "valtech"
-    },
-    "Improbable": {
-      "slug": "improbable"
-    },
-    "OMG UK": {
-      "slug": "omguk"
-    },
-    "Cobblestone Energy": {
-      "slug": "cobblestoneenergy4"
-    },
-    "Phaidra": {
-      "slug": "phaidra"
-    },
-    "Turtlemint": {
-      "slug": "turtlemint"
-    },
-    "Sharethrough": {
-      "slug": "sharethrough"
-    },
-    "Starling Bank": {
-      "slug": "starlingsbank"
-    },
-    "Triterra": {
-      "slug": "triterra"
-    },
-    "Cera": {
-      "slug": "cera"
-    },
-    "WhiteHat Security": {
-      "slug": "whitehatsec"
-    },
-    "Snorkel AI": {
-      "slug": "snorkelai"
-    },
-    "Abacum": {
-      "slug": "abacum"
-    },
-    "Veriff": {
-      "slug": "veriff"
-    },
-    "Databricks": {
-      "slug": "databricks"
-    },
-    "RELEX Solutions": {
-      "slug": "relex"
-    },
-    "Nine Yards Analytics": {
-      "slug": "nineyardsanalytics"
-    },
-    "Mercon Coffee": {
-      "slug": "merconcoffee"
-    },
-    "Cimpress India": {
-      "slug": "cimpressindia"
-    },
-    "Tridge": {
-      "slug": "tridge"
-    },
-    "MTTN": {
-      "slug": "mttnow"
-    },
-    "Property Monitor": {
-      "slug": "propertymonitor"
-    },
-    "Agra IT": {
-      "slug": "agraitjobs"
-    },
-    "Codacy": {
-      "slug": "codacy"
-    },
-    "Easyship": {
-      "slug": "easyship"
-    },
-    "MongoDB": {
-      "slug": "mongodb"
-    },
-    "Flo Health": {
-      "slug": "flohealth"
-    },
-    "Wheely": {
-      "slug": "wheely"
-    },
-    "Yes Energy": {
-      "slug": "yesenergy"
-    },
-    "Mercer Advisors": {
-      "slug": "merceradvisors"
-    },
-    "RippleMatch Interns": {
-      "slug": "ripplematchinterns"
-    },
-    "Evio": {
-      "slug": "evio"
-    },
-    "SimpleSense": {
-      "slug": "simplesense"
-    },
-    "Speedbay Warehouse": {
-      "slug": "speedbaywarehousesolutions"
-    },
-    "Frontera Health": {
-      "slug": "fronterahealth"
-    },
-    "Speechify": {
-      "slug": "speechify"
-    },
-    "SideByCare": {
-      "slug": "sidebycare"
-    },
-    "Weedmaps": {
-      "slug": "weedmaps77"
-    },
-    "Zora": {
-      "slug": "zora"
-    },
-    "Baron Capital": {
-      "slug": "baroncapital"
-    },
-    "PitchBook": {
-      "slug": "pitchbookdata"
-    },
-    "SurveyMonkey": {
-      "slug": "surveymonkey"
-    },
-    "Proof of Humanity": {
-      "slug": "proofofhumanity"
-    },
-    "Peloton Interactive": {
-      "slug": "onepeloton"
-    },
-    "Flatiron School": {
-      "slug": "flatironschool"
-    },
-    "Aiven": {
-      "slug": "aiven"
-    },
-    "Fivetran": {
-      "slug": "fivetran"
-    },
-    "UnitedMasters": {
-      "slug": "unitedmasters"
-    },
-    "Watershed": {
-      "slug": "watershed"
-    },
-    "Teachable": {
-      "slug": "teachable"
-    },
-    "Bigeye": {
-      "slug": "bigeye"
-    },
-    "BetterUp": {
-      "slug": "betterup"
-    },
-    "CreatorIQ": {
-      "slug": "creatoriq"
-    },
-    "Recount": {
-      "slug": "recount"
-    },
-    "Flyhomes": {
-      "slug": "flyhomes"
-    },
-    "TMP Talent": {
-      "slug": "tmptalent"
-    },
-    "Tusk Ventures": {
-      "slug": "tuskventures"
-    },
-    "Dream Jobs": {
-      "slug": "dreamjobs"
-    },
-    "Flatiron Health": {
-      "slug": "flatironhealth"
-    },
-    "Sprout Social": {
-      "slug": "sproutsocial"
-    },
-    "Riskified": {
-      "slug": "riskified"
-    },
-    "Propel PLC": {
-      "slug": "propelplc"
-    },
-    "Terrible Labs": {
-      "slug": "terriblelabs"
-    },
-    "Sprinklr": {
-      "slug": "sprinklr"
-    },
-    "Healthie": {
-      "slug": "healthie"
-    },
-    "Mindbody": {
-      "slug": "mindbody"
-    },
-    "Carta": {
-      "slug": "carta"
-    },
-    "Kensho": {
-      "slug": "kensho"
-    },
-    "Kong": {
-      "slug": "kong"
-    },
-    "Oliver Wyman": {
-      "slug": "oliverwyman"
-    },
-    "Causal": {
-      "slug": "causal"
-    },
-    "Bolton & Felber Jobs": {
-      "slug": "boltonfelberjobs"
-    },
-    "Mural": {
-      "slug": "mural"
-    },
-    "Sofar Sounds": {
-      "slug": "sofarsounds"
-    },
-    "Virta Health": {
-      "slug": "virtahealth"
-    },
-    "Wonderschool": {
-      "slug": "wonderschool"
-    },
-    "iRhythm": {
-      "slug": "irhythm"
-    },
-    "Violet": {
-      "slug": "violet"
-    },
-    "Cognition": {
-      "slug": "cognition"
-    },
-    "Bravo Now": {
-      "slug": "bravonow"
-    },
-    "Modus Create": {
-      "slug": "moduscreate"
-    },
-    "STI Intuit": {
-      "slug": "stiintuit"
-    },
-    "Salsify": {
-      "slug": "salsify"
-    },
-    "Frame Tech": {
-      "slug": "frametechjobs"
-    },
-    "Agorapulse": {
-      "slug": "agorapulse"
-    },
-    "Lob": {
-      "slug": "lob"
-    },
-    "First Mode": {
-      "slug": "firstmode"
-    },
-    "Codeverse": {
-      "slug": "codeverse"
-    },
-    "Pager": {
-      "slug": "pager"
-    },
-    "PandaDoc": {
-      "slug": "pandadoc"
-    },
-    "DataRobot": {
-      "slug": "datarobot"
-    },
-    "Squarespace": {
-      "slug": "squarespace"
-    },
-    "Leapsome": {
-      "slug": "leapsome"
-    },
-    "Vivian Health": {
-      "slug": "vivianhealth"
-    },
-    "RH": {
-      "slug": "rh"
-    },
-    "Wizard Commerce": {
-      "slug": "wizardcommerce"
-    },
-    "Earthjustice": {
-      "slug": "earthjustice"
-    },
-    "Liftoff": {
-      "slug": "liftoffio"
-    },
-    "VGS": {
-      "slug": "vgs"
-    },
-    "Tydo": {
-      "slug": "tydo"
-    },
-    "Welcome to the Jungle": {
-      "slug": "welcometothejungle"
-    },
-    "Myanmar": {
-      "slug": "myanmar"
-    },
-    "Soona": {
-      "slug": "soona"
-    },
-    "Auto1": {
-      "slug": "auto1"
-    },
-    "ECI": {
-      "slug": "eci"
-    },
-    "ETSI": {
-      "slug": "etsi"
-    },
-    "Motive": {
-      "slug": "motive"
-    },
-    "Odd Jobs": {
-      "slug": "oddjobs"
-    },
-    "Thorn": {
-      "slug": "thorn"
-    },
-    "Omada Health": {
-      "slug": "omadahealth"
-    },
-    "Everlaw": {
-      "slug": "everlaw"
-    },
-    "Intern": {
-      "slug": "intern"
-    },
-    "Linqia": {
-      "slug": "linqia"
-    },
-    "Energy Exemplar": {
-      "slug": "energyexemplarllc"
-    },
-    "Flywire": {
-      "slug": "flywire"
-    },
-    "Paloma Health UK": {
-      "slug": "palomahealthuk"
-    },
-    "CluedIn": {
-      "slug": "cluedinaps"
-    },
-    "Dwelly": {
-      "slug": "dwelly"
-    },
-    "Policy Expert": {
-      "slug": "policyexpert"
-    },
-    "Digital Catapult": {
-      "slug": "digitalcatapult"
-    },
-    "Mangopay": {
-      "slug": "mangopay"
-    },
-    "Optimove": {
-      "slug": "optimove"
-    },
-    "Glovo": {
-      "slug": "glovo"
-    },
-    "Sekoia": {
-      "slug": "sekoiajobs"
-    },
-    "Noname Security": {
-      "slug": "nonamesecurity"
-    },
-    "ServiceTitan": {
-      "slug": "servicetitan"
-    },
-    "SumUp": {
-      "slug": "sumup"
-    },
-    "BigChange": {
-      "slug": "bigchange"
-    },
-    "Pave": {
-      "slug": "pave"
-    },
-    "Finom": {
-      "slug": "finom"
-    },
-    "Pendo": {
-      "slug": "pendo"
-    },
-    "Sedo": {
-      "slug": "sedo"
-    },
-    "SaltPay": {
-      "slug": "saltpay"
-    },
-    "StatsBomb": {
-      "slug": "statsbomb"
-    },
-    "New Relic": {
-      "slug": "newrelic"
-    },
-    "AppLearn": {
-      "slug": "applearn"
-    },
-    "Broadpeak": {
-      "slug": "broadpeak"
-    },
-    "The Dot Collective": {
-      "slug": "thedotcollective"
-    },
-    "AssemblyAI": {
-      "slug": "assemblyai"
-    },
-    "Awin": {
-      "slug": "awin"
-    },
-    "AWS BDISI": {
-      "slug": "aws-bdisi"
-    },
-    "Blis": {
-      "slug": "blisjobs"
-    },
-    "Bryant Park Consulting": {
-      "slug": "bryantparkconsulting"
-    },
-    "Dolby": {
-      "slug": "dolby"
-    },
-    "English Jobs": {
-      "slug": "englishjobs"
-    },
-    "Etsy Labs": {
-      "slug": "etsylabs"
-    },
-    "Everbridge": {
-      "slug": "everbridge"
-    },
-    "Finson Jobs": {
-      "slug": "finsonjobs"
-    },
-    "Greenlight": {
-      "slug": "greenlight"
-    },
-    "Gumtree": {
-      "slug": "gumtree"
-    },
-    "Human Security": {
-      "slug": "humansecurity"
-    },
-    "Justworks": {
-      "slug": "justworks"
-    },
-    "Ken Plotkin Jobs": {
-      "slug": "kenplotkinjobs"
-    },
-    "Later": {
-      "slug": "later"
-    },
-    "Linear Foundation": {
-      "slug": "linearfoundation"
-    },
-    "Materialize": {
-      "slug": "materialize"
-    },
-    "Midia": {
-      "slug": "midia"
-    },
-    "Overdrive": {
-      "slug": "overdrive"
-    },
-    "PagerDuty": {
-      "slug": "pagerduty"
-    },
-    "Runwise": {
-      "slug": "runwise"
-    },
-    "Spotify": {
-      "slug": "spotify"
-    },
-    "Storyblocks": {
-      "slug": "storyblocks"
-    },
-    "Tatari": {
-      "slug": "tatari"
-    },
-    "Uniform Force": {
-      "slug": "uniformforce"
-    },
-    "Vivun": {
-      "slug": "vivun"
-    },
-    "Watchmaker Genomics": {
-      "slug": "watchmakergenomics"
+    "greenhouse": {
+        "Stripe": {
+            "slug": "stripe"
+        },
+        "Warby Parker": {
+            "slug": "warbyparker"
+        },
+        "Zocdoc": {
+            "slug": "zocdoc"
+        },
+        "Affirm": {
+            "slug": "affirm"
+        },
+        "Reddit": {
+            "slug": "reddit"
+        },
+        "Airtable": {
+            "slug": "airtable"
+        },
+        "Figma": {
+            "slug": "figma"
+        },
+        "Coursera": {
+            "slug": "coursera"
+        },
+        "BuzzFeed": {
+            "slug": "buzzfeed"
+        },
+        "Rent the Runway": {
+            "slug": "renttherunway"
+        },
+        "DoubleVerify": {
+            "slug": "doubleverify"
+        },
+        "Harry's": {
+            "slug": "harrys"
+        },
+        "Peloton": {
+            "slug": "peloton"
+        },
+        "Vimeo": {
+            "slug": "vimeo"
+        },
+        "Instacart": {
+            "slug": "instacart"
+        },
+        "Twilio": {
+            "slug": "twilio"
+        },
+        "Monzo": {
+            "slug": "monzo"
+        },
+        "GoCardless": {
+            "slug": "gocardless"
+        },
+        "SonderMind": {
+            "slug": "sondermind"
+        },
+        "Angi": {
+            "slug": "angi"
+        },
+        "Checkr": {
+            "slug": "checkr"
+        },
+        "Automox": {
+            "slug": "automox"
+        },
+        "GitLab": {
+            "slug": "gitlab"
+        },
+        "Intercom": {
+            "slug": "intercom"
+        },
+        "CFM Company": {
+            "slug": "cfm"
+        },
+        "Capital Rx (Judi Health)": {
+            "slug": "capitalrx"
+        },
+        "Clear Street": {
+            "slug": "clearstreet"
+        },
+        "Conductor": {
+            "slug": "conductor"
+        },
+        "Contentful": {
+            "slug": "contentful"
+        },
+        "Cribl": {
+            "slug": "cribl"
+        },
+        "Engine": {
+            "slug": "engine"
+        },
+        "EverDriven": {
+            "slug": "everdriven"
+        },
+        "GHX (Global Healthcare Exchange)": {
+            "slug": "globalhealthcareexchangeinc"
+        },
+        "Grafana Labs": {
+            "slug": "grafanalabs"
+        },
+        "Gusto": {
+            "slug": "gusto"
+        },
+        "Hudl": {
+            "slug": "hudl"
+        },
+        "Nimble Gravity": {
+            "slug": "nimblegravity"
+        },
+        "Orchard": {
+            "slug": "orchard"
+        },
+        "Ping Identity": {
+            "slug": "pingidentity"
+        },
+        "Prove": {
+            "slug": "prove"
+        },
+        "RedPeak": {
+            "slug": "redpeak"
+        },
+        "Reltio": {
+            "slug": "reltio"
+        },
+        "Sandstone Care - Denver": {
+            "slug": "sandstonedenver"
+        },
+        "Semgrep": {
+            "slug": "semgrep"
+        },
+        "Strive Health": {
+            "slug": "strivehealth"
+        },
+        "The Trade Desk": {
+            "slug": "thetradedesk"
+        },
+        "True Anomaly": {
+            "slug": "trueanomalyinc"
+        },
+        "Workato": {
+            "slug": "workato"
+        },
+        "Datadog": {
+            "slug": "datadog"
+        },
+        "The New York Times": {
+            "slug": "thenewyorktimes"
+        },
+        "Take-Two Interactive": {
+            "slug": "taketwo"
+        },
+        "Convene": {
+            "slug": "convene"
+        },
+        "iCapital": {
+            "slug": "icapitalnetwork"
+        },
+        "RippleMatch": {
+            "slug": "ripplematch"
+        },
+        "Superblocks": {
+            "slug": "superblocks"
+        },
+        "EvolutionIQ": {
+            "slug": "evolutioniq"
+        },
+        "Maven Clinic": {
+            "slug": "mavenclinic"
+        },
+        "Public": {
+            "slug": "public"
+        },
+        "Invisible Technologies": {
+            "slug": "invisibletech"
+        },
+        "Fireworks AI": {
+            "slug": "fireworksai"
+        },
+        "Biohub": {
+            "slug": "biohub"
+        },
+        "New York City Economic Development Corporation": {
+            "slug": "nycedc"
+        },
+        "GlossGenius": {
+            "slug": "glossgenius"
+        },
+        "PDT Partners": {
+            "slug": "pdtpartners"
+        },
+        "Scale AI": {
+            "slug": "scaleai"
+        },
+        "Uniswap Labs": {
+            "slug": "uniswaplabs"
+        },
+        "DoorDash": {
+            "slug": "doordashusa"
+        },
+        "Kalshi": {
+            "slug": "kalshi"
+        },
+        "Grow Therapy": {
+            "slug": "growtherapy"
+        },
+        "Sigma Computing": {
+            "slug": "sigmacomputing"
+        },
+        "Mercury": {
+            "slug": "mercury"
+        },
+        "Monstro": {
+            "slug": "monstro"
+        },
+        "Ava Labs": {
+            "slug": "avalabs"
+        },
+        "Bombas": {
+            "slug": "bombas"
+        },
+        "Known": {
+            "slug": "known"
+        },
+        "Clair": {
+            "slug": "clair"
+        },
+        "Galaxy": {
+            "slug": "galaxydigitalservices"
+        },
+        "VTS": {
+            "slug": "vts"
+        },
+        "Altana": {
+            "slug": "altanaai"
+        },
+        "Whop": {
+            "slug": "whop"
+        },
+        "Philo": {
+            "slug": "philo"
+        },
+        "Garner Health": {
+            "slug": "garnerhealth"
+        },
+        "AutogenAI": {
+            "slug": "autogenai"
+        },
+        "Tripadvisor": {
+            "slug": "tripadvisor"
+        },
+        "Flagstone Group": {
+            "slug": "flagstone"
+        },
+        "WPP": {
+            "slug": "wpp"
+        },
+        "WPP Media": {
+            "slug": "wppmedia"
+        },
+        "Recorded Future": {
+            "slug": "recordedfuture"
+        },
+        "GWI": {
+            "slug": "globalwebindex"
+        },
+        "LiveScore Group": {
+            "slug": "livescore9"
+        },
+        "Ogilvy UK": {
+            "slug": "ogilvyuk"
+        },
+        "DEPT": {
+            "slug": "dept"
+        },
+        "Agilisys": {
+            "slug": "agilisys"
+        },
+        "DataCamp": {
+            "slug": "datacamp"
+        },
+        "HERE Technologies": {
+            "slug": "hereio"
+        },
+        "Schonfeld": {
+            "slug": "schonfeld"
+        },
+        "ApotheCom": {
+            "slug": "apothecom"
+        },
+        "PolyAI": {
+            "slug": "polyai"
+        },
+        "Graphcore": {
+            "slug": "graphcore"
+        },
+        "Goodnotes": {
+            "slug": "goodnotes"
+        },
+        "Algolia": {
+            "slug": "algolia"
+        },
+        "Isomorphic Labs": {
+            "slug": "isomorphiclabs"
+        },
+        "DRW": {
+            "slug": "drweng"
+        },
+        "Sayari": {
+            "slug": "sayari"
+        },
+        "StackAdapt": {
+            "slug": "stackadapt"
+        },
+        "RAPP": {
+            "slug": "rapp"
+        },
+        "Webflow": {
+            "slug": "webflow"
+        },
+        "Anthropic": {
+            "slug": "anthropic"
+        },
+        "TurboTenant": {
+            "slug": "turbotenant"
+        },
+        "Sovrn": {
+            "slug": "sovrn"
+        },
+        "Launch2": {
+            "slug": "launch2"
+        },
+        "Caribou": {
+            "slug": "caribou"
+        },
+        "Simplifed": {
+            "slug": "simplifed"
+        },
+        "System": {
+            "slug": "system"
+        },
+        "Sage49": {
+            "slug": "sage49"
+        },
+        "Beacon Software": {
+            "slug": "beaconsoftware"
+        },
+        "Wingspan": {
+            "slug": "wingspan"
+        },
+        "Litify": {
+            "slug": "litify"
+        },
+        "The Knot Worldwide": {
+            "slug": "theknotworldwide"
+        },
+        "Impiricus": {
+            "slug": "impiricus"
+        },
+        "Spring Health": {
+            "slug": "springhealth66"
+        },
+        "YipitData": {
+            "slug": "yipitdata"
+        },
+        "Cara Medical": {
+            "slug": "caramedicalltd"
+        },
+        "Clear": {
+            "slug": "clear"
+        },
+        "Stensul": {
+            "slug": "stensul"
+        },
+        "Hone Health": {
+            "slug": "honehealth"
+        },
+        "Sixfold": {
+            "slug": "sixfold"
+        },
+        "Recursion Pharmaceuticals": {
+            "slug": "recursionpharmaceuticals"
+        },
+        "Modulr": {
+            "slug": "modulrfinance"
+        },
+        "Samsara": {
+            "slug": "samsara"
+        },
+        "Yext": {
+            "slug": "yext"
+        },
+        "Epic Games": {
+            "slug": "epicgames"
+        },
+        "Aurora Innovation": {
+            "slug": "aurorainnovation"
+        },
+        "Diligent Corporation": {
+            "slug": "diligentcorporation"
+        },
+        "Oodle Finance": {
+            "slug": "oodlefinance"
+        },
+        "CreativeX": {
+            "slug": "creativex"
+        },
+        "Commvault": {
+            "slug": "commvault"
+        },
+        "TrueLayer": {
+            "slug": "truelayer"
+        },
+        "Netskope": {
+            "slug": "netskope"
+        },
+        "Robinhood": {
+            "slug": "robinhood"
+        },
+        "HubSpot": {
+            "slug": "hubspotjobs"
+        },
+        "Remote": {
+            "slug": "remotecom"
+        },
+        "Doit International": {
+            "slug": "doitintl"
+        },
+        "SharkNinja": {
+            "slug": "sharkninjaoperatingllc"
+        },
+        "Butternut Box": {
+            "slug": "butternutbox"
+        },
+        "Smartsheet": {
+            "slug": "smartsheet"
+        },
+        "OpenTable": {
+            "slug": "opentable"
+        },
+        "Unybrands": {
+            "slug": "unybrands"
+        },
+        "Dice FM": {
+            "slug": "dicefm-careers"
+        },
+        "Lightricks": {
+            "slug": "lightricks"
+        },
+        "Similarweb": {
+            "slug": "similarweb"
+        },
+        "Prolific": {
+            "slug": "prolific"
+        },
+        "Ledgy": {
+            "slug": "ledgy"
+        },
+        "Risk Ledger": {
+            "slug": "riskledger"
+        },
+        "Valtech": {
+            "slug": "valtech"
+        },
+        "OMG UK": {
+            "slug": "omguk"
+        },
+        "Cobblestone Energy": {
+            "slug": "cobblestoneenergy4"
+        },
+        "Phaidra": {
+            "slug": "phaidra"
+        },
+        "Snorkel AI": {
+            "slug": "snorkelai"
+        },
+        "Veriff": {
+            "slug": "veriff"
+        },
+        "Databricks": {
+            "slug": "databricks"
+        },
+        "RELEX Solutions": {
+            "slug": "relex"
+        },
+        "Tridge": {
+            "slug": "tridge"
+        },
+        "Easyship": {
+            "slug": "easyship"
+        },
+        "MongoDB": {
+            "slug": "mongodb"
+        },
+        "Flo Health": {
+            "slug": "flohealth"
+        },
+        "Wheely": {
+            "slug": "wheely"
+        },
+        "Yes Energy": {
+            "slug": "yesenergy"
+        },
+        "Mercer Advisors": {
+            "slug": "merceradvisors"
+        },
+        "RippleMatch Interns": {
+            "slug": "ripplematchinterns"
+        },
+        "Evio": {
+            "slug": "evio"
+        },
+        "SimpleSense": {
+            "slug": "simplesense"
+        },
+        "Speedbay Warehouse": {
+            "slug": "speedbaywarehousesolutions"
+        },
+        "Frontera Health": {
+            "slug": "fronterahealth"
+        },
+        "Speechify": {
+            "slug": "speechify"
+        },
+        "SideByCare": {
+            "slug": "sidebycare"
+        },
+        "Weedmaps": {
+            "slug": "weedmaps77"
+        },
+        "Zora": {
+            "slug": "zora"
+        },
+        "Baron Capital": {
+            "slug": "baroncapital"
+        },
+        "PitchBook": {
+            "slug": "pitchbookdata"
+        },
+        "SurveyMonkey": {
+            "slug": "surveymonkey"
+        },
+        "Fivetran": {
+            "slug": "fivetran"
+        },
+        "Watershed": {
+            "slug": "watershed"
+        },
+        "Flatiron Health": {
+            "slug": "flatironhealth"
+        },
+        "Sprout Social": {
+            "slug": "sproutsocial"
+        },
+        "Riskified": {
+            "slug": "riskified"
+        },
+        "Healthie": {
+            "slug": "healthie"
+        },
+        "Mindbody": {
+            "slug": "mindbody"
+        },
+        "Carta": {
+            "slug": "carta"
+        },
+        "Wonderschool": {
+            "slug": "wonderschool"
+        },
+        "Modus Create": {
+            "slug": "moduscreate"
+        },
+        "Salsify": {
+            "slug": "salsify"
+        },
+        "Lob": {
+            "slug": "lob"
+        },
+        "PandaDoc": {
+            "slug": "pandadoc"
+        },
+        "Squarespace": {
+            "slug": "squarespace"
+        },
+        "Wizard Commerce": {
+            "slug": "wizardcommerce"
+        },
+        "Liftoff": {
+            "slug": "liftoff"
+        },
+        "Motive": {
+            "slug": "motive"
+        },
+        "Thorn": {
+            "slug": "thorn"
+        },
+        "Omada Health": {
+            "slug": "omadahealth"
+        },
+        "Everlaw": {
+            "slug": "everlaw"
+        },
+        "Intern": {
+            "slug": "intern"
+        },
+        "Linqia": {
+            "slug": "linqia"
+        },
+        "Energy Exemplar": {
+            "slug": "energyexemplarllc"
+        },
+        "Paloma Health UK": {
+            "slug": "palomahealthuk"
+        },
+        "CluedIn": {
+            "slug": "cluedinaps"
+        },
+        "Dwelly": {
+            "slug": "dwelly"
+        },
+        "Policy Expert": {
+            "slug": "policyexpert"
+        },
+        "Mangopay": {
+            "slug": "mangopay"
+        },
+        "Optimove": {
+            "slug": "optimove"
+        },
+        "Glovo": {
+            "slug": "glovo"
+        },
+        "SumUp": {
+            "slug": "sumup"
+        },
+        "Pendo": {
+            "slug": "pendo"
+        },
+        "Sedo": {
+            "slug": "sedo"
+        },
+        "New Relic": {
+            "slug": "newrelic"
+        },
+        "The Dot Collective": {
+            "slug": "thedotcollective"
+        },
+        "AssemblyAI": {
+            "slug": "assemblyai"
+        },
+        "Awin": {
+            "slug": "awin"
+        },
+        "Bryant Park Consulting": {
+            "slug": "bryantparkconsulting"
+        },
+        "Justworks": {
+            "slug": "justworks"
+        },
+        "Later": {
+            "slug": "later"
+        },
+        "Materialize": {
+            "slug": "materialize"
+        },
+        "PagerDuty": {
+            "slug": "pagerduty"
+        },
+        "Runwise": {
+            "slug": "runwise"
+        },
+        "Storyblocks": {
+            "slug": "storyblocks"
+        },
+        "Tatari": {
+            "slug": "tatari"
+        },
+        "Watchmaker Genomics": {
+            "slug": "watchmakergenomics"
+        },
+        "Adyen": {
+            "slug": "adyen"
+        },
+        "Amwell": {
+            "slug": "amwell"
+        },
+        "Asana": {
+            "slug": "asana"
+        },
+        "Block": {
+            "slug": "block"
+        },
+        "Cleo": {
+            "slug": "cleo"
+        },
+        "Discord": {
+            "slug": "discord"
+        },
+        "DonorsChoose": {
+            "slug": "donorschoose"
+        },
+        "Duolingo": {
+            "slug": "duolingo"
+        },
+        "Form3": {
+            "slug": "form3"
+        },
+        "Formlabs": {
+            "slug": "formlabs"
+        },
+        "Grammarly": {
+            "slug": "grammarly"
+        },
+        "Khan Academy": {
+            "slug": "khanacademy"
+        },
+        "Lucid Software": {
+            "slug": "lucidsoftware"
+        },
+        "MasterClass": {
+            "slug": "masterclass"
+        },
+        "One Medical": {
+            "slug": "onemedical"
+        },
+        "Opendoor": {
+            "slug": "opendoor"
+        },
+        "Parsley Health": {
+            "slug": "parsleyhealth"
+        },
+        "Postman": {
+            "slug": "postman"
+        },
+        "Retool": {
+            "slug": "retool"
+        },
+        "Stability AI": {
+            "slug": "stabilityai"
+        },
+        "Taboola": {
+            "slug": "taboola"
+        },
+        "Together AI": {
+            "slug": "togetherai"
+        },
+        "Vercel": {
+            "slug": "vercel"
+        }
+    },
+    "ashby": {
+        "Notion": "notion",
+        "Vercel": "vercel",
+        "Retool": "retool",
+        "Rippling": "rippling",
+        "OpenSea": "opensea",
+        "Linear": "linear",
+        "Replit": "replit",
+        "Midjourney": "midjourney",
+        "Perplexity AI": "perplexity",
+        "Vanta": "vanta",
+        "Sourcegraph": "sourcegraph",
+        "Hex (Hex Technologies)": "hex"
+    },
+    "lever": {
+        "Atlassian": "atlassian",
+        "Grammarly": "grammarly",
+        "Quora": "quora",
+        "Patreon": "patreon",
+        "Postman": "postman",
+        "Eventbrite": "eventbrite",
+        "DonorsChoose": "donorschoose",
+        "Opendoor": "opendoor",
+        "Khan Academy": "khanacademy",
+        "Loom": "loom",
+        "Verition": "verition",
+        "Wise": "wise"
+    },
+    "workable": {
+        "Starling Bank": "starling-bank",
+        "Zego": "zego",
+        "Cleo": "meetcleo",
+        "Form3": "form3",
+        "Gousto": "gousto",
+        "Codat": "codat",
+        "Curve": "curve",
+        "Pento": "pento"
+    },
+    "smartrecruiters": {
+        "Spotify": "Spotify",
+        "Ubisoft": "Ubisoft",
+        "King": "King"
+    },
+    "bamboohr": {
+        "Formlabs": "formlabs",
+        "Lucid Software": "lucid"
+    },
+    "recruitee": {
+        "Backbase": "backbase",
+        "Bynder": "bynder",
+        "Otrium": "otrium"
+    },
+    "comeet": {
+        "Riskified": "riskified",
+        "Taboola": "taboola",
+        "Similarweb": "similarweb",
+        "Fiverr": "fiverr",
+        "Via (Via Transportation)": "viatransportation"
+    },
+    "taleo": {
+        "Transport for London (TfL)": "tfl",
+        "Metropolitan Police": "metpolice",
+        "University College London (UCL)": "ucl",
+        "University of the Arts London (UAL)": "ual"
+    },
+    "workday": {
+        "Bloomberg": "bloomberg",
+        "Deliveroo": "deliveroo",
+        "Snowflake": "snowflakecomputing",
+        "Nike": "nike",
+        "Salesforce": "salesforce",
+        "Walmart": "walmart",
+        "Target": "target"
+    },
+    "custom": {
+        "Microsoft": "https://careers.microsoft.com",
+        "Johnson & Johnson": "https://jobs.jnj.com",
+        "ServiceNow": "https://careers.servicenow.com",
+        "DaVita": "https://careers.davita.com",
+        "DISH": "https://careers.dish.com",
+        "JPMorgan Chase": "https://careers.jpmorgan.com/global/en",
+        "BlackRock": "https://careers.blackrock.com",
+        "Citi": "https://careers.citigroup.com",
+        "Shell": "https://jobs.shell.com",
+        "HSBC": "https://mycareer.hsbc.com",
+        "Amazon": "https://www.amazon.jobs",
+        "Google": "https://careers.google.com/jobs/results/",
+        "Apple": "https://jobs.apple.com",
+        "Meta": "https://www.metacareers.com",
+        "Netflix": "https://jobs.netflix.com",
+        "Tesla": "https://www.tesla.com/careers",
+        "Jane Street": "https://www.janestreet.com/join-jane-street/",
+        "Hudson River Trading": "https://www.hudsonrivertrading.com/careers/",
+        "Citadel": "https://www.citadel.com/careers/",
+        "DE Shaw": "https://www.deshaw.com/careers",
+        "Jump Trading": "https://jumptrading.com/careers/",
+        "DRW": "https://drw.com/work-at-drw/",
+        "IMC Trading": "https://www.imc.com/us/careers/",
+        "Optiver": "https://optiver.com/working-at-optiver/",
+        "Uber": "https://www.uber.com/us/en/careers/",
+        "DeepMind": "https://www.deepmind.com/careers",
+        "The Guardian": "https://workforus.theguardian.com/",
+        "BBC": "https://careerssearch.bbc.co.uk/"
     }
-  },
-  "ashby": {
-    "Notion": "notion",
-    "Vercel": "vercel",
-    "Retool": "retool",
-    "Rippling": "rippling",
-    "OpenSea": "opensea",
-    "Linear": "linear",
-    "Replit": "replit",
-    "Midjourney": "midjourney",
-    "Perplexity AI": "perplexity",
-    "Vanta": "vanta",
-    "Sourcegraph": "sourcegraph",
-    "Hex (Hex Technologies)": "hex"
-  },
-  "lever": {
-    "Atlassian": "atlassian",
-    "Grammarly": "grammarly",
-    "Quora": "quora",
-    "Patreon": "patreon",
-    "Postman": "postman",
-    "Eventbrite": "eventbrite",
-    "DonorsChoose": "donorschoose",
-    "Opendoor": "opendoor",
-    "Khan Academy": "khanacademy",
-    "Loom": "loom",
-    "Verition": "verition",
-    "Wise": "wise"
-  },
-  "workable": {
-    "Starling Bank": "starling-bank",
-    "Zego": "zego",
-    "Cleo": "meetcleo",
-    "Form3": "form3",
-    "Gousto": "gousto",
-    "Codat": "codat",
-    "Curve": "curve",
-    "Pento": "pento"
-  },
-  "smartrecruiters": {
-    "Spotify": "Spotify",
-    "Ubisoft": "Ubisoft",
-    "King": "King"
-  },
-  "bamboohr": {
-    "Formlabs": "formlabs",
-    "Lucid Software": "lucid"
-  },
-  "recruitee": {
-    "Backbase": "backbase",
-    "Bynder": "bynder",
-    "Otrium": "otrium"
-  },
-  "comeet": {
-    "Riskified": "riskified",
-    "Taboola": "taboola",
-    "Similarweb": "similarweb",
-    "Fiverr": "fiverr",
-    "Via (Via Transportation)": "viatransportation"
-  },
-  "taleo": {
-    "Transport for London (TfL)": "tfl",
-    "Metropolitan Police": "metpolice",
-    "University College London (UCL)": "ucl",
-    "University of the Arts London (UAL)": "ual"
-  },
-  "workday": {
-    "Bloomberg": "bloomberg",
-    "Deliveroo": "deliveroo",
-    "Snowflake": "snowflakecomputing",
-    "Nike": "nike",
-    "Salesforce": "salesforce",
-    "Walmart": "walmart",
-    "Target": "target"
-  },
-  "custom": {
-    "Microsoft": "https://careers.microsoft.com",
-    "Johnson & Johnson": "https://jobs.jnj.com",
-    "ServiceNow": "https://careers.servicenow.com",
-    "DaVita": "https://careers.davita.com",
-    "DISH": "https://careers.dish.com",
-    "JPMorgan Chase": "https://careers.jpmorgan.com/global/en",
-    "BlackRock": "https://careers.blackrock.com",
-    "Citi": "https://careers.citigroup.com",
-    "Shell": "https://jobs.shell.com",
-    "HSBC": "https://mycareer.hsbc.com",
-    "Amazon": "https://www.amazon.jobs",
-    "Google": "https://careers.google.com/jobs/results/",
-    "Apple": "https://jobs.apple.com",
-    "Meta": "https://www.metacareers.com",
-    "Netflix": "https://jobs.netflix.com",
-    "Tesla": "https://www.tesla.com/careers",
-    "Jane Street": "https://www.janestreet.com/join-jane-street/",
-    "Hudson River Trading": "https://www.hudsonrivertrading.com/careers/",
-    "Citadel": "https://www.citadel.com/careers/",
-    "DE Shaw": "https://www.deshaw.com/careers",
-    "Jump Trading": "https://jumptrading.com/careers/",
-    "DRW": "https://drw.com/work-at-drw/",
-    "IMC Trading": "https://www.imc.com/us/careers/",
-    "Optiver": "https://optiver.com/working-at-optiver/",
-    "Uber": "https://www.uber.com/us/en/careers/",
-    "DeepMind": "https://www.deepmind.com/careers",
-    "The Guardian": "https://workforus.theguardian.com/",
-    "BBC": "https://careerssearch.bbc.co.uk/"
-  }
 }

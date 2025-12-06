@@ -30,7 +30,15 @@ python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
 # With filtering:
 python fetch_jobs.py lon 100 --sources adzuna,greenhouse --min-description-length 500
 
+# With companies filter:
+python fetch_jobs.py lon 100 --sources adzuna,greenhouse --companies "company1,company2,company3"
+
+# with resume hours:
+python fetch_jobs.py lon 100 --sources adzuna,greenhouse --resume-hours 24
 Author: Claude Code
+
+# with adzuna max days old:
+python fetch_jobs.py lon 100 --sources adzuna,greenhouse --adzuna-max-days-old 30
 """
 
 import asyncio
@@ -52,7 +60,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
+async def fetch_from_adzuna(city: str, max_jobs_per_query: int, max_days_old: int = 30) -> List:
     """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects
     
     Now supports pagination with rate limiting to fetch more than 50 jobs per query.
@@ -68,6 +76,7 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
 
         logger.info(f"Fetching jobs from Adzuna API for {city}")
         logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with up to {max_jobs_per_query} jobs per query")
+        logger.info(f"Filtering Adzuna results to jobs posted in last {max_days_old} days")
         
         # Show API call estimate
         estimate = calculate_api_calls(
@@ -88,6 +97,7 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int) -> List:
                 city_code=city,
                 search_query=query,
                 max_results=max_jobs_per_query,
+                max_days_old=max_days_old,
                 verbose=True
             )
 
@@ -294,7 +304,8 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         'cost_saved_filtering': 0.0,
         'cost_classification': 0.0,
         'start_time': pipeline_start_time,
-        'resume_hours': resume_hours
+        'resume_hours': resume_hours,
+        'zero_job_companies': []
     }
 
     # Callback function to process each company's jobs incrementally
@@ -317,6 +328,10 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         logger.info(f"  - Filter rate: {company_stats.get('filter_rate', 0):.1f}%")
         logger.info(f"  - Cost saved: ${company_stats['jobs_filtered'] * 0.00388:.2f}")
         logger.info(f"{'-'*80}")
+
+        # Track companies where nothing was kept to process
+        if len(jobs) == 0:
+            stats['zero_job_companies'].append(company_slug)
 
         # Update global stats
         stats['companies_processed'] += 1
@@ -595,12 +610,19 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     logger.info(f"  - Net cost: ${stats['cost_classification']:.2f}")
     logger.info(f"  - Cost per job enriched: ${stats['cost_classification']/stats['jobs_written_enriched'] if stats['jobs_written_enriched'] > 0 else 0:.4f}")
 
+    logger.info(f"\nCompanies with 0 jobs kept:")
+    if stats['zero_job_companies']:
+        for slug in stats['zero_job_companies']:
+            logger.info(f"  - {slug}")
+    else:
+        logger.info("  - none")
+
     logger.info("="*80)
 
     return stats
 
 
-async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dict:
+async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_days_old: int = 30) -> Dict:
     """
     Process Adzuna jobs incrementally with upsert pattern.
     
@@ -644,7 +666,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100) -> Dic
     }
     
     # Fetch jobs from Adzuna
-    jobs = await fetch_from_adzuna(city_code, max_jobs)
+    jobs = await fetch_from_adzuna(city_code, max_jobs, max_days_old=max_days_old)
     
     if not jobs:
         logger.warning(f"No Adzuna jobs fetched for {city_code}")
@@ -1112,6 +1134,13 @@ Examples:
         help='Resume mode: Skip companies processed within last N hours (0 = disabled). Example: --resume-hours 24'
     )
 
+    parser.add_argument(
+        '--adzuna-max-days-old',
+        type=int,
+        default=30,
+        help='Adzuna only: filter to jobs posted within last N days (max_days_old). Default: 30'
+    )
+
     args = parser.parse_args()
 
     logger.info("="*80)
@@ -1124,6 +1153,7 @@ Examples:
     if 'adzuna' in [s.strip().lower() for s in args.sources.split(',')]:
         from scrapers.adzuna.fetch_adzuna_jobs import DEFAULT_SEARCH_QUERIES
         logger.info(f"Adzuna will search {len(DEFAULT_SEARCH_QUERIES)} role types: {', '.join(DEFAULT_SEARCH_QUERIES[:3])}...")
+        logger.info(f"Adzuna max_days_old filter: {args.adzuna_max_days_old} days")
     logger.info("="*80 + "\n")
 
     # Parse sources
@@ -1153,7 +1183,11 @@ Examples:
     # ADZUNA PIPELINE: Incremental processing (same pattern as Greenhouse)
     # Upserts to raw_jobs first, only classifies NEW jobs to save API costs
     if 'adzuna' in sources:
-        adzuna_stats = await process_adzuna_incremental(args.city, args.max_jobs)
+        adzuna_stats = await process_adzuna_incremental(
+            args.city,
+            args.max_jobs,
+            max_days_old=args.adzuna_max_days_old
+        )
         total_stats['adzuna'] = adzuna_stats
 
     # FINAL SUMMARY

@@ -1,23 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python fetch_jobs.py:*)",
+      "Bash(timeout 300 python -c:*)",
       "Bash(python:*)",
-      "Bash(powershell:*)",
-      "WebFetch(domain:job-boards.greenhouse.io)",
-      "Bash(tasklist:*)",
-      "Bash(findstr:*)",
-      "Bash(dir \"C:\\Cursor Projects\\job-analytics\\output\" /s /b /O:D)",
-      "Bash(dir \"C:\\Cursor Projects\\job-analytics\\prod_run_plan_output\" /s /b /O:D)",
-      "Bash(taskkill:*)",
-      "Bash(timeout /t 30)",
-      "Bash(ping:*)",
-      "Bash(timeout /t 10)",
-      "Bash(cat:*)",
-      "Bash(dir \"C:\\Cursor Projects\\job-analytics\")",
       "Bash(tee:*)",
-      "Bash(dir:*)",
-      "Bash(ls -lh C:Cursor Projectsjob-analytics*50*)"
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

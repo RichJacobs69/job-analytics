@@ -373,7 +373,7 @@ class GreenhouseScraper:
     async def scrape_company(
         self,
         company_slug: str,
-        max_retries: int = 3,
+        max_retries: int = 1,
         max_jobs: Optional[int] = None
     ) -> Dict:
         """
