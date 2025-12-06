@@ -113,14 +113,23 @@ def matches_target_location(location: str, target_patterns: List[str]) -> bool:
         return False
 
     location_lower = location.lower()
+    patterns_lower = [p.lower() for p in target_patterns]
 
-    # Remote locations: match if "remote" is in target_patterns or if remote + target city
-    if 'remote' in location_lower:
-        # "Remote", "Remote - US", "Remote - London" all match if remote is in patterns
-        return any(pattern.lower() in location_lower for pattern in target_patterns)
+    # Split multi-location strings (e.g., "San Francisco, CA; New York, NY; Austin, TX").
+    # We keep the full string plus split tokens to catch both combined and separated cases.
+    tokens = [location_lower]
+    split_tokens = [
+        token.strip()
+        for token in re.split(r'[;/|•\n]', location_lower)
+        if token and token.strip()
+    ]
+    tokens.extend(split_tokens)
 
-    # Standard substring matching
-    return any(pattern.lower() in location_lower for pattern in target_patterns)
+    return any(
+        pattern in token
+        for token in tokens
+        for pattern in patterns_lower
+    )
 
 
 def is_relevant_role(title: str, patterns: List[str]) -> bool:
@@ -221,6 +230,8 @@ class GreenhouseScraper:
             'span[class*="location"]',
             '.location',
             'div[class*="meta"]',
+            'p[class*="body__secondary"]',  # Airtable: <p class="body body__secondary body--metadata">
+            'p.body__secondary',  # Airtable location (secondary paragraph)
         ],
         # Pagination selectors - Greenhouse uses different pagination styles
         'pagination': {
@@ -487,8 +498,11 @@ class GreenhouseScraper:
         jobs = []
         seen_urls = set()
         visited_page_urls = set()  # Track visited pagination pages to prevent loops
+        visited_page_numbers = set()  # Track clicked page numbers to prevent re-clicking
         max_pagination_iterations = 200  # Safety limit to prevent infinite loops
         pagination_iteration = 0
+        last_dom_job_count = 0  # Track job count to detect infinite loops
+        identical_count_iterations = 0  # Count consecutive iterations with same job count
 
         while True:
             pagination_iteration += 1
@@ -506,28 +520,50 @@ class GreenhouseScraper:
             if isinstance(selectors, str):
                 selectors = [selectors]
 
+            # Pick the selector that returns the most elements rather than the first non-empty.
+            # Some boards (e.g., Stripe) show only a subset with the primary selector but
+            # expose the full list via a fallback selector (a[href*="/jobs/"]).
+            max_found = 0
+            best_selector = None
             for selector in selectors:
                 elements = await page.query_selector_all(selector)
-                if elements:
+                if elements and len(elements) > max_found:
                     job_elements = elements
-                    logger.info(f"[{company_slug}] Found {len(job_elements)} job listings using selector: {selector}")
-                    break
+                    max_found = len(elements)
+                    best_selector = selector
+
+            if job_elements:
+                logger.info(f"[{company_slug}] Found {len(job_elements)} job listings using selector: {best_selector}")
 
             if not job_elements:
                 # Give the page an extra chance to render after navigation
                 await self._wait_for_listings(page, company_slug)
+                max_found = 0
+                best_selector = None
                 for selector in selectors:
                     elements = await page.query_selector_all(selector)
-                    if elements:
+                    if elements and len(elements) > max_found:
                         job_elements = elements
-                        logger.info(f"[{company_slug}] Found {len(job_elements)} job listings after wait using selector: {selector}")
-                        break
+                        max_found = len(elements)
+                        best_selector = selector
+                if job_elements:
+                    logger.info(f"[{company_slug}] Found {len(job_elements)} job listings after wait using selector: {best_selector}")
 
-            if not job_elements:
-                logger.warning(f"[{company_slug}] No job listings found with any selector")
-                break
+                if not job_elements:
+                    logger.warning(f"[{company_slug}] No job listings found with any selector")
+                    break
 
             current_dom_job_count = len(job_elements)
+
+            # INFINITE LOOP DETECTION: If we're seeing the same job count repeatedly, we're likely looping
+            if current_dom_job_count == last_dom_job_count and current_dom_job_count > 0:
+                identical_count_iterations += 1
+                if identical_count_iterations >= 3:  # 3 consecutive iterations with same count = loop
+                    logger.warning(f"[{company_slug}] Detected infinite loop (same job count {current_dom_job_count} for 3 iterations), stopping pagination")
+                    break
+            else:
+                identical_count_iterations = 0  # Reset counter if job count changed
+            last_dom_job_count = current_dom_job_count
 
             for job_element in job_elements:
                 try:
@@ -567,7 +603,14 @@ class GreenhouseScraper:
 
                     # STEP 4: Job passed all filters - fetch full description (expensive)
                     self.filter_stats['jobs_kept'] += 1
-                    job.description = await self._get_job_description(job.url)
+
+                    # Only fetch description if:
+                    # 1. Filters are enabled (so we're limiting to a subset), OR
+                    # 2. max_jobs is set (so we're limiting results anyway)
+                    # Skip description fetching during pagination if no filters and no limit (allows full pagination)
+                    if self.filter_titles or self.filter_locations or max_jobs:
+                        job.description = await self._get_job_description(job.url)
+
                     jobs.append(job)
 
                     # Check if we've reached max_jobs limit
@@ -709,42 +752,74 @@ class GreenhouseScraper:
                 continue
 
             # Method 4: Fallback - click any visible numeric page link that isn't active
-            try:
-                generic_links = await page.query_selector_all('a, button')
-                for link in generic_links:
-                    try:
-                        text = (await link.text_content() or '').strip()
-                        if not text or not text.isdigit():
-                            continue
+            # ONLY try fallback if we haven't used Next button recently (to avoid loops)
+            # The Next button is more reliable for pagination; fallback is for tables without Next
+            if not self.last_successful_next_selector:
+                # First, detect the current page number from active/current indicators
+                current_page_num = 1
+                try:
+                    # Try multiple selectors to find active page indicator
+                    active_links = await page.query_selector_all(
+                        'a[aria-current="page"], button[aria-current="page"], '
+                        'a.active, button.active, '
+                        'li.active a, li.current a, '
+                        'a[class*="active"], button[class*="active"], '
+                        'a[class*="current"], button[class*="current"]'
+                    )
+                    for active_link in active_links:
+                        active_text = (await active_link.text_content() or '').strip()
+                        # Extract just the number part if it's mixed with text
+                        for char in active_text:
+                            if char.isdigit():
+                                current_page_num = int(active_text.split()[0]) if active_text.split()[0].isdigit() else current_page_num
+                                break
+                        if current_page_num > 1:  # Found valid page number
+                            break
+                except Exception:
+                    pass
 
-                        link_href = await link.get_attribute('href') or ''
-                        class_name = await link.get_attribute('class') or ''
-                        aria_current = await link.get_attribute('aria-current') or ''
-                        aria_disabled = await link.get_attribute('aria-disabled') or ''
+                try:
+                    generic_links = await page.query_selector_all('a, button')
+                    for link in generic_links:
+                        try:
+                            text = (await link.text_content() or '').strip()
+                            if not text or not text.isdigit():
+                                continue
 
-                        if link_href and link_href in visited_page_urls:
-                            continue
-                        if 'active' in class_name.lower() or 'current' in class_name.lower():
-                            continue
-                        if aria_current == 'page' or aria_disabled == 'true':
-                            continue
+                            page_num = int(text)
+                            # Don't click numeric links that go backwards, to same page, or already visited
+                            if page_num <= current_page_num or page_num in visited_page_numbers:
+                                continue
 
-                        is_visible = await link.is_visible()
-                        is_enabled = await link.is_enabled()
-                        if not (is_visible and is_enabled):
-                            continue
+                            link_href = await link.get_attribute('href') or ''
+                            class_name = await link.get_attribute('class') or ''
+                            aria_current = await link.get_attribute('aria-current') or ''
+                            aria_disabled = await link.get_attribute('aria-disabled') or ''
 
-                        if link_href:
-                            visited_page_urls.add(link_href)
-                        await link.click()
-                        await self._wait_for_listings(page, company_slug)
-                        logger.info(f"[{company_slug}] Clicked numeric page link via fallback: {text}")
-                        pagination_found = True
-                        break
-                    except Exception:
-                        continue
-            except Exception as e:
-                logger.debug(f"[{company_slug}] Fallback numeric pagination failed: {str(e)[:50]}")
+                            if link_href and link_href in visited_page_urls:
+                                continue
+                            if 'active' in class_name.lower() or 'current' in class_name.lower():
+                                continue
+                            if aria_current == 'page' or aria_disabled == 'true':
+                                continue
+
+                            is_visible = await link.is_visible()
+                            is_enabled = await link.is_enabled()
+                            if not (is_visible and is_enabled):
+                                continue
+
+                            if link_href:
+                                visited_page_urls.add(link_href)
+                            visited_page_numbers.add(page_num)  # Track this page number to prevent re-click
+                            await link.click()
+                            await self._wait_for_listings(page, company_slug)
+                            logger.info(f"[{company_slug}] Clicked numeric page link via fallback: {text}")
+                            pagination_found = True
+                            break
+                        except Exception:
+                            continue
+                except Exception as e:
+                    logger.debug(f"[{company_slug}] Fallback numeric pagination failed: {str(e)[:50]}")
 
             if pagination_found:
                 continue

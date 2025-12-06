@@ -9,6 +9,9 @@ python pipeline/utilities/backfill_out_of_scope.py --dry-run --limit 10
 # Filter by classified_at window (inclusive lower bound, exclusive upper):
 python pipeline/utilities/backfill_out_of_scope.py --dry-run --classified-after 2025-01-01 --classified-before 2025-01-08
 
+# Process a specific raw_job_id:
+python pipeline/utilities/backfill_out_of_scope.py --dry-run --raw-job-id 12345
+
 # Full run with database updates:
 python pipeline/utilities/backfill_out_of_scope.py --live
 """
@@ -42,6 +45,7 @@ def get_out_of_scope_jobs(
     limit: int = None,
     classified_after: str = None,
     classified_before: str = None,
+    raw_job_id: int = None,
 ):
     """Get all jobs currently classified as out_of_scope."""
     print("Fetching out_of_scope jobs...")
@@ -51,25 +55,39 @@ def get_out_of_scope_jobs(
         'seniority, city_code, working_arrangement, data_source'
     ).eq('job_family', 'out_of_scope').eq('is_agency', False)
 
+    if raw_job_id is not None:
+        query = query.eq('raw_job_id', raw_job_id)
+
     if classified_after:
         query = query.gte('classified_at', classified_after)
     if classified_before:
         query = query.lt('classified_at', classified_before)
+
+    # Supabase defaults to 1K row limit; page through results to respect user limit.
+    max_to_fetch = limit if limit is not None else 2000
+    page_size = 1000
+    offset = 0
+    enriched_rows = []
+
+    while True:
+        remaining = max_to_fetch - len(enriched_rows)
+        if remaining <= 0:
+            break
+        batch_size = min(page_size, remaining)
+        batch = query.range(offset, offset + batch_size - 1).execute()
+        batch_data = batch.data or []
+        enriched_rows.extend(batch_data)
+        offset += batch_size
+        if len(batch_data) < batch_size:
+            break
     
-    if limit:
-        query = query.limit(limit)
-    else:
-        query = query.limit(2000)
-    
-    enriched_result = query.execute()
-    
-    if not enriched_result.data:
+    if not enriched_rows:
         return []
     
-    print(f"Found {len(enriched_result.data)} out_of_scope jobs")
+    print(f"Found {len(enriched_rows)} out_of_scope jobs")
     
     # Get raw_job_ids
-    raw_job_ids = [job['raw_job_id'] for job in enriched_result.data]
+    raw_job_ids = [job['raw_job_id'] for job in enriched_rows]
     
     # Fetch raw_jobs
     print("Fetching raw job data...")
@@ -87,7 +105,7 @@ def get_out_of_scope_jobs(
     
     # Combine enriched + raw data
     jobs_to_process = []
-    for enriched in enriched_result.data:
+    for enriched in enriched_rows:
         raw_job_id = enriched['raw_job_id']
         if raw_job_id in raw_jobs_data:
             raw = raw_jobs_data[raw_job_id]
@@ -144,6 +162,7 @@ def run_backfill(
     limit: int = None,
     classified_after: str = None,
     classified_before: str = None,
+    raw_job_id: int = None,
 ):
     """Main backfill function."""
     start_time = time.time()
@@ -155,12 +174,15 @@ def run_backfill(
         print(f"Filter: classified_at >= {classified_after}")
     if classified_before:
         print(f"Filter: classified_at < {classified_before}")
+    if raw_job_id is not None:
+        print(f"Filter: raw_job_id = {raw_job_id}")
     print("="*80)
     
     jobs = get_out_of_scope_jobs(
         limit=limit,
         classified_after=classified_after,
         classified_before=classified_before,
+        raw_job_id=raw_job_id,
     )
     
     if not jobs:
@@ -254,6 +276,8 @@ if __name__ == "__main__":
                         help='Only process jobs with classified_at >= this ISO date/datetime')
     parser.add_argument('--classified-before', type=parse_iso_datetime, default=None,
                         help='Only process jobs with classified_at < this ISO date/datetime')
+    parser.add_argument('--raw-job-id', type=int, default=None,
+                        help='Only process the job associated with this raw_job_id')
     
     args = parser.parse_args()
     dry_run = not args.live
@@ -263,5 +287,6 @@ if __name__ == "__main__":
         limit=args.limit,
         classified_after=args.classified_after,
         classified_before=args.classified_before,
+        raw_job_id=args.raw_job_id,
     )
 
