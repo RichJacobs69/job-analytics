@@ -1,5 +1,161 @@
 {
     "greenhouse": {
+        "Brex": {
+            "slug": "brex"
+        },
+        "SmartAsset": {
+            "slug": "smartasset"
+        },
+        "Enigma": {
+            "slug": "enigmaio"
+        },
+        "Dagster": {
+            "slug": "dagsterlabs"
+        },
+        "Runway": {
+            "slug": "runwayml"
+        },
+        "Labelbox": {
+            "slug": "labelbox"
+        },
+        "Capitolis": {
+            "slug": "capitolis"
+        },
+        "Betterment": {
+            "slug": "betterment"
+        },
+        "MoneyLion": {
+            "slug": "moneylion"
+        },
+        "Galileo Health": {
+            "slug": "galileo"
+        },
+        "Thirty Madison": {
+            "slug": "thirtymadison"
+        },
+        "Ambient AI": {
+            "slug": "ambient"
+        },
+        "Fora Travel": {
+            "slug": "foratravel"
+        },
+        "EquityMultiple": {
+            "slug": "equitymultiple"
+        },
+        "Able": {
+            "slug": "able"
+        },
+        "Courier Health": {
+            "slug": "courierhealth"
+        },
+        "Check": {
+            "slug": "check"
+        },
+        "Monograph": {
+            "slug": "monograph"
+        },
+        "Hex": {
+            "slug": "hextechnologies"
+        },
+        "Hightouch": {
+            "slug": "hightouch"
+        },
+        "Airbyte": {
+            "slug": "airbyte"
+        },
+        "LaunchDarkly": {
+            "slug": "launchdarkly"
+        },
+        "Cameo": {
+            "slug": "cameo"
+        },
+        "Strava": {
+            "slug": "strava"
+        },
+        "ClassPass": {
+            "slug": "classpass"
+        },
+        "Goldbelly": {
+            "slug": "goldbelly"
+        },
+        "Tide": {
+            "slug": "tide"
+        },
+        "Marqeta": {
+            "slug": "marqeta"
+        },
+        "Alma": {
+            "slug": "alma"
+        },
+        "Bloomreach": {
+            "slug": "bloomreach"
+        },
+        "Behavox": {
+            "slug": "behavox"
+        },
+        "Synthesia": {
+            "slug": "synthesia"
+        },
+        "Wayve": {
+            "slug": "wayve"
+        },
+        "Featurespace": {
+            "slug": "featurespace"
+        },
+        "Guild Education": {
+            "slug": "guild"
+        },
+        "Pax8": {
+            "slug": "pax8"
+        },
+        "Scythe Robotics": {
+            "slug": "scytherobotics"
+        },
+        "OneTrust": {
+            "slug": "onetrust"
+        },
+        "Dispatch": {
+            "slug": "dispatch"
+        },
+        "SpotHero": {
+            "slug": "spothero"
+        },
+        "Typeform": {
+            "slug": "typeform"
+        },
+        "Calendly": {
+            "slug": "calendly"
+        },
+        "Amplitude": {
+            "slug": "amplitude"
+        },
+        "Mixpanel": {
+            "slug": "mixpanel"
+        },
+        "Customer.io": {
+            "slug": "customerio"
+        },
+        "Braze": {
+            "slug": "braze"
+        },
+        "Iterable": {
+            "slug": "iterable"
+        },
+        "Klaviyo": {
+            "slug": "klaviyo"
+        },
+        "Toast": {
+            "slug": "toast"
+        },
+        "CoStar": {
+            "slug": "costar"
+        },
+        "Knock": {
+            "slug": "knock"
+        },
+        "Homeward": {
+            "slug": "homeward"
+        },
         "Stripe": {
             "slug": "stripe"
         },
