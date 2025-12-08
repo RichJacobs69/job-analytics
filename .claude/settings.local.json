@@ -4,7 +4,9 @@
       "Bash(timeout 300 python -c:*)",
       "Bash(python:*)",
       "Bash(tee:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebSearch",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

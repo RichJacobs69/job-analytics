@@ -7,7 +7,7 @@ in London, NYC, and Denver. Validates they're scrapeable and optionally adds
 to company_ats_mapping.json.
 
 Usage:
-    python scripts/discover_greenhouse_slugs.py [--dry-run] [--batch-size 5] [--save]
+    python pipeline/utilities/discover_greenhouse_slugs.py [--dry-run] [--batch-size 5] [--save]
 
 Options:
     --dry-run       Test slugs but don't save results (default behavior)
@@ -404,7 +404,7 @@ async def discover_batch(companies: dict, batch_size: int = 5) -> dict:
 
 def load_existing_mapping() -> set:
     """Load existing company names from mapping file."""
-    mapping_path = Path(__file__).parent.parent / 'config' / 'company_ats_mapping.json'
+    mapping_path = Path(__file__).parent.parent.parent / 'config' / 'company_ats_mapping.json'
 
     try:
         with open(mapping_path) as f:
@@ -499,7 +499,7 @@ def main():
 
     # Save if requested
     if args.save and results['valid']:
-        mapping_path = Path(__file__).parent.parent / 'config' / 'company_ats_mapping.json'
+        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'company_ats_mapping.json'
         save_results(results, mapping_path)
     elif args.save:
         print("\nNo valid slugs to save.")
@@ -507,7 +507,7 @@ def main():
         print("\n[Dry run mode - use --save to add to mapping]")
 
     # Save discovery log
-    log_path = Path(__file__).parent.parent / 'output' / 'greenhouse_discovery_log.json'
+    log_path = Path(__file__).parent.parent.parent / 'output' / 'greenhouse_discovery_log.json'
     log_path.parent.mkdir(exist_ok=True)
 
     log = {

@@ -1,13 +1,14 @@
 # Classification Cost Metrics
 
-> **Last Updated:** 2025-12-04  
+> **Last Updated:** 2025-12-04
 > **Data Source:** Anthropic API Usage Dashboard
+> **Note:** This is a point-in-time cost analysis from Dec 4, 2025. These metrics represent the cost per job for Haiku classification and remain valid regardless of dataset size. See `../../CLAUDE.md` for current job counts (Supabase source of truth, updated 2025-12-07).
 
 ## Summary
 
-This directory contains API cost tracking data and analysis for the Claude 3.5 Haiku classification pipeline.
+This directory contains API cost tracking data and analysis for the Claude 3.5 Haiku classification pipeline. The metrics below represent actual measured costs from production runs and are independent of the total job dataset size.
 
-### Key Cost Metrics (2025-12-04)
+### Key Cost Metrics (Point-in-Time: 2025-12-04)
 
 | Metric | Value |
 |--------|-------|
@@ -18,7 +19,7 @@ This directory contains API cost tracking data and analysis for the Claude 3.5 H
 | **Cost per classified job** | $0.00976 |
 | **Classification rate** | 58.1% (961/1,654) |
 
-### Token Usage (2025-12-04)
+### Token Usage (Point-in-Time: 2025-12-04)
 
 | Metric | Value |
 |--------|-------|
@@ -26,6 +27,7 @@ This directory contains API cost tracking data and analysis for the Claude 3.5 H
 | **Output tokens** | 698,232 |
 | **Total tokens** | 8,930,235 |
 | **Avg tokens per classification** | ~9,293 |
+| **Note** | These are actual measured values from Anthropic API; valid for predicting future Haiku classification costs |
 
 ### Pricing (Claude 3.5 Haiku)
 
@@ -38,16 +40,17 @@ This directory contains API cost tracking data and analysis for the Claude 3.5 H
 
 ## Cost Breakdown by Date
 
-### December 4, 2025
+### December 4, 2025 (Point-in-Time Snapshot)
 
 **Total Cost: $9.38**
 - Input tokens (no cache): $6.59 (8.2M tokens)
 - Output tokens: $2.79 (698K tokens)
 
-**Pipeline Efficiency:**
+**Pipeline Efficiency (Dec 4 measurement):**
 - 58% of raw inserts were classified
 - 42% filtered before classification (duplicates, agencies, quality filters)
 - Agency detection saved significant API costs
+- **Note:** This measurement was taken on 2025-12-04; current job counts have grown since then (see CLAUDE.md for latest dataset size)
 
 ### December 2, 2025
 
@@ -130,6 +133,10 @@ The classifier returns cost data in `_cost_data`:
 - **Bug Fixed (2025-12-04)**: Pipeline was looking for `cost_usd` instead of `total_cost` in cost tracking
 - **Model**: Using Claude 3.5 Haiku for cost efficiency (~10x cheaper than Sonnet)
 - **Quality**: Haiku achieves ~93% accuracy on job classification tasks
+
+
+
+
 
 
 

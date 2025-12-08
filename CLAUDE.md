@@ -19,11 +19,17 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 - ✅ Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
 - ✅ Epic 3: Database & Data Layer - Schema and connections stable
 - ✅ Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
-  - **Adzuna Data (2025-11-26):** 1,279 raw jobs + 1,044 enriched jobs (all 3 cities)
-  - **Greenhouse Production Run (2025-11-28):** 109 companies processed, 62 with active jobs, 3,913 jobs scraped, 207 kept (94.7% filter rate), 184 stored
-- ⏳ Epic 5: Analytics Query Layer - Ready to start (combined dataset: 1,044 Adzuna + 184 Greenhouse = 1,228 total enriched jobs)
+- ⏳ Epic 5: Analytics Query Layer - Ready to start
 - ⏳ Epic 6: Dashboard & Visualization - Blocked (depends on Epic 5)
 - ⏳ Epic 7: Automation & Operational - Ready after Epic 6
+
+**Current Dataset (Supabase - Source of Truth, updated 2025-12-07):**
+- **Raw jobs:** 6,178 total (Adzuna: 4,963 | Greenhouse: 1,213 | Manual: 2)
+- **Enriched jobs:** 5,629 total (Adzuna: 4,676 | Greenhouse: 953)
+- **Companies scraped:** 302 Greenhouse companies configured (in `config/company_ats_mapping.json`)
+- **Geographic distribution:** London: 2,187 (38.9%) | NYC: 1,980 (35.2%) | Denver: 888 (15.8%) | Remote: 269 (4.8%) | Unknown: 305 (5.4%)
+- **Filtering rate:** 8.9% filtered, 91.1% kept
+- **Note:** Cumulative dataset from continuous scraping; numbers grow with each pipeline run
 
 **See:** `docs/README.md` for documentation index, `docs/archive/` for implementation history, `greenhouse_validation_results.json` for ATS validation details
 
@@ -195,10 +201,10 @@ streamlit_app.py (User-Facing Dashboards)
 ### Greenhouse Scraper Status
 
 **✅ GREENHOUSE SCRAPING IMPLEMENTED:**
+- **Company coverage:** 302 Greenhouse companies configured in `config/company_ats_mapping.json`
 - **Full descriptions captured:** 9,000-15,000+ chars per job (vs. 4,000 from main description alone)
 - **Complete sections included:** Main responsibilities, Hybrid work arrangements, Pay & benefits, In-office expectations, Remote work policies
-- **Production run (2025-11-28):** 109 companies processed, 62 with active jobs, 3,913 jobs scraped, 207 kept after filters, 184 stored (~58 min runtime)
-- **Coverage:** 109 Greenhouse companies configured
+- **Current jobs collected:** 1,213 Greenhouse jobs across configured companies in dataset (as of 2025-12-07)
 - **Title filtering:** Pre-classification filtering reduces LLM costs by 60-70% (implemented 2025-11-26)
 - **Location filtering:** Combined with title filtering achieves 94.7% filter rate in production
 - **Pagination support:** Multi-page navigation (Load More, Next buttons, page numbers)
@@ -265,11 +271,10 @@ streamlit_app.py (User-Facing Dashboards)
 - ✅ Merges via unified_job_ingester.py
 - ✅ Passes merged jobs to classifier pipeline
 
-**Phase 4: Run Greenhouse Scraper at Scale** ✅ (COMPLETE 2025-11-28)
-- ✅ Production run: 109 companies processed, 62 with active jobs
-- ✅ Extracted: 3,913 jobs scraped, 207 kept after filters (94.7% filter rate)
-- ✅ Stored: 184 jobs to database (20 flagged as recruitment agencies)
-- ✅ Runtime: ~58 minutes for full pipeline
+**Phase 4: Run Greenhouse Scraper at Scale** ✅ (COMPLETE 2025-11-28, Ongoing)
+- ✅ Initial production run: 109 companies processed, 62 with active jobs
+- ✅ Scraper integrated into main pipeline and running continuously
+- ✅ Current dataset: 1,213 Greenhouse jobs successfully stored (as of 2025-12-07)
 - ✅ Ready: For analytics queries and compensation benchmarking
 
 ### Key Implementation Notes
@@ -739,19 +744,15 @@ The project is organized into discrete epics that can be addressed in any order 
 
 **Key Achievement:** Cost tracking now embedded in production pipeline via `classifier.py`, not just validation
 
-**Production Data Collection:**
-- ✅ **Adzuna Pipeline (2025-11-26):** COMPLETE for all 3 cities (London, NYC, Denver)
-  - **Total collected:** 1,279 raw jobs → 1,044 enriched jobs (18.4% filtering rate)
-  - **London:** 500 jobs fetched, $1.94 cost, ~26 minutes
-  - **NYC:** 503 jobs fetched, ~7% deduplication rate
-  - **Denver:** 482 jobs fetched, ~14% deduplication rate
+**Production Data Collection (Cumulative as of 2025-12-07):**
+- ✅ **Adzuna Pipeline:** Ongoing continuous collection from all 3 cities (London, NYC, Denver)
+  - **Current total:** 4,963 raw jobs → 4,676 enriched jobs
   - **All 11 role types covered:** Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM
   - **Storage:** All jobs successfully stored in Supabase (raw_jobs + enriched_jobs tables)
-- ✅ **Greenhouse Pipeline (2025-11-28):** COMPLETE production run on all companies
-  - **Companies:** 109 processed, 62 with active jobs
-  - **Jobs:** 3,913 scraped, 207 kept after filters (94.7% filter rate), 184 stored
-  - **Runtime:** ~58 minutes for full pipeline
-  - **Combined dataset:** 1,044 Adzuna + 184 Greenhouse = 1,228 total enriched jobs ready for analytics
+- ✅ **Greenhouse Pipeline:** Ongoing scraping from configured companies
+  - **Current total:** 1,213 Greenhouse raw jobs → 953 enriched jobs
+  - **Storage:** All jobs successfully stored with proper source tracking
+  - **Combined dataset:** 4,676 Adzuna + 953 Greenhouse = 5,629 total enriched jobs ready for analytics
 
 **Validation Artifacts:**
 - `validation_actual_costs.json` - 7-job test with real API costs
@@ -894,8 +895,9 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 ### 📋 Immediate Next Steps
 **Epic 5: Analytics Query Layer** (ready to start)
-- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, both data sources collected
-- **Dataset:** 1,228 enriched jobs (1,044 Adzuna + 184 Greenhouse) across all 3 cities and 11 role types
+- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, both data sources collecting continuously
+- **Dataset:** 5,629 enriched jobs (4,676 Adzuna + 953 Greenhouse) across all 3 cities and 11 role types (as of 2025-12-07)
+- **Dataset growth:** Cumulative numbers; dataset grows with each pipeline run
 - **Action:** Begin building `analytics.py` with query functions for marketplace questions
 - **Goal:** Programmatically answer questions like "Which skills are growing fastest for Data Engineers in NYC?"
 - **Data Quality:** Combined dataset provides both volume (Adzuna) and depth (Greenhouse full descriptions)
@@ -1126,6 +1128,24 @@ Refer to these YAML/Markdown files for detailed specifications:
 - Verify `.env` has correct Supabase credentials
 - Check Supabase dashboard for connection limits
 - Look for connection pooling issues in logs
+
+**Supabase Queries & Data Fetching:**
+- **CRITICAL:** Supabase has a 1,000 row default limit - all queries MUST implement pagination
+- **Pagination template:** Use `offset()` and `limit()` in a loop until no rows returned
+  ```python
+  all_data = []
+  offset = 0
+  page_size = 1000
+  while True:
+      batch = supabase.table('table_name').select('columns').offset(offset).limit(page_size).execute()
+      if not batch.data:
+          break
+      all_data.extend(batch.data)
+      offset += page_size
+  ```
+- Without pagination, queries hitting the 1K limit will silently truncate results
+- Always verify result completeness by checking if last batch returned fewer than `page_size` rows
+- When writing analysis/reporting scripts, handle pagination to get accurate full dataset counts
 
 **High API costs:**
 - Check if hard filtering is working (should block 10-15% of jobs)

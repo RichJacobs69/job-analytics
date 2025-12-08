@@ -293,6 +293,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         'companies_processed': 0,
         'companies_skipped': 0,
         'companies_total': 0,
+        'companies_total_effective': 0,
         'jobs_scraped': 0,
         'jobs_kept': 0,
         'jobs_filtered': 0,
@@ -491,10 +492,14 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         # Pipeline progress
         elapsed = time.time() - stats['start_time']
         avg_time_per_company = elapsed / stats['companies_processed'] if stats['companies_processed'] > 0 else 0
-        remaining_companies = stats['companies_total'] - stats['companies_processed']
+        effective_total_companies = (
+            stats.get('companies_total_effective')
+            or max(stats['companies_total'] - stats.get('companies_skipped', 0), 0)
+        )
+        remaining_companies = max(effective_total_companies - stats['companies_processed'], 0)
         eta_seconds = avg_time_per_company * remaining_companies
 
-        logger.info(f"Pipeline Progress: {stats['companies_processed']}/{stats['companies_total']} companies")
+        logger.info(f"Pipeline Progress: {stats['companies_processed']}/{effective_total_companies} companies")
         logger.info(f"  - Elapsed: {elapsed/60:.1f} min")
         logger.info(f"  - Avg per company: {avg_time_per_company:.1f}s")
         logger.info(f"  - ETA: {eta_seconds/60:.1f} min")
@@ -553,6 +558,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     if not companies:
                         logger.info("All companies already processed - nothing to do!")
                         stats['companies_total'] = original_count
+                        stats['companies_total_effective'] = len(companies)
                         return stats
                 else:
                     logger.info(f"No companies found processed in last {resume_hours} hours")
@@ -560,6 +566,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     logger.info(f"{'='*80}\n")
 
             stats['companies_total'] = original_count
+            stats['companies_total_effective'] = len(companies)
 
             # Scrape with incremental callback
             logger.info(f"Starting incremental scrape of {len(companies)} companies...")
@@ -587,9 +594,10 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     logger.info("="*80)
 
     logger.info(f"\nCompany Processing:")
-    logger.info(f"  - Companies total: {stats['companies_total']}")
+    logger.info(f"  - Companies total (after resume filter): {stats.get('companies_total_effective', stats['companies_total'])}")
     logger.info(f"  - Companies processed: {stats['companies_processed']}")
     logger.info(f"  - Companies skipped (resume): {stats['companies_skipped']}")
+    logger.info(f"  - Companies in original list: {stats['companies_total']}")
     logger.info(f"  - Avg time per company: {total_elapsed/stats['companies_processed'] if stats['companies_processed'] > 0 else 0:.1f}s")
 
     logger.info(f"\nJob Scraping & Filtering:")
@@ -1197,7 +1205,14 @@ Examples:
 
     if total_stats['greenhouse']:
         logger.info("\nGreenhouse Pipeline:")
-        logger.info(f"  Companies processed: {total_stats['greenhouse']['companies_processed']}/{total_stats['greenhouse']['companies_total']}")
+        gh_effective_total = total_stats['greenhouse'].get(
+            'companies_total_effective',
+            total_stats['greenhouse']['companies_total']
+        )
+        logger.info(f"  Companies processed: {total_stats['greenhouse']['companies_processed']}/{gh_effective_total}")
+        logger.info(f"  Companies skipped (resume): {total_stats['greenhouse']['companies_skipped']}")
+        if total_stats['greenhouse'].get('companies_total') != gh_effective_total:
+            logger.info(f"  Companies in original list: {total_stats['greenhouse']['companies_total']}")
         logger.info(f"  Jobs scraped: {total_stats['greenhouse']['jobs_scraped']}")
         logger.info(f"  Jobs kept after filtering: {total_stats['greenhouse']['jobs_kept']}")
         logger.info(f"  Jobs written to raw_jobs: {total_stats['greenhouse']['jobs_written_raw']}")

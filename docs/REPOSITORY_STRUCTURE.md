@@ -98,6 +98,8 @@ docs/                  # Documentation
   └── archive/         # Historical docs and session notes
 
 tests/                 # Test suite
+  ├── test_*.py        # Test files
+  └── TESTING_GUIDE.md # Consolidated testing guide
 output/                # Generated outputs (gitignored)
 ```
 
@@ -191,10 +193,17 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 - Production run logs and metrics
 - Parallel execution guide
 
-### Deleted
+### Deleted (2025-12-07 Cleanup)
+- Ad-hoc test files: `.check_wheely.py`, `test_wheely_scrape.py`, `test_custom_domain_companies.py`, `temp_query.py`
+- Output files: `validate_greenhouse_results.json`, `config_cleanup_results.md`
+- Duplicate documentation: `docs/epic_5_analytics_plan.md` (kept `epic5_analytics_layer_planning.md`)
+- Redundant READMEs: `pipeline/README.md`, `scrapers/greenhouse/README.md`, `tests/README_TITLE_FILTER_TESTS.md`, `tests/QUICK_REFERENCE.md`
+- Git artifact files: Various malformed git command outputs in root directory
+
+### Deleted (Previous Sessions)
 - `core/` - Empty directory removed
 - `nul` - Windows artifact removed
-- `scripts/` - Contents moved to `pipeline/utilities/`
+- `scripts/` - Directory removed after moving contents
 
 ### Consolidated
 - Database migrations now only in root `migrations/` (old `docs/database/migrations/` archived)
@@ -205,9 +214,11 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 |------|-------|------|
 | Root wrappers | 8 | Python scripts |
 | Core pipeline | 6 | Python scripts |
-| Utilities | 7 | Python scripts |
-| Migrations | 5 | SQL/Python scripts |
-| **Total active** | **26** | **Scripts** |
+| Utilities | 11 | Python scripts |
+| Migrations | 6 | SQL scripts |
+| Test files | 10 | Python scripts |
+| **Total active** | **41** | **Scripts** |
+| Documentation | 3 | README files (docs/, tests/, migrations/) |
 
 ## Current Status
 
@@ -230,7 +241,8 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 
 ---
 
-**Last Updated:** 2025-12-04
-**Changes:** Added `docs/costs/` directory with cost metrics, API usage tracking, and optimization documentation
-**Previous (2025-12-03):** Implemented incremental upsert architecture, cleaned up orphaned files, consolidated migrations
-**Status:** Ready for production use with incremental pipeline and cost tracking
+**Last Updated:** 2025-12-07
+**Changes:** Major cleanup - consolidated READMEs (6→3), moved utility scripts, removed ad-hoc test files
+**Previous (2025-12-04):** Added `docs/costs/` directory with cost metrics, API usage tracking
+**Previous (2025-12-03):** Implemented incremental upsert architecture, cleaned up orphaned files
+**Status:** Clean structure, 100% compliant with documented organization
