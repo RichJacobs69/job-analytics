@@ -211,8 +211,8 @@ Return JSON with this EXACT structure:
 
 # LOCATION MAPPING GUIDANCE
 - London, UK / London, England / Greater London → lon
-- New York, NY / NYC / New York City / Manhattan / Brooklyn → nyc  
-- Denver, CO / Denver Metro / Boulder, CO → den
+- New York, NY / NYC / Any NYC borough (Manhattan, Brooklyn, Queens, Bronx, Staten Island) / NY Metro Area → nyc  
+- Denver, CO / Any Colorado city (Denver, Boulder, Colorado Springs, Fort Collins, Aurora, Lakewood, etc.) → den
 - Remote / Work from Home / WFH / Remote-first / Anywhere → remote
 - If location cannot be determined → unk
 

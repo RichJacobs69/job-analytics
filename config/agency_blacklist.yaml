@@ -4,9 +4,9 @@
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.1
-  last_updated: "2025-12-04"
-  total_agencies: 72
+  version: 1.2
+  last_updated: "2025-12-08"
+  total_agencies: 125
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -97,6 +97,83 @@ hard_filter:
   - singular recruitment
   - carrington recruitment solutions
   - carrington recruitment
+  
+  # Added 2025-12-08 from CSV validation
+  - teksystems
+  - tek systems
+  - insight global
+  - ignite digital search
+  - ignite digital search ltd
+  - talent navigation experts
+  - michael page technology
+  - michael page digital
+  - randstad technologies
+  - randstad technologies recruitment
+  - kforce
+  - manpowergroup
+  - manpower uk
+  - manpower uk ltd
+  - manpower uk - rise
+  - hays technology
+  - hays specialist recruitment
+  - hays specialist recruitment limited
+  - aston carter
+  - haystack
+  - aspire personnel
+  - aspire personnel ltd
+  - robert half technology
+  - c&c search
+  - c&c search ltd
+  - cybercoders
+  - stott & may
+  - stott & may professional search
+  - stott & may professional search limited
+  - wave talent
+  - heart mind talent
+  - pinnova talent
+  - socially responsible recruitment
+  - understanding recruitment
+  - ota recruitment
+  - it talent solutions
+  - ag talent
+  - neartech search
+  - paritas recruitment
+  - dgh recruitment
+  - dgh recruitment ltd
+  - arc it recruitment
+  - arc it recruitment ltd
+  - redtech recruitment
+  - redtech recruitment ltd
+  - lynx recruitment
+  - lynx recruitment ltd
+  - eligo recruitment
+  - equation staffing
+  - aurum search limited
+  - carrington recruitment solutions ltd
+  - pioneer search
+  - spotlight recruitment
+  - capumen executive recruitment
+  - harnham
+  - jss search
+  - opus recruitment solutions
+  - opus recruitment solutions ltd
+  - cubiq recruitment
+  - arc it recruitment ltd
+  - outpost search
+  - outpost search ltd
+  - parkside recruitment
+  - rise technical recruitment ltd
+  - corecruit
+  - adlib recruitment
+  - elevate recruitment
+  - arcus search
+  - insight recruitment solutions
+  - insight recruitment solutions limited
+  - itss recruitment
+  - itss recruitment ltd
+  - randstad digital
+  - trg.recruitment
+  - dvf recruitment
 
 # =========================
 # PATTERN DETECTION

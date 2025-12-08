@@ -344,6 +344,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         # Track company-specific metrics
         company_jobs_written = 0
         company_jobs_duplicate = 0
+        agencies_blocked = 0
         company_jobs_classified = 0
         company_jobs_enriched = 0
 
@@ -484,6 +485,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
         logger.info(f"Company Summary:")
         logger.info(f"  - New jobs written: {company_jobs_written}")
         logger.info(f"  - Duplicates skipped: {company_jobs_duplicate}")
+        logger.info(f"  - Agencies blocked: {agencies_blocked}")
         logger.info(f"  - Jobs classified: {company_jobs_classified}")
         logger.info(f"  - Jobs enriched: {company_jobs_enriched}")
         logger.info(f"  - Processing time: {company_elapsed:.1f}s")
@@ -889,6 +891,7 @@ async def classify_jobs(jobs: List) -> List:
         logger.info(f"Classifying {len(jobs)} jobs")
 
         classified = []
+        agencies_blocked = 0
         for i, job in enumerate(jobs):
             if (i + 1) % 10 == 0:
                 logger.info(f"  Progress: {i+1}/{len(jobs)}")
@@ -896,7 +899,8 @@ async def classify_jobs(jobs: List) -> List:
             # Hard filter: check if it's a known agency
             company_name = job.company
             if is_agency_job(company_name):
-                logger.debug(f"Skipping agency: {company_name}")
+                logger.info(f"[BLOCKED AGENCY] {company_name}")
+                agencies_blocked += 1
                 continue
 
             # Classify the job
@@ -947,7 +951,9 @@ async def classify_jobs(jobs: List) -> List:
                 logger.warning(f"Failed to classify job {job.title}: {str(e)}")
                 continue
 
-        logger.info(f"Classified {len(classified)} jobs (filtered {len(jobs) - len(classified)} agencies)")
+        logger.info(f"Classified {len(classified)} jobs successfully")
+        logger.info(f"  - Agencies blocked: {agencies_blocked}")
+        logger.info(f"  - Other filters: {len(jobs) - len(classified) - agencies_blocked}")
 
         return classified
 

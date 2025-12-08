@@ -44,7 +44,7 @@ ADZUNA_BASE_URLS = {
 LOCATION_QUERIES = {
     "lon": "London",
     "nyc": "New York",
-    "den": "Denver"
+    "den": "Colorado"  # Changed from "Denver" to capture entire state (Denver, Boulder, Colorado Springs, etc.)
 }
 
 # Rate limiting configuration
@@ -81,7 +81,8 @@ def fetch_adzuna_jobs(
     search_query: str,
     page: int = 1,
     results_per_page: int = 10,
-    max_days_old: int = 30
+    max_days_old: int = 30,
+    sort_by: str = "relevance"
 ) -> list:
     """
     Fetch jobs from Adzuna API for a single search query.
@@ -92,6 +93,7 @@ def fetch_adzuna_jobs(
         page: Page number for pagination (default: 1)
         results_per_page: Number of results per page (max 50, default: 10)
         max_days_old: Filter jobs posted within N days (default: 30)
+        sort_by: Sort order for results (default: "relevance", options: "relevance", "date", "salary")
 
     Returns:
         List of job dictionaries from Adzuna API
@@ -106,7 +108,8 @@ def fetch_adzuna_jobs(
         "results_per_page": min(results_per_page, 50),
         "what": search_query,
         "where": location,
-        "max_days_old": max_days_old
+        "max_days_old": max_days_old,
+        "sort_by": sort_by
     }
 
     headers = {"Content-Type": "application/json"}
@@ -129,7 +132,8 @@ def fetch_adzuna_jobs_paginated(
     max_results: int = 50,
     max_days_old: int = 30,
     rate_limit_delay: float = RATE_LIMIT_DELAY,
-    verbose: bool = True
+    verbose: bool = True,
+    sort_by: str = "relevance"
 ) -> List[Dict]:
     """
     Fetch jobs from Adzuna API with pagination support and rate limiting.
@@ -144,6 +148,7 @@ def fetch_adzuna_jobs_paginated(
         max_days_old: Filter jobs posted within N days (default: 30)
         rate_limit_delay: Seconds to wait between API calls (default: 2.5)
         verbose: Print progress messages (default: True)
+        sort_by: Sort order for results (default: "relevance", options: "relevance", "date", "salary")
     
     Returns:
         List of job dictionaries from Adzuna API
@@ -172,7 +177,8 @@ def fetch_adzuna_jobs_paginated(
             search_query=search_query,
             page=page,
             results_per_page=MAX_RESULTS_PER_PAGE,
-            max_days_old=max_days_old
+            max_days_old=max_days_old,
+            sort_by=sort_by
         )
         
         if not jobs:
