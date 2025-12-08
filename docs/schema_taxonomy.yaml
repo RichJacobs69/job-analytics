@@ -330,9 +330,15 @@ skills_ontology:
     
     - family: {code: analytics_pm, label: "Analytics for PMs"}
       names: ["SQL", "Data analysis", "Metrics", "KPIs", "Dashboards", "Amplitude", "Mixpanel", "Google Analytics", "Product analytics"]
-    
+
     - family: {code: stakeholder_mgmt, label: "Stakeholder Management"}
       names: ["Stakeholder management", "Executive communication", "Cross-functional collaboration", "Influence without authority"]
+
+    - family: {code: business_tools, label: "Business Tools"}
+      names: ["Excel", "PowerPoint", "Google Sheets", "Google Slides", "Microsoft Office", "MS Office", "Spreadsheets"]
+
+    - family: {code: product_tools, label: "Product & Collaboration Tools"}
+      names: ["Figma", "Sketch", "Miro", "Notion", "Confluence", "Asana", "Linear", "Productboard"]
 
   data_ml:
     - family: {code: programming, label: "Programming"}
@@ -361,7 +367,10 @@ skills_ontology:
     
     - family: {code: warehouses_lakes, label: "Warehouses/Lakes"}
       names: ["Snowflake", "BigQuery", "Redshift", "Databricks", "Athena", "Delta Lake", "Data lake", "Lakehouse", "Iceberg"]
-    
+
+    - family: {code: databases, label: "Databases"}
+      names: ["PostgreSQL", "Postgres", "MySQL", "MongoDB", "Redis", "Elasticsearch", "ElasticSearch", "Cassandra", "DynamoDB", "Neo4j", "Oracle", "SQL Server"]
+
     - family: {code: mlops, label: "MLOps"}
       names: ["MLflow", "Kubeflow", "Model serving", "Model monitoring", "Model deployment", "Feature stores", "Model registry", "Experiment tracking", "Weights & Biases"]
     
@@ -386,6 +395,12 @@ skills_ontology:
     
     - family: {code: monitoring, label: "Monitoring/Observability"}
       names: ["Datadog", "New Relic", "Prometheus", "Grafana", "ELK stack", "Observability", "Logging", "Metrics"]
+
+    - family: {code: version_control, label: "Version Control"}
+      names: ["Git", "GitHub", "GitLab", "Bitbucket", "Version control", "GitOps", "GitHub Actions", "GitLab CI"]
+
+    - family: {code: apis_integration, label: "APIs & Integration"}
+      names: ["REST", "REST API", "GraphQL", "API", "APIs", "Webhooks", "FastAPI", "API Design", "Microservices", "gRPC", "OpenAPI"]
 
 # =========================
 # CLASSIFICATION GUIDANCE

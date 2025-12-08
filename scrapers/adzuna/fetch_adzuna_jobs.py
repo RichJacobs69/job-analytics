@@ -68,7 +68,8 @@ DEFAULT_SEARCH_QUERIES = [
     "Product Manager",
     "Technical Product Manager",
     "Growth Product Manager",
-    "AI Product Manager"
+    "AI Product Manager",
+    "Product Owner"
 ]
 
 # ============================================

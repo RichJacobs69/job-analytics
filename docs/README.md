@@ -65,6 +65,15 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
   - How jobs are merged and deduplicated
   - Why dual sources provide better coverage
 
+## Analytics & Consumption Layer
+
+- **epic5_analytics_layer_planning.md** - Job Market Dashboard delivery plan (ACTIVE)
+  - Status: **Phase 0 Complete** ✅ (2025-12-08)
+  - Building Next.js dashboard at `richjacobs.me/projects/job-market`
+  - Architecture: Next.js API Routes → Supabase (read-only)
+  - Chart library: Chart.js
+  - 6 phased delivery (Foundation → Launch)
+
 ## Database Documentation
 
 ### directory: `database/`
@@ -85,13 +94,15 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 - **claude_api_cost_*.csv** - Daily cost exports from Anthropic dashboard
 - **claude_api_tokens_*.csv** - Hourly token usage exports
 
-**Key Metrics (as of 2025-12-04):**
-| Metric | Value |
-|--------|-------|
-| Cost per raw insert | $0.00567 |
-| Cost per classified job | $0.00976 |
-| Classification rate | 58% |
-| Model | Claude 3.5 Haiku |
+**Key Metrics:**
+| Metric | Value | Timestamp |
+|--------|-------|-----------|
+| Cost per raw insert | $0.00567 | 2025-12-04 (point-in-time) |
+| Cost per classified job | $0.00976 | 2025-12-04 (point-in-time) |
+| Classification rate | 58% | 2025-12-04 (point-in-time) |
+| Model | Claude 3.5 Haiku | - |
+| **Current dataset size** | 5,629 enriched jobs | 2025-12-07 (Supabase) |
+| **Companies configured** | 302 Greenhouse companies | 2025-12-07 (config) |
 
 ## Testing Documentation
 
@@ -121,11 +132,12 @@ This is valuable context for understanding how the system evolved, why certain d
 4. schema_taxonomy.yaml - How we classify jobs
 5. system_architecture.yaml - System design & interactions
 6. architecture/DUAL_PIPELINE.md - Adzuna + Greenhouse pipeline design
+7. **epic5_analytics_layer_planning.md** - Analytics dashboard architecture (active development)
 
 **Implementation Details (When Needed):**
-7. database/SCHEMA_UPDATES.md - Database schema & changes
-8. blacklisting_process.md - Agency filtering & optimization
-9. Individual module docstrings in source code (../classifier.py, ../db_connection.py, etc.)
+8. database/SCHEMA_UPDATES.md - Database schema & changes
+9. blacklisting_process.md - Agency filtering & optimization
+10. Individual module docstrings in source code (../classifier.py, ../db_connection.py, etc.)
 
 **Historical Context (Understanding Evolution):**
 - archive/README.md - Why we chose certain approaches

@@ -68,7 +68,30 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
     # Get classification guidance
     seniority_guidance = taxonomy['classification_guidance']['seniority']
     subfamily_guidance = taxonomy['classification_guidance']['job_subfamily']
-    
+
+    # Build skills ontology for the prompt
+    skills_sections = []
+    skills_ontology = taxonomy.get('skills_ontology', {})
+
+    for parent_category, families in skills_ontology.items():
+        category_skills = []
+        for family_info in families:
+            family_code = family_info['family']['code']
+            family_label = family_info['family']['label']
+            skill_names = family_info.get('names', [])
+
+            # Format as: family_code (Label): skill1, skill2, skill3, ...
+            skills_list = ", ".join(skill_names[:10])  # Limit to first 10 to save tokens
+            if len(skill_names) > 10:
+                skills_list += f", ... ({len(skill_names)} total)"
+
+            category_skills.append(f"  - {family_code} ({family_label}): {skills_list}")
+
+        if category_skills:
+            skills_sections.append(f"\n**{parent_category.upper()} Skills:**\n" + "\n".join(category_skills))
+
+    skills_ontology_text = "\n".join(skills_sections)
+
     # Build the job input section based on whether we have structured input
     if structured_input:
         job_input_section = "# JOB TO CLASSIFY\n\n"
@@ -107,8 +130,8 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
   - "Product Manager", "PM", "Product Owner", "PO"
   - "Product Lead", "Head of Product", "VP Product", "CPO"
   - "Product Director", "Group Product Manager", "GPM"
-  - "Technical Product Manager", "TPM"
-  - "Growth PM", "Platform PM", "AI/ML PM"
+  - "Technical Product Manager"
+  - "Growth PM", "Platform PM", "AI PM", "ML PM"
   
 → **data** - Classify as 'data' if the job title contains:
   - "Data Scientist", "Data Engineer", "Data Analyst"
@@ -120,8 +143,6 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 → **out_of_scope** - Classify as 'out_of_scope' ONLY if:
   - Title is clearly NOT product or data (e.g., "Software Engineer", "Marketing Manager", "Sales Rep")
   - Title contains: "Product Marketing", "Product Designer", "Product Support" (these are NOT PM roles)
-
-**IMPORTANT:** When in doubt between product/data vs out_of_scope, lean towards product or data if the title suggests it. The title is authoritative.
 
 # SENIORITY CLASSIFICATION RULES
 
@@ -201,11 +222,15 @@ Return JSON with this EXACT structure:
 - "Remote-first" → remote
 - Nothing stated → onsite
 
+# SKILLS ONTOLOGY - Use these family_codes when extracting skills
+{skills_ontology_text}
+
 # SKILLS EXTRACTION RULES
 - ONLY extract skills explicitly named in the posting
-- Match to family_code from taxonomy if possible (programming, deep_learning, warehouses_lakes, etc.)
-- If skill family unclear, leave family_code as null
-- DO NOT infer skills from job requirements (e.g., don't add "Python" because it's a data job)
+- Match to family_code from the ontology above whenever possible
+- Common examples: "Python" → programming, "AWS" → cloud, "Snowflake" → warehouses_lakes, "dbt" → data_modeling
+- If skill doesn't match any family in ontology, use family_code: null
+- DO NOT infer skills from job requirements (e.g., don't add "Python" just because it's a data job)
 
 {job_input_section}
 
