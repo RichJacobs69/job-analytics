@@ -195,13 +195,16 @@ class GreenhouseScraper:
     # Greenhouse has migrated to job-boards.greenhouse.io for some companies
     # Try both domains to find the correct one
     # Some companies (MongoDB, Databricks, etc.) only work with embed URLs
-    # EU companies use job-boards.eu.greenhouse.io
+    # Order optimized based on discovery validation (2025-12-09):
+    #   - job-boards.greenhouse.io: 87% success rate (47/54 companies)
+    #   - embed format: 13% success rate (7/54 companies)
+    #   - EU/legacy domains: 0% success rate (kept as fallback)
     BASE_URLS = [
-        "https://job-boards.greenhouse.io",                    # New domain (try first)
-        "https://job-boards.eu.greenhouse.io",                 # EU domain
+        "https://job-boards.greenhouse.io",                    # Primary domain (87% success rate)
+        "https://boards.greenhouse.io/embed/job_board?for=",   # Embed pattern (13% success rate - Unity, Coinbase, etc.)
         "https://boards.greenhouse.io",                        # Legacy domain (fallback)
-        "https://board.greenhouse.io",                         # Singular legacy variant
-        "https://boards.greenhouse.io/embed/job_board?for=",   # Embed pattern (fallback for custom career sites)
+        "https://board.greenhouse.io",                         # Singular legacy variant (fallback)
+        "https://job-boards.eu.greenhouse.io",                 # EU domain (rare, check last)
     ]
 
     # CSS selectors for job listings page
@@ -333,6 +336,82 @@ class GreenhouseScraper:
         # Filtering statistics (tracked per scrape)
         self.reset_filter_stats()
 
+        # URL cache from proven scraper runs (speeds up known companies)
+        self.url_cache = self._load_url_cache()
+
+    def _get_cache_path(self) -> Path:
+        """Get path to scraper URL cache file."""
+        project_root = Path(__file__).parent.parent.parent
+        output_dir = project_root / 'output'
+        output_dir.mkdir(exist_ok=True)
+        return output_dir / 'greenhouse_scraper_cache.json'
+
+    def _load_url_cache(self) -> Dict[str, str]:
+        """Load URL cache from proven scraper runs.
+
+        Returns:
+            Dict mapping company_slug (lowercase) to successful URL
+        """
+        cache_path = self._get_cache_path()
+        try:
+            with open(cache_path, 'r') as f:
+                cache_data = json.load(f)
+
+            cache = {slug.lower(): url for slug, url in cache_data.get('urls', {}).items()}
+
+            if cache:
+                logger.info(f"Loaded URL cache with {len(cache)} proven companies")
+            return cache
+        except FileNotFoundError:
+            logger.debug("URL cache not found, will be created on first successful scrape")
+            return {}
+        except Exception as e:
+            logger.warning(f"Failed to load URL cache: {e}")
+            return {}
+
+    def _update_url_cache(self, company_slug: str, successful_url: str):
+        """Update URL cache with newly proven successful URL.
+
+        Only adds URLs from actual successful scrapes (jobs extracted).
+
+        Args:
+            company_slug: Company slug (e.g., 'stripe')
+            successful_url: URL that successfully scraped jobs
+        """
+        cache_path = self._get_cache_path()
+
+        try:
+            # Load existing cache
+            try:
+                with open(cache_path, 'r') as f:
+                    cache_data = json.load(f)
+            except FileNotFoundError:
+                cache_data = {
+                    'description': 'URL cache from proven Greenhouse scraper runs',
+                    'last_updated': None,
+                    'urls': {}
+                }
+
+            # Update or add entry
+            slug_lower = company_slug.lower()
+            if slug_lower in cache_data['urls']:
+                logger.debug(f"Updated URL cache for {company_slug}: {successful_url}")
+            else:
+                logger.info(f"Added to URL cache: {company_slug} -> {successful_url}")
+
+            cache_data['urls'][slug_lower] = successful_url
+            cache_data['last_updated'] = datetime.now().isoformat()
+
+            # Write back atomically
+            with open(cache_path, 'w') as f:
+                json.dump(cache_data, f, indent=2)
+
+            # Update in-memory cache
+            self.url_cache[slug_lower] = successful_url
+
+        except Exception as e:
+            logger.warning(f"Failed to update URL cache for {company_slug}: {e}")
+
     def reset_filter_stats(self):
         """Reset filtering statistics for a new scrape."""
         self.filter_stats = {
@@ -399,7 +478,17 @@ class GreenhouseScraper:
 
         page = None
 
-        # Try each base URL until one works
+        # Check URL cache first (speeds up known companies)
+        slug_lower = company_slug.lower()
+        cached_url = self.url_cache.get(slug_lower)
+
+        # Build URL list: cached URL first, then all BASE_URLS
+        urls_to_try = []
+        if cached_url:
+            urls_to_try.append(cached_url)
+            logger.info(f"[{company_slug}] Using cached URL: {cached_url}")
+
+        # Add all BASE_URLS (will skip cached_url if already tried)
         for base_url in self.BASE_URLS:
             # Handle embed URL pattern (ends with ?for=) differently
             if base_url.endswith('?for='):
@@ -407,6 +496,12 @@ class GreenhouseScraper:
             else:
                 url = f"{base_url}/{company_slug}"
 
+            # Skip if this URL was already tried from cache
+            if url != cached_url:
+                urls_to_try.append(url)
+
+        # Try each URL until one works
+        for url in urls_to_try:
             try:
                 for attempt in range(max_retries):
                     try:
@@ -431,10 +526,10 @@ class GreenhouseScraper:
                                 continue
 
                         if not listings_found:
-                            logger.warning(f"[{company_slug}] No job listings found with any selector on {base_url}")
+                            logger.warning(f"[{company_slug}] No job listings found with any selector on {url}")
                             if page:
                                 await page.close()
-                            break  # Break retry loop, try next base URL (not a transient error)
+                            break  # Break retry loop, try next URL (not a transient error)
 
                         # Extract jobs (with filtering if enabled)
                         jobs = await self._extract_all_jobs(page, company_slug, max_jobs)
@@ -451,7 +546,7 @@ class GreenhouseScraper:
                             'filtered_locations_sample': self.filter_stats['filtered_locations'][:20],  # First 20 only
                         }
 
-                        logger.info(f"[{company_slug}] Successfully scraped {len(jobs)} jobs from {base_url}")
+                        logger.info(f"[{company_slug}] Successfully scraped {len(jobs)} jobs from {url}")
                         if self.filter_titles or self.filter_locations:
                             logger.info(f"[{company_slug}] Filtering: {self.filter_stats['jobs_scraped']} total, "
                                       f"{self.filter_stats['jobs_kept']} kept, "
@@ -461,23 +556,26 @@ class GreenhouseScraper:
                             if self.filter_locations:
                                 logger.info(f"[{company_slug}]   - By location: {self.filter_stats['filtered_by_location']}")
 
+                        # Update URL cache with proven successful URL
+                        self._update_url_cache(company_slug, url)
+
                         return {
                             'jobs': jobs,
                             'stats': stats
                         }
 
                     except Exception as e:
-                        logger.warning(f"[{company_slug}] Attempt {attempt + 1} on {base_url} failed: {str(e)[:100]}")
+                        logger.warning(f"[{company_slug}] Attempt {attempt + 1} on {url} failed: {str(e)[:100]}")
                         if page:
                             await page.close()
                         if attempt < max_retries - 1:
                             await asyncio.sleep(2)
 
             except Exception as e:
-                logger.warning(f"[{company_slug}] Failed with {base_url}: {str(e)[:100]}")
-                continue  # Try next base URL
+                logger.warning(f"[{company_slug}] Failed with {url}: {str(e)[:100]}")
+                continue  # Try next URL
 
-        logger.error(f"[{company_slug}] Failed to scrape on any base URL")
+        logger.error(f"[{company_slug}] Failed to scrape on any URL")
         return {
             'jobs': [],
             'stats': self.filter_stats
@@ -1067,6 +1165,16 @@ class GreenhouseScraper:
             description = ""
             if fetch_description:
                 description = await self._get_job_description(job_url)
+
+                # CRITICAL: Detect and skip bot challenge pages (Cloudflare, etc.)
+                # Bot detection pages are typically short (<500 chars) with challenge keywords
+                is_short = len(description) < 500
+                has_challenge = 'challenge-error' in description.lower() or 'verify you are human' in description.lower()
+                has_js_warning = 'enable javascript and cookies' in description.lower()
+
+                if is_short and (has_challenge or has_js_warning):
+                    logger.warning(f"[{company_slug}] Bot detection page detected for {job_url} - skipping job")
+                    return None  # Skip this job entirely
 
             return Job(
                 company=company_slug,

@@ -21,6 +21,9 @@ Sources for seed list:
     - London fintech Series B/C rounds (2024)
     - Denver/Boulder tech scene (2024)
     - Known Greenhouse customers from industry reports
+    - Expanded verticals (2025-12): Cybersecurity, Climate Tech, Logistics,
+      Crypto/Web3, Gaming, HR Tech, InsurTech, Sports Tech, Aerospace/Defense,
+      Legal Tech, Hardware/Robotics, Food/Ag Tech, Infrastructure/Cloud, AI/ML
 """
 
 import asyncio
@@ -255,6 +258,228 @@ SEED_COMPANIES = {
     "Homeward": ["homeward"],
     "Divvy Homes": ["divvyhomes", "divvy"],
     "Arrived": ["arrived", "arrivedhomes"],
+
+    # =========================================================================
+    # CYBERSECURITY & SECURITY (~20 companies)
+    # =========================================================================
+    "Snyk": ["snyk"],
+    "Wiz": ["wiz", "wizinc"],
+    "Orca Security": ["orcasecurity", "orca"],
+    "Lacework": ["lacework"],
+    "Axonius": ["axonius"],
+    "CrowdStrike": ["crowdstrike"],
+    "SentinelOne": ["sentinelone"],
+    "Cybereason": ["cybereason"],
+    "Tenable": ["tenable"],
+    "1Password": ["1password", "onepassword"],
+    "Bitwarden": ["bitwarden"],
+    "Keeper Security": ["keeper", "keepersecurity"],
+    "Arctic Wolf": ["arcticwolf"],
+    "Abnormal Security": ["abnormalsecurity", "abnormal"],
+    "Tessian": ["tessian"],
+    "Huntress": ["huntress"],
+    "Expel": ["expel"],
+    "Drata": ["drata"],
+    "Vanta": ["vanta"],
+    "Chainguard": ["chainguard"],
+
+    # =========================================================================
+    # CLIMATE TECH & CLEAN ENERGY (~15 companies)
+    # =========================================================================
+    "Pachama": ["pachama"],
+    "Span": ["span", "spanio"],
+    "Aurora Solar": ["aurorasolar", "aurora"],
+    "Crusoe Energy": ["crusoe", "crusoeenergy"],
+    "Arcadia": ["arcadia", "arcadiapower"],
+    "Mosaic": ["mosaic", "joinmosaic"],
+    "Palmetto": ["palmetto"],
+    "EnergySage": ["energysage"],
+    "Redwood Materials": ["redwoodmaterials", "redwood"],
+    "Sila Nanotechnologies": ["sila", "silananotechnologies"],
+    "QuantumScape": ["quantumscape"],
+    "Form Energy": ["formenergy"],
+    "Commonwealth Fusion": ["commonwealthfusion", "cfs"],
+    "Twelve": ["twelve", "twelvelabs"],
+    "Charm Industrial": ["charmindustrial", "charm"],
+
+    # =========================================================================
+    # LOGISTICS & SUPPLY CHAIN (~12 companies)
+    # =========================================================================
+    "Flexport": ["flexport"],
+    "project44": ["project44", "p44"],
+    "FourKites": ["fourkites"],
+    "Stord": ["stord"],
+    "Shippo": ["shippo", "goshippo"],
+    "ShipBob": ["shipbob"],
+    "Deliverr": ["deliverr"],
+    "Shipium": ["shipium"],
+    "Locus Robotics": ["locusrobotics", "locus"],
+    "6 River Systems": ["6riversystems"],
+    "Attabotics": ["attabotics"],
+    "Fabric": ["fabric", "getfabric"],
+
+    # =========================================================================
+    # CRYPTO & WEB3 (~15 companies)
+    # =========================================================================
+    "Coinbase": ["coinbase"],
+    "Chainalysis": ["chainalysis"],
+    "Fireblocks": ["fireblocks"],
+    "Alchemy": ["alchemy", "alchemyplatform"],
+    "Consensys": ["consensys"],
+    "Ledger": ["ledger"],
+    "Anchorage Digital": ["anchorage", "anchoragedigital"],
+    "Circle": ["circle"],
+    "Paxos": ["paxos"],
+    "Figment": ["figment"],
+    "Messari": ["messari"],
+    "Dune Analytics": ["dune", "duneanalytics"],
+    "Nansen": ["nansen"],
+    "OpenZeppelin": ["openzeppelin"],
+    "Paradigm": ["paradigm"],
+
+    # =========================================================================
+    # GAMING & ENTERTAINMENT (~12 companies)
+    # =========================================================================
+    "Riot Games": ["riotgames", "riot"],
+    "Unity": ["unity", "unity3d"],
+    "Roblox": ["roblox"],
+    "Niantic": ["niantic"],
+    "Supercell": ["supercell"],
+    "Jam City": ["jamcity"],
+    "Scopely": ["scopely"],
+    "Machine Zone": ["machinezone", "mz"],
+    "Zynga": ["zynga"],
+    "N3twork": ["n3twork"],
+    "Manticore Games": ["manticoregames", "manticore"],
+    "Rec Room": ["recroom"],
+
+    # =========================================================================
+    # HR TECH & FUTURE OF WORK (~12 companies)
+    # =========================================================================
+    "Deel": ["deel"],
+    "Oyster": ["oyster", "oysterhr"],
+    "Lattice": ["lattice", "latticehq"],
+    "Culture Amp": ["cultureamp"],
+    "15Five": ["15five"],
+    "Workrise": ["workrise"],
+    "Velocity Global": ["velocityglobal"],
+    "Papaya Global": ["papayaglobal", "papaya"],
+    "Hibob": ["hibob"],
+    "Leapsome": ["leapsome"],
+    "ChartHop": ["charthop"],
+
+    # =========================================================================
+    # INSURTECH (~10 companies)
+    # =========================================================================
+    "Lemonade": ["lemonade"],
+    "Root Insurance": ["root", "rootinsurance"],
+    "Hippo": ["hippo", "hippoinsurance"],
+    "Coalition": ["coalition", "coalitioninc"],
+    "Next Insurance": ["nextinsurance"],
+    "Pie Insurance": ["pieinsurance", "pie"],
+    "Branch": ["branch", "branchinsurance"],
+    "Bestow": ["bestow"],
+    "Ethos": ["ethos", "ethoslife"],
+    "Clearcover": ["clearcover"],
+
+    # =========================================================================
+    # SPORTS TECH (~10 companies)
+    # =========================================================================
+    "Fanatics": ["fanatics"],
+    "DraftKings": ["draftkings"],
+    "FanDuel": ["fanduel"],
+    "Sportradar": ["sportradar"],
+    "Catapult": ["catapult", "catapultsports"],
+    "Whoop": ["whoop"],
+    "Oura": ["oura", "ouraring"],
+    "Hyperice": ["hyperice"],
+    "TMRW Sports": ["tmrwsports", "tmrw"],
+    "Overtime": ["overtime"],
+
+    # =========================================================================
+    # AEROSPACE & DEFENSE TECH (~12 companies)
+    # =========================================================================
+    "Anduril": ["anduril"],
+    "Shield AI": ["shieldai"],
+    "Hadrian": ["hadrian"],
+    "Relativity Space": ["relativityspace", "relativity"],
+    "Rocket Lab": ["rocketlab"],
+    "Astra": ["astra", "astraspace"],
+    "Planet Labs": ["planetlabs", "planet"],
+    "Spire Global": ["spire", "spireglobal"],
+    "Capella Space": ["capellaspace", "capella"],
+    "Hawkeye 360": ["hawkeye360"],
+    "BlackSky": ["blacksky"],
+    "Impulse Space": ["impulsespace"],
+
+    # =========================================================================
+    # LEGAL TECH (~8 companies)
+    # =========================================================================
+    "Ironclad": ["ironclad"],
+    "Clio": ["clio", "goclio"],
+    "LegalZoom": ["legalzoom"],
+    "ContractPodAi": ["contractpodai"],
+    "Juro": ["juro"],
+    "Lawtrades": ["lawtrades"],
+    "LinkSquares": ["linksquares"],
+    "Evisort": ["evisort"],
+
+    # =========================================================================
+    # HARDWARE & ROBOTICS (~10 companies)
+    # =========================================================================
+    "Figure AI": ["figure", "figureai"],
+    "Boston Dynamics": ["bostondynamics"],
+    "Zipline": ["zipline", "flyzipline"],
+    "Skydio": ["skydio"],
+    "Saronic": ["saronic"],
+    "Agility Robotics": ["agilityrobotics", "agility"],
+    "Nuro": ["nuro"],
+    "Cruise": ["cruise", "getcruise"],
+    "Waymo": ["waymo"],
+    "Zoox": ["zoox"],
+
+    # =========================================================================
+    # FOOD & AGRICULTURE TECH (~8 companies)
+    # =========================================================================
+    "Bowery Farming": ["bowery", "boweryfarming"],
+    "Plenty": ["plenty", "plentyag"],
+    "AppHarvest": ["appharvest"],
+    "Impossible Foods": ["impossiblefoods", "impossible"],
+    "Perfect Day": ["perfectday"],
+    "Upside Foods": ["upsidefoods", "upside"],
+    "Eat Just": ["eatjust", "just"],
+    "NotCo": ["notco"],
+
+    # =========================================================================
+    # INFRASTRUCTURE & CLOUD (~8 companies)
+    # =========================================================================
+    "Cloudflare": ["cloudflare"],
+    "Fastly": ["fastly"],
+    "Fly.io": ["flyio", "fly"],
+    "Railway": ["railway"],
+    "Render": ["render"],
+    "PlanetScale": ["planetscale"],
+    "Supabase": ["supabase"],
+    "Neon": ["neon", "neondatabase"],
+
+    # =========================================================================
+    # ADDITIONAL AI/ML COMPANIES (~15 companies)
+    # =========================================================================
+    "OpenAI": ["openai"],
+    "Mistral AI": ["mistral", "mistralai"],
+    "Character AI": ["character", "characterai"],
+    "Inflection AI": ["inflection", "inflectionai"],
+    "Hugging Face": ["huggingface"],
+    "Adept AI": ["adept", "adeptai"],
+    "Jasper": ["jasper", "jasperai"],
+    "Copy.ai": ["copyai"],
+    "Writer": ["writer", "writerai"],
+    "Covariant": ["covariant"],
+    "Sanctuary AI": ["sanctuaryai", "sanctuary"],
+    "Physical Intelligence": ["physicalintelligence"],
+    "Extropic": ["extropic"],
+    "Cognition AI": ["cognition", "cognitionai"],
+    "Magic": ["magic", "magicai"],
 }
 
 # Base URLs to try (EXACTLY same as validate_greenhouse_slugs.py)
@@ -419,6 +644,80 @@ def load_existing_mapping() -> set:
         return set()
 
 
+def get_checked_log_path() -> Path:
+    """Get path to the checked companies log."""
+    return Path(__file__).parent.parent.parent / 'config' / 'greenhouse_checked_companies.json'
+
+
+def load_checked_companies() -> tuple[set, set]:
+    """
+    Load previously checked companies from the persistent log.
+
+    Returns: (valid_set, invalid_set) - both lowercase for comparison
+    """
+    log_path = get_checked_log_path()
+
+    try:
+        with open(log_path) as f:
+            log = json.load(f)
+
+        valid = {c.lower() for c in log.get('valid', [])}
+        invalid = {c.lower() for c in log.get('invalid', [])}
+        return valid, invalid
+    except FileNotFoundError:
+        return set(), set()
+
+
+def update_checked_companies(results: dict):
+    """
+    Update the persistent checked companies log with new results.
+
+    Appends newly tested companies to the existing log.
+    """
+    log_path = get_checked_log_path()
+
+    # Load existing log or create new
+    try:
+        with open(log_path) as f:
+            log = json.load(f)
+    except FileNotFoundError:
+        log = {
+            'description': 'Persistent log of all Greenhouse slugs tested. Used by discover_greenhouse_slugs.py to skip re-testing.',
+            'valid': [],
+            'invalid': []
+        }
+
+    # Get existing sets for deduplication
+    existing_valid = set(log.get('valid', []))
+    existing_invalid = set(log.get('invalid', []))
+
+    # Add new valid companies
+    added_valid = 0
+    for company, slug, url in results.get('valid', []):
+        if company not in existing_valid:
+            log['valid'].append(company)
+            added_valid += 1
+
+    # Add new invalid companies
+    added_invalid = 0
+    for company in results.get('invalid', []):
+        if company not in existing_invalid:
+            log['invalid'].append(company)
+            added_invalid += 1
+
+    # Update timestamp
+    log['last_updated'] = datetime.now().isoformat()
+
+    # Save
+    with open(log_path, 'w') as f:
+        json.dump(log, f, indent=2)
+
+    total_valid = len(log['valid'])
+    total_invalid = len(log['invalid'])
+    print(f"\nUpdated checked companies log: +{added_valid} valid, +{added_invalid} invalid")
+    print(f"  Total tracked: {total_valid} valid, {total_invalid} invalid ({total_valid + total_invalid} total)")
+
+
 def save_results(results: dict, mapping_path: Path):
     """Save valid slugs to mapping file."""
     with open(mapping_path) as f:
@@ -449,6 +748,8 @@ def main():
                         help='Concurrent tests per batch (default: 5)')
     parser.add_argument('--limit', type=int, default=None,
                         help='Limit total companies to test')
+    parser.add_argument('--recheck', action='store_true',
+                        help='Re-test previously invalid companies (ignore checked log)')
 
     args = parser.parse_args()
 
@@ -457,16 +758,37 @@ def main():
     print("=" * 80)
     print(f"\nSeed list contains {len(SEED_COMPANIES)} companies")
 
-    # Filter out companies already in mapping
-    existing = load_existing_mapping()
+    # Load existing mapping and checked companies log
+    existing_mapping = load_existing_mapping()
+    checked_valid, checked_invalid = load_checked_companies()
+
+    # Determine what to skip based on --recheck flag
+    if args.recheck:
+        # Only skip companies already in mapping or previously valid
+        skip_set = existing_mapping | checked_valid
+        print("\n[--recheck mode: will re-test previously invalid companies]")
+    else:
+        # Skip all previously checked companies
+        skip_set = existing_mapping | checked_valid | checked_invalid
+
+    # Filter out companies already tested
     to_test = {
         company: slugs
         for company, slugs in SEED_COMPANIES.items()
-        if company.lower() not in existing
+        if company.lower() not in skip_set
     }
 
-    print(f"Already in mapping: {len(SEED_COMPANIES) - len(to_test)}")
-    print(f"New companies to test: {len(to_test)}")
+    in_mapping = len([c for c in SEED_COMPANIES if c.lower() in existing_mapping])
+    prev_valid = len([c for c in SEED_COMPANIES if c.lower() in checked_valid and c.lower() not in existing_mapping])
+    prev_invalid = len([c for c in SEED_COMPANIES if c.lower() in checked_invalid])
+
+    print(f"Already in mapping: {in_mapping}")
+    print(f"Previously checked (valid, not in mapping): {prev_valid}")
+    print(f"Previously checked (invalid): {prev_invalid}")
+    if args.recheck:
+        print(f"Re-checking invalid + new companies: {len(to_test)}")
+    else:
+        print(f"New companies to test: {len(to_test)}")
 
     if args.limit:
         to_test = dict(list(to_test.items())[:args.limit])
@@ -506,7 +828,10 @@ def main():
     else:
         print("\n[Dry run mode - use --save to add to mapping]")
 
-    # Save discovery log
+    # Update persistent checked companies log (always, even in dry-run)
+    update_checked_companies(results)
+
+    # Save discovery log (this run only)
     log_path = Path(__file__).parent.parent.parent / 'output' / 'greenhouse_discovery_log.json'
     log_path.parent.mkdir(exist_ok=True)
 
@@ -520,7 +845,7 @@ def main():
     with open(log_path, 'w') as f:
         json.dump(log, f, indent=2)
 
-    print(f"\nDiscovery log saved to: {log_path}")
+    print(f"Discovery log (this run) saved to: {log_path}")
 
 
 if __name__ == '__main__':
