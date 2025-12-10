@@ -39,6 +39,16 @@ Author: Claude Code
 
 # with adzuna max days old:
 python fetch_jobs.py lon 100 --sources adzuna,greenhouse --adzuna-max-days-old 30
+
+# With full terminal output capture AND live monitoring (recommended):
+# PowerShell approach - shows live output in terminal AND saves to file:
+# $transcriptPath = "output/cursor_session_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
+# Start-Transcript -Path $transcriptPath
+# python fetch_jobs.py lon 100 --sources adzuna,greenhouse
+# Stop-Transcript
+
+# Or use tee for cross-platform (shows live output + captures to file):
+# python fetch_jobs.py lon 100 --sources adzuna,greenhouse 2>&1 | tee "output/cursor_session_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
 """
 
 import asyncio

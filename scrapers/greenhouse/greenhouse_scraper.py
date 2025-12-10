@@ -686,7 +686,7 @@ class GreenhouseScraper:
                             self.filter_stats['jobs_filtered'] += 1
                             self.filter_stats['filtered_by_title'] += 1
                             self.filter_stats['filtered_titles'].append(job.title)
-                            logger.debug(f"[{company_slug}] Filtered by title: {job.title}")
+                            logger.info(f"[{company_slug}] Filtered by title: '{job.title}'")
                             continue
 
                     # STEP 3: Apply location filter
@@ -696,7 +696,7 @@ class GreenhouseScraper:
                             self.filter_stats['jobs_filtered'] += 1
                             self.filter_stats['filtered_by_location'] += 1
                             self.filter_stats['filtered_locations'].append(job.location)
-                            logger.debug(f"[{company_slug}] Filtered by location: {job.title} ({job.location})")
+                            logger.info(f"[{company_slug}] Filtered by location: '{job.title}' at '{job.location}'")
                             continue
 
                     # STEP 4: Job passed all filters - fetch full description (expensive)
@@ -1124,11 +1124,12 @@ class GreenhouseScraper:
             # Try to get location from within the element using proper selectors
             location = "Unspecified"
             try:
-                # Method 1: Try location-specific HTML selectors first
+                # Method 1: Try location-specific HTML selectors first (in job_element and parent)
                 location_selectors = self.SELECTORS['job_location']
                 if isinstance(location_selectors, str):
                     location_selectors = [location_selectors]
 
+                # Try searching within the job_element first
                 for selector in location_selectors:
                     try:
                         location_elem = await job_element.query_selector(selector)
@@ -1139,6 +1140,26 @@ class GreenhouseScraper:
                                 break
                     except:
                         continue
+
+                # If not found in job_element, try the parent container
+                # (Handles cases like Dojo where location is a sibling: <a>Title</a> <span class="location">...</span>)
+                if location == "Unspecified":
+                    try:
+                        parent = await job_element.evaluate_handle('el => el.parentElement')
+                        for selector in location_selectors:
+                            try:
+                                location_elem = await parent.query_selector(selector)
+                                if location_elem:
+                                    location_text = await location_elem.text_content()
+                                    if location_text and location_text.strip():
+                                        location = location_text.strip()
+                                        break
+                            except:
+                                continue
+                            if location != "Unspecified":
+                                break
+                    except:
+                        pass
 
                 # Method 2: If no HTML element found, extract from concatenated text
                 # (Handles table layouts where title+location are in same element)
@@ -1156,6 +1177,9 @@ class GreenhouseScraper:
                             break
             except:
                 pass
+
+            # NOTE: Location will be populated from job description later if fetch_description=True
+            # and current extraction returned "Unspecified" (see post-extraction location mining below)
 
             # Department is optional, not critical to extract
             department = None
