@@ -1,6 +1,7 @@
 """
 Job classification using Claude 3.5 Haiku
 UPDATED: Removed agency detection from Claude prompt (handled by Python pattern matching)
+UPDATED: Claude no longer classifies job_family - it's auto-derived from job_subfamily via strict mapping
 """
 import os
 import json
@@ -184,8 +185,7 @@ Return JSON with this EXACT structure:
   }},
   "role": {{
     "title_display": "string (required - exact title from input)",
-    "job_family": "product|data|out_of_scope (required - USE TITLE TO DECIDE)",
-    "job_subfamily": "string from subfamilies above (null only if out_of_scope)",
+    "job_subfamily": "string from subfamilies above (required - choose the most specific match, or 'out_of_scope' if none fit)",
     "seniority": "junior|mid|senior|staff_principal|director_plus|null",
     "track": "ic|management|null",
     "position_type": "full_time|part_time|contract|internship (default: full_time)",
@@ -331,6 +331,32 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
             result['employer'] = {}
         result['employer']['is_agency'] = None
         result['employer']['agency_confidence'] = None
+
+        # Automatically derive job_family from job_subfamily using strict mapping
+        # Claude no longer classifies job_family - we determine it deterministically
+        if 'role' in result and result['role'].get('job_subfamily'):
+            job_subfamily = result['role']['job_subfamily']
+
+            # Special case: out_of_scope means job_family should also be out_of_scope
+            if job_subfamily == 'out_of_scope':
+                result['role']['job_family'] = 'out_of_scope'
+            else:
+                # Get correct family from mapping
+                from job_family_mapper import get_correct_job_family
+                job_family = get_correct_job_family(job_subfamily)
+
+                if job_family:
+                    result['role']['job_family'] = job_family
+                    if verbose:
+                        print(f"[INFO] job_family auto-assigned: {job_subfamily} -> {job_family}")
+                else:
+                    # Subfamily not in mapping - shouldn't happen but handle gracefully
+                    if verbose:
+                        print(f"[WARNING] Unknown job_subfamily '{job_subfamily}' - no family mapping found")
+                    result['role']['job_family'] = None
+        else:
+            # No subfamily provided
+            result['role']['job_family'] = None
 
         # Attach actual cost data to the result for tracking
         result['_cost_data'] = cost_data

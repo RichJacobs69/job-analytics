@@ -1,0 +1,19 @@
+# Strict mapping: job_subfamily -> job_family
+# This ensures data consistency regardless of LLM classification output
+
+data:
+  - data_analyst
+  - data_engineer
+  - analytics_engineer
+  - data_scientist
+  - ml_engineer
+  - ai_engineer
+  - data_architect
+
+product:
+  - core_pm
+  - product_manager
+  - growth_pm
+  - platform_pm
+  - technical_pm
+  - ai_ml_pm

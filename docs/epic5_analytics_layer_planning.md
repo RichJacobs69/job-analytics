@@ -1,13 +1,13 @@
-# Epic 5: Job Market Dashboard - Delivery Plan
+# Epic 5: Hiring Market Dashboard - Delivery Plan
 
-> **Status:** Phase 0 Complete ✅
+> **Status:** Phase 0 Complete ✅ | Phase 1 Complete ✅ | Phase 2 Complete ✅
 > **Created:** 2025-12-07
-> **Last Updated:** 2025-12-08
+> **Last Updated:** 2025-12-10
 > **Delivery:** Incremental (ship question-by-question)
 
 ## Goal
 
-Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` that:
+Ship a professional analytics dashboard at `richjacobs.me/projects/hiring-market` that:
 - Answers 5 marketplace questions with interactive visualizations
 - Matches your site's existing design system
 - Impresses in portfolio reviews and interviews
@@ -27,6 +27,10 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 | **Mobile Responsiveness** | Could-have (defer to v2) | Charts on mobile are complex; focus on desktop-first for portfolio demo |
 | **Supabase Security** | Server-side service key only; RLS optional for v1 | API routes are the only access point; no client-side key exposure |
 | **Orchestration** | Python pipeline writes independently; portfolio reads only | Later automated via GitHub Actions |
+| **Filter Design** | Custom dropdowns with smooth animations; no "All" options | Native selects have harsh transitions; focused filters (specific city + family) create clearer insights |
+| **Chart Coloring** | Gradient by data value (lime intensity) | Single color gradient is visually smoother than multi-color; immediately shows high/low values |
+| **Supabase Pagination** | All endpoints implement pagination loops | Default 1,000 row limit would cap results; pagination ensures accurate counts |
+| **Job Family Derivation** | Auto-derived from job_subfamily via strict mapping | LLM shouldn't classify deterministic relationships; reduces tokens, ensures 100% accuracy |
 
 ---
 
@@ -46,13 +50,13 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
    - Fixed schema mismatch: using `last_seen_date` instead of non-existent `created_at`
 
 2. ✅ **Test API Route**
-   - Created `/api/job-market/test-connection/route.ts`
+   - Created `/api/hiring-market/test-connection/route.ts`
    - Returns database stats: enriched_jobs count, raw_jobs count, Greenhouse count, cities
    - Validates Supabase connection end-to-end
    - **Tested with Postman** - working ✅
 
 3. ✅ **Shared TypeScript Types**
-   - Created `lib/types/job-market.ts`
+   - Created `lib/types/hiring-market.ts`
    - Defined `ApiResponse<T>` wrapper
    - Defined interfaces for all 5 dashboard questions
    - Type-safe contract between API and frontend
@@ -64,18 +68,31 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
    - Side-by-side comparison with pros/cons
    - **Decision: Chart.js** (lighter bundle, good performance)
 
-5. ✅ **Files Created:**
+5. ✅ **Files Created (Phase 0):**
    ```
    portfolio-site/
    ├── .env.local.example
    ├── .env.local (configured)
    ├── lib/
    │   ├── supabase.ts
-   │   └── types/job-market.ts
+   │   └── types/hiring-market.ts
    └── app/
-       ├── api/job-market/
+       ├── api/hiring-market/
        │   └── test-connection/route.ts
        └── projects/chart-test/page.tsx
+   ```
+
+6. ✅ **Files Created (Phase 1):**
+   ```
+   portfolio-site/
+   ├── lib/
+   │   └── api-utils.ts                          # Shared normalization helpers
+   └── app/
+       ├── api/hiring-market/
+       │   └── role-demand/route.ts              # First data endpoint
+       └── projects/hiring-market/
+           ├── page.tsx                          # Dashboard page skeleton
+           └── api-docs/page.tsx                 # API documentation page
    ```
 
 **Architectural Decisions Made:**
@@ -84,32 +101,38 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 - **Query approach:** Supabase JS client for 1-2 dimension grouping, SQL functions only for complex (UNNEST)
 - **Data freshness:** Derived from `MAX(last_seen_date)` in enriched_jobs
 - **Chart library:** Chart.js for lighter bundle and better performance
+- **API parameter naming:** Match DB schema column names exactly (e.g., `city_code`, `job_family`)
+- **Case handling:** Case-insensitive via shared normalization utilities in `lib/api-utils.ts`
 
 **Decision Gate:** ✅ Library chosen, can query Supabase from API route, POC ready for testers
 
 ---
 
-## Phase 1: Infrastructure
+## Phase 1: Infrastructure ✅ COMPLETE
 
 ### Deliverable: Working data pipeline (API to Frontend)
+
+**Status:** Completed 2025-12-09
 
 **Tasks:**
 
 1. **Create API structure**
    ```
-   /api/job-market/
+   /api/hiring-market/
      ├── test-connection.ts    # Returns COUNT(*) from enriched_jobs
      └── types.ts              # Shared TypeScript interfaces
    ```
 
    **API contracts (shared across all endpoints):**
-   - Query params: `date_range` (default: last 30d), `city` (multi-select), `role_family`
-   - Response envelope: `{ data, meta: { last_updated, filters, source_info }, error }`
-   - Error handling: Graceful degradation, meaningful error messages
+   - **Query params naming:** Match DB schema column names exactly (`city_code`, `job_family`, `seniority`, etc.)
+   - **Case handling:** All string params normalized to lowercase via shared `api-utils.ts`
+   - **Common params:** `date_range` (days, e.g., "30"), `city_code` (comma-separated), `job_family`, `data_source`
+   - **Response envelope:** `{ data, meta: { last_updated, total_records, source }, error? }`
+   - **Error handling:** Graceful degradation with 500 status + error message
 
 2. **Create dashboard page skeleton**
    ```
-   /app/projects/job-market/
+   /app/projects/hiring-market/
      ├── page.tsx           # Main dashboard
      └── layout.tsx         # Inherits site navigation
    ```
@@ -119,7 +142,7 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 
 3. **Set up shared types**
    ```typescript
-   // Example: /lib/types/job-market.ts
+   // Example: /lib/types/hiring-market.ts
    interface JobDemandData {
      city_code: string;
      job_subfamily: string;
@@ -137,41 +160,92 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
    }
    ```
 
-**Decision Gate:** Can fetch data from Supabase and display on page
+**Decision Gate:** ✅ Can fetch data from Supabase and display on page, API docs published
 
 ---
 
-## Phase 2: First Chart
+## Phase 2: First Chart ✅ COMPLETE
 
 ### Deliverable: One complete question with working visualization
 
-**Pick the simplest high-impact question:**
-**"Which roles have most job postings by city?"** (MDS001 variant)
+**Status:** Completed 2025-12-10
 
-**Tasks:**
+**Question Implemented:** "Which roles have most job postings?" (Role Demand by City - MDS001 variant)
 
-1. **Write API endpoint**
-   - `/api/job-market/role-demand.ts`
-   - Query: `SELECT city_code, job_subfamily, COUNT(*) ... GROUP BY ...`
-   - Returns JSON array
-   - **Data source:** All enriched_jobs (5,629 records) - no quality concerns for simple counts
+**What Was Built:**
 
-2. **Build chart component**
-   - Create `<RoleDemandChart>` component
-   - Grouped bar chart (roles x cities)
-   - Basic interactivity (tooltips, legend)
-   - Use winning library from Phase 0 POC
+1. ✅ **Global Filter System**
+   - Custom dropdown components with smooth animations (`CustomSelect.tsx`)
+   - Three filters: Date range (7/30/90 days, all time), City (London/NYC/Denver), Job family (Data/Product)
+   - **Design decision:** No "All" options - requires specific selections for focused insights
+   - Real-time job count display below filters
+   - Last updated timestamp (top right, relative time with tooltip)
+   - Smooth transitions (200ms ease-in-out) for professional feel
+   - Filter state management with URL-ready architecture
 
-3. **Add to dashboard page**
-   - Section with title + description
-   - Chart with loading state
-   - Data source attribution: "Based on X job listings"
+2. ✅ **Count API Endpoint** (`/api/hiring-market/count/route.ts`)
+   - Returns total job count based on active filters
+   - Server-side filtering (city, job_family, date_range)
+   - Efficient COUNT(*) query with pagination support
 
-4. **Write basic tests**
-   - Unit test: API endpoint returns expected shape
-   - E2E test: Chart renders with data
+3. ✅ **Role Demand API Endpoint** (`/api/hiring-market/role-demand/route.ts`)
+   - Enhanced with `job_family` field in response
+   - Supabase pagination implemented (bypasses 1,000 row limit)
+   - Server-side filtering and grouping
+   - Data sorted by job_family first, then by count descending
+   - Returns actual job count (not just group count) in metadata
 
-**Decision Gate:** One complete question looks good, ready to replicate pattern
+4. ✅ **RoleDemandChart Component**
+   - Single-city bar chart (cleaner than multi-city grouped bars)
+   - **Gradient coloring:** Bars colored by job volume (light lime → saturated lime)
+   - Chart.js integration with custom styling
+   - Responsive design matching site theme (Geist fonts, dark mode)
+   - Loading states with spinner
+   - Error handling and empty state messaging
+   - Per-chart attribution: "Based on X job listings (all sources)"
+   - No grid lines (cleaner visualization)
+   - Interactive tooltips with job counts
+
+5. ✅ **Data Quality Fix: Job Family Mapping**
+   - Created strict `job_family` ↔ `job_subfamily` mapping (`config/job_family_mapping.yaml`)
+   - Built validation module (`pipeline/job_family_mapper.py`)
+   - **Updated classifier:** Claude no longer classifies `job_family` - it's auto-derived from `job_subfamily`
+   - Prevents misclassifications (e.g., ai_ml_pm incorrectly assigned to 'data' family)
+   - 100% accuracy through deterministic mapping
+   - Reduced token usage (removed job_family from prompt)
+
+6. ✅ **Files Created (Phase 2):**
+   ```
+   portfolio-site/
+   ├── app/
+   │   ├── api/hiring-market/
+   │   │   └── count/route.ts                        # Job count endpoint
+   │   └── projects/hiring-market/
+   │       └── components/
+   │           ├── GlobalFilters.tsx                 # Filter bar component
+   │           ├── CustomSelect.tsx                  # Custom dropdown with animations
+   │           └── RoleDemandChart.tsx               # First chart component
+   ├── lib/types/hiring-market.ts                    # Updated with filter types
+   └── app/globals.css                               # Added dropdown animations
+
+   job-analytics/
+   ├── config/
+   │   └── job_family_mapping.yaml                   # Strict subfamily → family mapping
+   └── pipeline/
+       ├── job_family_mapper.py                      # Validation module
+       └── classifier.py                             # Updated to auto-derive job_family
+   ```
+
+**Key Improvements:**
+
+- **UX:** Smooth filter animations eliminate harsh transitions
+- **Visual Design:** Lime gradient by volume makes high/low demand immediately visible
+- **Data Accuracy:** Supabase pagination ensures correct counts (not capped at 1,000 rows)
+- **Data Quality:** Job family mapping prevents taxonomy inconsistencies
+- **Performance:** Server-side filtering, efficient queries, smooth loading states
+- **Developer Experience:** Type-safe filters, clean component architecture
+
+**Decision Gate:** ✅ Pattern validated, ready to replicate for remaining charts
 
 ---
 
@@ -390,7 +464,7 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 │     richjacobs.me (Next.js 16 on Vercel)                       │
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐ │
-│  │  Dashboard Page (/app/projects/job-market/page.tsx)       │ │
+│  │  Dashboard Page (/app/projects/hiring-market/page.tsx)    │ │
 │  │  - Global filters (date, city, role)                      │ │
 │  │  - 5 chart components                                     │ │
 │  │  - Loading/error states                                   │ │
@@ -399,7 +473,7 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 │                  │ fetch()                                      │
 │                  ▼                                              │
 │  ┌───────────────────────────────────────────────────────────┐ │
-│  │  API Routes (/api/job-market/) - Server-side only         │ │
+│  │  API Routes (/api/hiring-market/) - Server-side only      │ │
 │  │  - role-demand.ts                                         │ │
 │  │  - top-skills.ts (Greenhouse source)                      │ │
 │  │  - working-arrangement.ts (Greenhouse source)             │ │
@@ -465,21 +539,26 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/job-market` t
 
 **Phase 0 Complete ✅** - Moving to Phase 1
 
-1. **Create dashboard page skeleton** at `/projects/job-market`
+1. **Create dashboard page skeleton** at `/projects/hiring-market`
    - Inherit site navigation/footer from layout
    - Fetch test-connection API to display database stats
    - Add loading states and error handling
    - Prove end-to-end flow works
 
-2. **Build first API endpoint:** `/api/job-market/role-demand`
+2. **Build first API endpoint:** `/api/hiring-market/role-demand`
    - Query: Fetch `city_code, job_subfamily` from enriched_jobs
    - Group and count in JavaScript
    - Apply server-side filters (city, role_family, date_range)
    - Return formatted JSON with ApiResponse wrapper
 
-3. **Deploy to Vercel for testers**
-   - Add `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` to Vercel environment variables
+3. **Deploy to Vercel**
+   - Vercel environment variables already configured ✅
    - Push to GitHub (triggers auto-deploy)
-   - Test live URL with POC page at `richjacobs.me/projects/chart-test`
+   - Test live URL
+
+**Testing Approach for v1:**
+- TypeScript type safety + manual testing
+- No testing framework setup initially (personal project)
+- Add Vitest later if query logic becomes complex
 
 **Then proceed to Phase 2: First Chart**
