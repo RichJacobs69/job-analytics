@@ -905,6 +905,192 @@
         },
         "Vercel": {
             "slug": "vercel"
+        },
+        "Wiz": {
+            "slug": "wizinc"
+        },
+        "Orca Security": {
+            "slug": "orcasecurity"
+        },
+        "Axonius": {
+            "slug": "axonius"
+        },
+        "Cybereason": {
+            "slug": "cybereason"
+        },
+        "Bitwarden": {
+            "slug": "bitwarden"
+        },
+        "Abnormal Security": {
+            "slug": "abnormalsecurity"
+        },
+        "Huntress": {
+            "slug": "huntress"
+        },
+        "Expel": {
+            "slug": "expel"
+        },
+        "Chainguard": {
+            "slug": "chainguard"
+        },
+        "Palmetto": {
+            "slug": "palmetto"
+        },
+        "EnergySage": {
+            "slug": "energysage"
+        },
+        "Redwood Materials": {
+            "slug": "redwoodmaterials"
+        },
+        "Sila Nanotechnologies": {
+            "slug": "silananotechnologies"
+        },
+        "Flexport": {
+            "slug": "flexport"
+        },
+        "project44": {
+            "slug": "project44"
+        },
+        "FourKites": {
+            "slug": "fourkites"
+        },
+        "Locus Robotics": {
+            "slug": "locusrobotics"
+        },
+        "Coinbase": {
+            "slug": "coinbase"
+        },
+        "Fireblocks": {
+            "slug": "fireblocks"
+        },
+        "Alchemy": {
+            "slug": "alchemy"
+        },
+        "Consensys": {
+            "slug": "consensys"
+        },
+        "Figment": {
+            "slug": "figment"
+        },
+        "Messari": {
+            "slug": "messari"
+        },
+        "Nansen": {
+            "slug": "nansen"
+        },
+        "OpenZeppelin": {
+            "slug": "openzeppelin"
+        },
+        "Paradigm": {
+            "slug": "paradigm"
+        },
+        "Riot Games": {
+            "slug": "riotgames"
+        },
+        "Unity": {
+            "slug": "unity3d"
+        },
+        "Roblox": {
+            "slug": "roblox"
+        },
+        "Niantic": {
+            "slug": "niantic"
+        },
+        "Scopely": {
+            "slug": "scopely"
+        },
+        "Manticore Games": {
+            "slug": "manticoregames"
+        },
+        "Lattice": {
+            "slug": "lattice"
+        },
+        "Papaya Global": {
+            "slug": "papaya"
+        },
+        "Root Insurance": {
+            "slug": "root"
+        },
+        "Coalition": {
+            "slug": "coalition"
+        },
+        "Pie Insurance": {
+            "slug": "pieinsurance"
+        },
+        "Branch": {
+            "slug": "branch"
+        },
+        "Ethos": {
+            "slug": "ethos"
+        },
+        "FanDuel": {
+            "slug": "fanduel"
+        },
+        "Catapult": {
+            "slug": "catapultsports"
+        },
+        "Oura": {
+            "slug": "oura"
+        },
+        "Relativity Space": {
+            "slug": "relativity"
+        },
+        "Rocket Lab": {
+            "slug": "rocketlab"
+        },
+        "Planet Labs": {
+            "slug": "planetlabs"
+        },
+        "Spire Global": {
+            "slug": "spire"
+        },
+        "Capella Space": {
+            "slug": "capellaspace"
+        },
+        "BlackSky": {
+            "slug": "blacksky"
+        },
+        "Figure AI": {
+            "slug": "figure"
+        },
+        "Zipline": {
+            "slug": "flyzipline"
+        },
+        "Skydio": {
+            "slug": "skydio"
+        },
+        "Agility Robotics": {
+            "slug": "agilityrobotics"
+        },
+        "Nuro": {
+            "slug": "nuro"
+        },
+        "Waymo": {
+            "slug": "waymo"
+        },
+        "Eat Just": {
+            "slug": "eatjust"
+        },
+        "Cloudflare": {
+            "slug": "cloudflare"
+        },
+        "Fastly": {
+            "slug": "fastly"
+        },
+        "PlanetScale": {
+            "slug": "planetscale"
+        },
+        "Inflection AI": {
+            "slug": "inflectionai"
+        },
+        "Jasper": {
+            "slug": "jasper"
+        },
+        "Magic": {
+            "slug": "magic"
+        },
+        "Dojo": {
+            "slug": "dojo"
         }
     },
     "ashby": {
