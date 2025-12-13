@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 300 python -c:*)",
+      "Bash(python:*)",
+      "Bash(tee:*)",
+      "Bash(git add:*)",
+      "WebSearch",
+      "Bash(cd:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nMerge changes: clean up temporary files and reorganize utilities\n\n- Remove temporary documentation: PERFORMANCE_COMPARISON.md, EPIC_5_ANALYTICS_PLAN.md\n- Remove sample data and obsolete README files\n- Reorganize discovery scripts to pipeline/utilities/\n- Consolidate testing documentation into TESTING_GUIDE.md\n- Update repository documentation with latest structure\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "WebFetch(domain:dojo.careers)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

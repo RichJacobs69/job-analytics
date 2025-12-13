@@ -472,9 +472,14 @@ classification_guidance:
     default_when_ambiguous: "mid"
 
   job_subfamily:
+    critical_rules:
+      - "ALWAYS classify jobs with 'Data Analyst' in title as data family, data_analyst subfamily - NEVER out_of_scope"
+      - "ALWAYS classify jobs with 'Research Scientist' or 'Applied Scientist' in title as data family - see research_applied_scientist_routing"
+
     key_distinctions:
       - "Product Analytics vs Data Analyst: Product Analytics = product metrics, user behavior, in-product experimentation, feature analysis, growth analytics. Data Analyst = business reporting, dashboards, ad-hoc SQL analysis, BI tools."
       - "Analytics Engineer vs Data Engineer: Analytics Engineer = dbt, metrics layer, SQL-focused, data modeling, semantic layer. Data Engineer = pipelines, infrastructure, Python/Scala-focused, ETL/ELT, big data."
+      - "Business Intelligence Engineer routing: Default to analytics_engineer (BI Engineers typically do data modeling, transformations, semantic layer work). Only use data_analyst if description clearly shows role is purely reporting/dashboards with no data modeling."
       - "ML Engineer scope (EXPANDED): Includes both classical ML (training models, feature engineering) AND GenAI/LLM work (fine-tuning, embeddings, RAG systems, agent frameworks) when focused on MODEL DEVELOPMENT. If role is primarily calling LLM APIs with minimal ML work, classify as out_of_scope (Software Engineering)."
       - "Data Scientist vs Research Scientist: Data Scientist = business insights, predictions, practical ML, stakeholder communication. Research Scientist = novel research, publications, cutting-edge techniques, pushing SOTA."
       - "Technical PM vs Platform PM: Technical PM = deep technical skills, often ex-engineer, technical architecture. Platform PM = developer tools, APIs, infrastructure products (may or may not be technical)."
@@ -494,6 +499,14 @@ classification_guidance:
       - "  - Feature engineering or data science workflows"
       - "If AI Engineer role is primarily: API integration, prompt engineering without model work, backend development → out_of_scope"
       - "If ML Engineer role involves LLMs, RAG, embeddings, fine-tuning → ml_engineer (legitimate ML work)"
+
+    research_applied_scientist_routing:
+      - "CRITICAL: Research Scientist and Applied Scientist titles are ALWAYS data family roles, never out_of_scope"
+      - "Applied Scientist → research_scientist_ml (applied ML research, model development, algorithm design)"
+      - "Research Scientist (ML/AI/Data focus) → research_scientist_ml"
+      - "Research Scientist (non-ML focus like physics, chemistry) → out_of_scope"
+      - "Staff/Principal Applied Scientist → research_scientist_ml with staff_principal seniority"
+      - "Embodied AI, Robotics ML, Foundation Models, Computer Vision, NLP research → ALL are research_scientist_ml"
 
   working_arrangement:
     classification_rules:
@@ -531,10 +544,14 @@ normalization:
     "DS": "Data Scientist"
     "Sr DS": "Senior Data Scientist"
     "Sr. DS": "Senior Data Scientist"
+    "Applied Scientist": "Research Scientist (ML/AI)"  # Applied science roles are ML research
+    "Research Scientist": "Research Scientist (ML/AI)"
     "Analytics Eng": "Analytics Engineer"
     "BI Developer": "Business Intelligence Engineer"
+    "BI Engineer": "Business Intelligence Engineer"
     "BI Analyst": "Data Analyst"
     "Business Intelligence Analyst": "Data Analyst"
+    "Business Intelligence Engineer": "Business Intelligence Engineer"  # Classify based on job description (see classification_guidance)
 
   seniority_markers:
     junior: 

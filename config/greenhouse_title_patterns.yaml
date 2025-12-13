@@ -21,6 +21,8 @@ relevant_title_patterns:
   # Data Analyst family
   - 'data analyst'
   - 'analytics (engineer|lead|manager)'
+  - 'business intelligence|bi (engineer|analyst|developer)'
+  - 'bi engineer|bi analyst'
 
   # Data Engineer family
   - 'data engineer'
@@ -45,8 +47,13 @@ relevant_title_patterns:
   # Product Manager family
   - 'product manager'
   - 'product owner'
-  - 'tpm|technical program manager'
   - 'technical product manager'
+
+  # Product Leadership (Director+)
+  - 'director.*(product|pm)'
+  - '(vp|vice president).*(product|pm)'
+  - 'head of product'
+  - 'chief product officer|cpo'
 
   # Growth PM
   - 'growth (pm|product manager)'

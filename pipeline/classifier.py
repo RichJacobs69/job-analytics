@@ -170,7 +170,10 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 **Data Subfamilies:**
 {data_subfamilies}
 
-**Key Distinctions to Remember:**
+**Classification Rules:**
+- Data Analyst / Research Scientist / Applied Scientist titles → ALWAYS data family
+- Applied Scientist = research_scientist_ml (ML research, not software eng)
+- BI Engineer → analytics_engineer (data modeling focused)
 {chr(10).join('- ' + rule for rule in subfamily_guidance['key_distinctions'])}
 
 # REQUIRED OUTPUT SCHEMA
@@ -357,6 +360,15 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
         else:
             # No subfamily provided
             result['role']['job_family'] = None
+
+        # Enrich skills with family codes using deterministic mapping
+        # Claude extracts skill names; Python assigns families
+        if 'skills' in result and result['skills']:
+            from skill_family_mapper import enrich_skills_with_families
+            result['skills'] = enrich_skills_with_families(result['skills'])
+            if verbose:
+                mapped = sum(1 for s in result['skills'] if s.get('family_code'))
+                print(f"[INFO] Skills enriched: {mapped}/{len(result['skills'])} mapped to families")
 
         # Attach actual cost data to the result for tracking
         result['_cost_data'] = cost_data

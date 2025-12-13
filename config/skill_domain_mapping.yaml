@@ -1,0 +1,70 @@
+# Skill Domain Mapping
+# =====================
+# Maps skill_family codes to high-level skill_domain codes.
+# Creates 3-ring hierarchy: domain → family → skill
+#
+# Domains are broad categories that group related families.
+
+ai_ml:
+  label: "AI & ML"
+  families:
+    - deep_learning
+    - classical_ml
+    - llm_genai
+    - mlops
+    - analytics_stats
+
+data_infrastructure:
+  label: "Data Infrastructure"
+  families:
+    - cloud
+    - warehouses_lakes
+    - databases
+    - big_data
+    - streaming
+
+data_engineering:
+  label: "Data Engineering"
+  families:
+    - pipelines_orchestration
+    - data_modeling
+    - data_governance
+
+analytics_bi:
+  label: "Analytics & BI"
+  families:
+    - visualization
+    - business_tools
+    - analytics_pm
+    - experimentation
+
+platform_devops:
+  label: "Platform & DevOps"
+  families:
+    - deployment
+    - ci_cd
+    - infrastructure_code
+    - monitoring
+
+development:
+  label: "Development"
+  families:
+    - programming
+    - apis_integration
+    - testing
+
+product_collaboration:
+  label: "Product & Collaboration"
+  families:
+    - discovery_research
+    - execution_delivery
+    - stakeholder_mgmt
+    - product_tools
+
+enterprise_systems:
+  label: "Enterprise Systems"
+  families:
+    - crm_marketing
+    - erp_systems
+    - security
+    - geospatial

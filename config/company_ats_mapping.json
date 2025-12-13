@@ -99,23 +99,14 @@
         "Wayve": {
             "slug": "wayve"
         },
-        "Featurespace": {
-            "slug": "featurespace"
-        },
         "Guild Education": {
             "slug": "guild"
-        },
-        "Pax8": {
-            "slug": "pax8"
         },
         "Scythe Robotics": {
             "slug": "scytherobotics"
         },
         "OneTrust": {
             "slug": "onetrust"
-        },
-        "Dispatch": {
-            "slug": "dispatch"
         },
         "SpotHero": {
             "slug": "spothero"
