@@ -1,8 +1,8 @@
 # Epic 5: Hiring Market Dashboard - Delivery Plan
 
-> **Status:** Phase 0 Complete ✅ | Phase 1 Complete ✅ | Phase 2 Complete ✅
+> **Status:** Phase 0 Complete ✅ | Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 Question 2 Complete ✅
 > **Created:** 2025-12-07
-> **Last Updated:** 2025-12-10
+> **Last Updated:** 2025-12-13
 > **Delivery:** Incremental (ship question-by-question)
 
 ## Goal
@@ -249,18 +249,118 @@ Ship a professional analytics dashboard at `richjacobs.me/projects/hiring-market
 
 ---
 
-## Phase 3: Core Analytics
+## Phase 3: Core Analytics - Question 2 Complete ✅
 
-### Deliverable: 4 more questions answered
+### Deliverable: Skills Demand visualization with 3-level hierarchy
+
+**Status:** Completed 2025-12-13
+
+**Question Implemented:** "What skills are most in-demand for [role]?" (SGU001)
+
+**What Was Built:**
+
+1. ✅ **Deterministic Skill Mapping (Job-Analytics)**
+   - Created `config/skill_domain_mapping.yaml` - 8 high-level domains grouping 32 skill families
+   - Created `config/skill_family_mapping.yaml` - 849 skills mapped to 32 families deterministically
+   - Built `pipeline/skill_family_mapper.py` - Core mapping logic for skill enrichment
+   - Updated `pipeline/classifier.py` - Skill names extracted by Claude, families assigned by Python
+   - Created `pipeline/utilities/backfill_skill_families.py` - Batch update script for existing records
+   - **Backfill results:** 1,503 job records updated, 3,532 skills enriched with family codes
+   - **Data quality:** 100% deterministic mapping ensures consistency across all skills
+
+2. ✅ **3-Level Hierarchy Architecture**
+   - Ring 1 (Domain): 8 semantic categories (AI & ML, Data Infrastructure, Development, etc.)
+   - Ring 2 (Family): 32 skill families (deep_learning, cloud, programming, etc.)
+   - Ring 3 (Skill): Individual skills within each family (PyTorch, AWS, Python, etc.)
+   - Hidden center (removed as per user request - already obvious from filter selection)
+
+3. ✅ **Skills Demand API Endpoint** (`/api/hiring-market/top-skills/route.ts`)
+   - Builds 3-level sunburst hierarchy: domain → family → skill
+   - Server-side filtering: city_code, job_family, job_subfamily (inline filter), date_range
+   - Pagination support (Supabase 1K row limit handled)
+   - Returns structured hierarchy with skill mention counts
+   - Provides available subfamilies for dropdown filtering
+   - Metadata: total jobs, last updated timestamp, data source
+
+4. ✅ **SkillsDemandChart Component** (`SkillsDemandChart.tsx`)
+   - Interactive sunburst visualization with drill-down capability
+   - 3-level color hierarchy with proper inheritance:
+     - Domain: Base color from palette (lime, purple, blue, emerald, amber, red, pink, indigo)
+     - Family: 80% opacity of parent domain color
+     - Skills: 40-100% opacity based on mention count (value intensity gradient)
+   - Inline role filter with "All Roles" option (defaults to all subfamilies)
+   - Dynamic import (Playwright sunburst-chart) for SSR compatibility
+   - Loading states with spinner
+   - Error handling with fallback messaging
+   - Tooltip with skill mention counts
+   - Attribution: "Based on X premium company listings (Greenhouse)"
+
+5. ✅ **TypeScript Declarations** (`types/sunburst-chart.d.ts`)
+   - Complete type definitions for sunburst-chart library
+   - Methods: data(), width(), height(), color(), label(), size(), tooltipContent(), etc.
+   - Enables full type-safe integration with React
+
+6. ✅ **Files Created (Phase 3 - Question 2):**
+   ```
+   portfolio-site/
+   ├── app/
+   │   ├── api/hiring-market/
+   │   │   └── top-skills/route.ts                     # 3-level hierarchy API
+   │   └── projects/hiring-market/
+   │       └── components/
+   │           └── SkillsDemandChart.tsx               # Sunburst component with color fix
+   └── types/
+       └── sunburst-chart.d.ts                         # TypeScript declarations
+
+   job-analytics/
+   ├── config/
+   │   ├── skill_domain_mapping.yaml                   # 8 domains grouping 32 families
+   │   └── skill_family_mapping.yaml                   # 849 skills → families mapping
+   └── pipeline/
+       ├── skill_family_mapper.py                      # Deterministic mapping logic
+       ├── classifier.py                               # Updated: Python enriches skills
+       └── utilities/
+           └── backfill_skill_families.py              # Batch update utility
+   ```
+
+**Key Decisions:**
+
+- **Skill mapping approach:** LLM extracts names only; Python assigns families deterministically (100% accuracy)
+- **Hierarchy:** 3 levels (domain → family → skill) for clear categorization without overwhelming users
+- **Color convention:** All 3 levels inherit from domain color with opacity/saturation variations
+- **Default filter:** "All Roles" shows complete skill demand across all subfamilies in job_family
+- **Data source:** All enriched_jobs (5,629 records) - skill family mapping works for both Adzuna and Greenhouse
+
+**Data Quality Improvements:**
+
+- **Before:** Skills had no family classification, just raw names
+- **After:** 100% of enriched skills have family codes via deterministic mapping
+- **Consistency:** Same skill always maps to same family (no LLM variance)
+- **Coverage:** Mapping handles 849 known skills; unknown skills logged for future expansion
+
+**Visual Design:**
+
+- **Color palette:** 9 colors (domain-level), scales to 32 families, thousands of individual skills
+- **Opacity encoding:** Skill prominence shown through opacity (high-mention skills brighter)
+- **Interactive:** Click to drill down, hover for tooltip details
+- **Professional:** Matches site's dark theme and design system
+
+**Next Steps:**
+
+Remaining 3 questions for Phase 3:
+- Question 3: Working arrangement split (stacked bar)
+- Question 4: Top hiring companies (ranked bar chart)
+- Question 5: Experience level distribution (histogram/pie)
+
+---
+
+## Phase 3: Core Analytics - Remaining Questions
+
+### Deliverable: 3 more questions answered
 
 **Add questions one at a time in priority order:**
 
-### Question 2: "What skills are most in-demand for [role]?" (SGU001)
-- **Data source:** Greenhouse only (953 jobs) - skills extraction requires full text
-- Interactive: dropdown to select role + city
-- Horizontal bar chart (easier to read skill names)
-- Shows frequency + percentage
-- **Data quality note:** Display "Based on 953 premium company listings"
+### Question 2: ✅ COMPLETE - Skills Demand (See above)
 
 ### Question 3: "What's the remote/hybrid/onsite split by role?" (WAL001)
 - **Data source:** Greenhouse only (953 jobs) - work arrangement classification quality
