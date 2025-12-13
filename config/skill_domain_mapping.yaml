@@ -35,7 +35,7 @@ analytics_bi:
   families:
     - visualization
     - business_tools
-    - analytics_pm
+    - product_usage
     - experimentation
 
 platform_devops:

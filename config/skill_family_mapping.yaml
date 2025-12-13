@@ -803,9 +803,9 @@ product_tools:
   - trello
 
 # =============================================================================
-# ANALYTICS FOR PMs
+# PRODUCT USAGE & METRICS
 # =============================================================================
-analytics_pm:
+product_usage:
   - amplitude
   - mixpanel
   - heap
