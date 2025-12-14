@@ -21,9 +21,6 @@
         "Capitolis": {
             "slug": "capitolis"
         },
-        "Betterment": {
-            "slug": "betterment"
-        },
         "MoneyLion": {
             "slug": "moneylion"
         },
@@ -902,9 +899,6 @@
         },
         "Bitwarden": {
             "slug": "bitwarden"
-        },
-        "Abnormal Security": {
-            "slug": "abnormalsecurity"
         },
         "Huntress": {
             "slug": "huntress"
