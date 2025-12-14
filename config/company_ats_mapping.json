@@ -540,9 +540,6 @@
         "Yext": {
             "slug": "yext"
         },
-        "Epic Games": {
-            "slug": "epicgames"
-        },
         "Aurora Innovation": {
             "slug": "aurorainnovation"
         },
@@ -623,9 +620,6 @@
         },
         "Snorkel AI": {
             "slug": "snorkelai"
-        },
-        "Veriff": {
-            "slug": "veriff"
         },
         "Databricks": {
             "slug": "databricks"
@@ -734,9 +728,6 @@
         },
         "Wizard Commerce": {
             "slug": "wizardcommerce"
-        },
-        "Liftoff": {
-            "slug": "liftoff"
         },
         "Motive": {
             "slug": "motive"
@@ -948,9 +939,6 @@
         "Locus Robotics": {
             "slug": "locusrobotics"
         },
-        "Coinbase": {
-            "slug": "coinbase"
-        },
         "Fireblocks": {
             "slug": "fireblocks"
         },
@@ -977,12 +965,6 @@
         },
         "Riot Games": {
             "slug": "riotgames"
-        },
-        "Unity": {
-            "slug": "unity3d"
-        },
-        "Roblox": {
-            "slug": "roblox"
         },
         "Niantic": {
             "slug": "niantic"
@@ -1082,8 +1064,31 @@
         },
         "Dojo": {
             "slug": "dojo"
-        }
-    },
+        }, 
+        "Subsplash": {
+            "slug": "subsplash"
+        },
+        "Quantifind": {
+            "slug": "Quantifind"
+        }, 
+        "Havenly": {
+            "slug": "havenly"
+        },
+        "Tifin": {
+            "slug": "tifin"
+        },
+        "Pleo": {
+            "slug": "pleo"
+        },
+        "Zilch": {
+            "slug": "zilch"
+        },
+        "Jetbrains": {
+            "slug": "jetbrains"
+        },
+        "Comply Advantage": {
+            "slug": "complyadvantage"
+        },
     "ashby": {
         "Notion": "notion",
         "Vercel": "vercel",

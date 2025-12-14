@@ -275,7 +275,6 @@ enums:
     - {code: platform_pm, label: "Platform PM", description: "Developer tools, APIs, infrastructure products, internal platforms"}
     - {code: technical_pm, label: "Technical PM", description: "Deep technical skills, often ex-engineer, works on complex technical products"}
     - {code: ai_ml_pm, label: "AI/ML PM", description: "AI/ML products, models, data products, machine learning features"}
-    - {code: product_analytics, label: "Product Analytics", description: "Product metrics, experimentation, A/B testing, user behavior analysis"}
 
   # Data subfamilies (ai_engineer REMOVED in v1.3)
   data_subfamily:
