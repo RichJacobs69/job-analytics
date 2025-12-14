@@ -53,8 +53,10 @@ target_locations:
   # Denver variations
   - denver
   - colorado
-  - co
   - denver, co  # Common format with comma and state
+  - denver, colorado
   - den  # City code
   - denver metro  # Metro area designation
   - boulder
+  - boulder, co
+  - boulder, colorado

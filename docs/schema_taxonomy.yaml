@@ -250,6 +250,7 @@ enums:
     - {code: hybrid, label: "Hybrid", description: "Mix of office and remote work (e.g., 2-3 days office per week)"}
     - {code: remote, label: "Remote", description: "Work from home, remote-first, no office requirement"}
     - {code: flexible, label: "Flexible", description: "Multiple arrangements offered - employee can choose (remote OR hybrid OR onsite)"}
+    - {code: unknown, label: "Unknown", description: "Working arrangement could not be determined from available data"}
 
   position_type:
     - {code: full_time, label: "Full Time", description: "Permanent, full-time employment (35-40 hours/week)"}

@@ -4,9 +4,9 @@
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.2
-  last_updated: "2025-12-08"
-  total_agencies: 125
+  version: 1.3
+  last_updated: "2025-12-14"
+  total_agencies: 130
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -22,6 +22,8 @@ hard_filter:
   - people talent
   - harvey nash
   - hays
+  - hays specialist recruitment
+  - hays technology
   - michael page
   - robert half
   - randstad
@@ -74,6 +76,7 @@ hard_filter:
   - arc it recruitment
   - anderson knight
   - cathcart associates
+  - unknown company
   
   # Added 2025-12-04 from orphan analysis
   - itol recruit
@@ -103,6 +106,13 @@ hard_filter:
   - tek systems
   - insight global
   - ignite digital search
+
+  # Added 2025-12-14 from false negative analysis
+  - intelligent people
+  - cv technical
+  - airswift
+  - dexian
+  - red global
   - ignite digital search ltd
   - talent navigation experts
   - michael page technology

@@ -44,6 +44,11 @@ python migrations/verify_001_hash_migration.py
 |---|------|------|-------------|--------|
 | 001 | `001_add_raw_jobs_hash.sql` | 2025-12-03 | Add hash column + unique constraint to raw_jobs | ⏳ Pending |
 | 002 | `002_add_last_seen_timestamp.sql` | 2025-12-03 | Add last_seen column for resume capability | ⏳ Pending |
+| 003 | `003_allow_unk_city_code.sql` | 2025-12-03 | Allow 'unk' as valid city_code | ✅ Done |
+| 004 | `004_allow_remote_city_code.sql` | 2025-12-03 | Allow 'remote' as valid city_code | ✅ Done |
+| 005 | `005_remove_hash_unique_constraint.sql` | 2025-12-03 | Remove hash unique constraint | ✅ Done |
+| 006 | `006_unique_source_job_id.sql` | 2025-12-03 | Add unique constraint on source_job_id | ✅ Done |
+| 007 | `007_allow_unknown_working_arrangement.sql` | 2025-12-14 | Allow 'unknown' as valid working_arrangement | ⏳ Pending |
 
 ## Current Migration: 001_add_raw_jobs_hash.sql
 
