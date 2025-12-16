@@ -98,7 +98,7 @@ def detect_agency(employer_name: str, job_description: str = None) -> Tuple[bool
     for suffix in MED_CONF_SUFFIXES:
         if name_lower.endswith(suffix):
             # Avoid false positives for common business suffixes
-            if suffix in ['solutions', 'consulting', 'partners', 'associates', 'group']:
+            if suffix in ['solutions', 'consulting', 'partners', 'associates', 'group', 'agency']:
                 # Only flag if there's also a recruitment-related word
                 if any(kw in name_lower for kw in ['talent', 'staff', 'recruit', 'search']):
                     return True, 'medium'

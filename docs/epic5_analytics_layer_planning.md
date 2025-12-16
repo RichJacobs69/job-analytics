@@ -440,11 +440,18 @@ Remaining 3 questions for Phase 3:
 - Filterable by city + date range
 - Bar chart ranked by count
 
-### Question 5: "What experience levels are companies targeting?" (RSR001)
-- **Data source:** All enriched_jobs (5,629 records) - seniority is well-classified
-- Distribution chart (Junior/Mid/Senior/Staff+)
-- Segmented by role subfamily
-- Shows hiring reality vs expectations
+### Question 5: ✅ COMPLETE "What experience levels are companies targeting?" (RSR001)
+- **Data source:** All enriched_jobs (5,629 records) - seniority is well-classified (not experience_range)
+- **Approach:** Use `seniority` field as proxy for experience level
+  - **Rationale:** `experience_range` field has 90% null rate and 90+ inconsistent formats (unusable)
+  - **Proxy mapping:** seniority → experience expectation
+    - `junior` = 0-2 years
+    - `mid` = 3-5 years
+    - `senior` = 6-10 years
+    - `staff_principal` = 11+ years
+- Distribution chart (Junior/Mid/Senior/Staff+) by role subfamily
+- Shows hiring reality vs job market expectations
+- **Note:** See Data Standardization epic (Phase 2) for future experience_range normalization project
 
 **Build pattern for each:**
 1. API endpoint (query + JSON response)

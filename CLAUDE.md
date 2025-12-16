@@ -19,9 +19,9 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 - ✅ Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
 - ✅ Epic 3: Database & Data Layer - Schema and connections stable
 - ✅ Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
-- ⏳ Epic 5: Analytics Query Layer - Ready to start
-- ⏳ Epic 6: Dashboard & Visualization - Blocked (depends on Epic 5)
-- ⏳ Epic 7: Automation & Operational - Ready after Epic 6
+- ✅ Epic 5: Analytics Query Layer - COMPLETE (Next.js API routes implementation, 2025-12-16)
+- ✅ Epic 6: Dashboard & Visualization - COMPLETE (richjacobs.me/projects/hiring-market, 2025-12-16)
+- ⏳ Epic 7: Automation & Operational - Ready to start
 
 **Current Dataset (Supabase - Source of Truth, updated 2025-12-07):**
 - **Raw jobs:** 6,178 total (Adzuna: 4,963 | Greenhouse: 1,213 | Manual: 2)
@@ -763,56 +763,96 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ---
 
-### Epic 5: Analytics Query Layer ⏳ READY TO START
-**Goal:** Programmatically answer 35 marketplace questions from enriched job data
+### Epic 5: Analytics Query Layer ✅ COMPLETE
+**Goal:** Programmatically answer marketplace questions from enriched job data
 
-**Components:**
-- `analytics.py` - Query functions for common patterns:
-  - Time series aggregation (monthly/quarterly trends, growth rates)
-  - Geographic comparisons (London vs NYC vs Denver)
-  - Skill demand tracking and co-occurrence analysis
-  - Compensation distribution (percentiles, by location)
-  - Role growth tracking (which subfamilies are hiring)
+**Status:** COMPLETE (2025-12-16)
 
-**SQL Patterns** (examples in CLAUDE.md)
-- Role growth rate by city, month-over-month
-- Skill co-occurrence (which skills appear together)
-- Work arrangement distribution by role and location
-- Salary range distribution by role/seniority/city
+**Implementation Approach:**
+- **Architecture:** Next.js API routes (TypeScript) instead of Python `analytics.py`
+- **Location:** `portfolio-site/app/api/hiring-market/` directory
+- **Query Layer:** Supabase JS client with server-side filtering
+- **Deployed:** Live at `richjacobs.me/projects/hiring-market`
 
-**Success Criteria:**
-- Can programmatically answer questions like "Which skills are growing fastest for Data Engineers in NYC?"
-- Query latency <5s for common aggregations
-- Results validated against manual spot-checks
+**Completed Components:**
+- ✅ `/api/hiring-market/role-demand` - Role demand by city/subfamily
+- ✅ `/api/hiring-market/top-skills` - 3-level skill hierarchy (domain → family → skill)
+- ✅ `/api/hiring-market/working-arrangement` - Remote/Hybrid/Onsite split
+- ✅ `/api/hiring-market/top-companies` - Employer hiring activity
+- ✅ `/api/hiring-market/experience-distribution` - Seniority level distribution
+- ✅ `/api/hiring-market/count` - Job count with filters
+- ✅ `/api/hiring-market/last-updated` - Pipeline freshness indicator
+
+**Query Patterns Implemented:**
+- Time series filtering (7/30/90 days, all time)
+- Geographic segmentation (London/NYC/Denver)
+- Skill demand tracking with hierarchical grouping
+- Work arrangement distribution by role
+- Employer activity ranking
+
+**Success Criteria Met:**
+- ✅ 5 marketplace questions answered programmatically
+- ✅ Query latency <5s with caching optimizations
+- ✅ Server-side filtering reduces bandwidth
+- ✅ Type-safe contracts between API and frontend
+- ✅ Unit tests completed
+- ✅ E2E tests completed
+
+**See:** `docs/epic5_analytics_layer_planning.md` for detailed implementation phases
 
 **Depends On:** Epic 4 ✅ COMPLETE
-**Unblocks:** Epic 6 (dashboard depends on query functions)
+**Unblocks:** Epic 6 ✅ COMPLETE
 
 ---
 
-### Epic 6: Dashboard & Visualization ⏳ PLANNED (blocked by Epic 5)
+### Epic 6: Dashboard & Visualization ✅ COMPLETE
 **Goal:** Non-technical users can explore insights without SQL
 
-**Components:**
-- `streamlit_app.py` - Interactive dashboards with:
-  - Market Overview (job volume by city, trending roles, remote split)
-  - Role Explorer (filter by function/city/seniority, see top skills & trends)
-  - Skills Demand (search skill, see trend & co-occurring skills)
-  - Compensation Benchmarks (NYC/Denver focus, due to pay transparency laws)
-  - Employer Activity (top hiring companies by role/city)
+**Status:** COMPLETE (2025-12-16)
 
-**Features:**
-- Interactive filters (date range, city, job function, seniority, working arrangement)
-- Charts and visualizations (Plotly)
-- Export functionality (CSV, charts)
-- Daily refresh (matches pipeline cadence)
+**Implementation Approach:**
+- **Architecture:** Next.js dashboard (React 19) instead of Streamlit
+- **Location:** `portfolio-site/app/projects/hiring-market/` directory
+- **Charts:** Chart.js + sunburst-chart for interactive visualizations
+- **Design:** Matches richjacobs.me design system (Geist fonts, lime/emerald accents)
+- **Deployed:** Live at `richjacobs.me/projects/hiring-market`
 
-**Success Criteria:**
-- Users discover 2-3 new insights per session
-- Dashboard loads in <5s
-- Users can answer marketplace questions without SQL knowledge
+**Completed Components:**
+- ✅ Global filter system (date range, city, job family)
+- ✅ Custom dropdowns with smooth animations
+- ✅ Real-time job count display
+- ✅ Five interactive visualizations:
+  1. **Role Demand Chart** - Bar chart with gradient coloring by volume
+  2. **Skills Demand Chart** - 3-level sunburst (domain → family → skill)
+  3. **Working Arrangement Chart** - Stacked bar chart (Remote/Hybrid/Onsite)
+  4. **Top Companies Chart** - Ranked bar chart by hiring activity
+  5. **Experience Distribution Chart** - Seniority level distribution
 
-**Depends On:** Epic 5 (analytics queries)
+**Features Implemented:**
+- ✅ Interactive filters with URL-ready architecture
+- ✅ Chart.js visualizations with custom styling
+- ✅ Smooth loading states with skeleton loaders
+- ✅ Frontend caching for instant role switching
+- ✅ Last updated timestamp with relative time
+- ✅ Data source indicators for quality transparency
+- ✅ Share functionality with Web Share API + clipboard fallback
+- ✅ Responsive design (desktop-focused for portfolio demos)
+- ✅ Error handling and empty states
+
+**Success Criteria Met:**
+- ✅ 5 marketplace questions answered with visualizations
+- ✅ Consistent with richjacobs.me design system
+- ✅ Loads in <3s with caching
+- ✅ Professional polish suitable for portfolio
+- ✅ Added to main site's projects page
+- ✅ GitHub repo documentation available
+- ✅ Browser tested (Chrome, Firefox, Safari)
+- ✅ Unit tests completed
+- ✅ E2E tests completed
+
+**See:** `docs/epic5_analytics_layer_planning.md` for detailed implementation phases
+
+**Depends On:** Epic 5 ✅ COMPLETE (implemented together)
 **Unblocks:** Epic 7 (automation to keep dashboard fresh)
 
 ---
@@ -894,14 +934,48 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
    - May need more sophisticated detection patterns beyond hard blacklist
 
 ### 📋 Immediate Next Steps
-**Epic 5: Analytics Query Layer** (ready to start)
-- **Status:** Epic 4 ✅ COMPLETE - pipeline validated, both data sources collecting continuously
+**Epic 7: Automation & Operational Excellence** (ready to start)
+- **Status:** Epics 1-6 ✅ COMPLETE - Full pipeline operational, dashboard live at richjacobs.me/projects/hiring-market
 - **Dataset:** 5,629 enriched jobs (4,676 Adzuna + 953 Greenhouse) across all 3 cities and 11 role types (as of 2025-12-07)
-- **Dataset growth:** Cumulative numbers; dataset grows with each pipeline run
-- **Action:** Begin building `analytics.py` with query functions for marketplace questions
-- **Goal:** Programmatically answer questions like "Which skills are growing fastest for Data Engineers in NYC?"
-- **Data Quality:** Combined dataset provides both volume (Adzuna) and depth (Greenhouse full descriptions)
-- **See:** Epic 5 section in "Planned Epics" for full details
+- **Dataset growth:** Manual pipeline runs; needs automation for consistent freshness
+- **Action:** Set up GitHub Actions for daily automated pipeline execution
+- **Goal:** Keep dashboard data fresh without manual intervention, achieve ≥95% successful run rate
+- **See:** Epic 7 section in "Planned Epics" for full details
+
+## Post-Project Epics
+
+Future enhancements planned after core platform (Epics 1-7) completion:
+
+### Epic: Data Standardization & Canonicalization System ⏸️ PLANNED
+**Goal:** Normalize and standardize LLM-extracted fields that are inconsistent, non-deterministic, or in free-form formats
+
+**Problems Addressed:**
+
+**Phase 1: Employer Size Canonicalization**
+- Same employer receives different size classifications (170+ employers with 2-3 variants)
+- Name variations ("Coinbase" vs "coinbase") treated as separate entities
+- Repeated classifications waste LLM costs
+
+**Phase 2: Experience Range Normalization**
+- 90% null rate (5,090/5,629 jobs have no value)
+- 90+ inconsistent formats in the 10% that exists
+- Free-form string extraction made data unusable despite "flexibility" intent
+
+**Solutions:**
+- **Employer Size**: Canonical mapping tables with name normalization + LLM fallback
+- **Experience Range**: Two-tier normalization (canonical forms + seniority alignment) + pattern-based backfill
+
+**Expected Benefits (Combined Phases):**
+- **Phase 1:** 100% consistency, 80-90% reduction in employer size LLM calls, 10-15% cost savings
+- **Phase 2:** 90% null → 100% coverage, 90+ formats → 5 canonical forms, enables experience analytics
+
+**Status:** Detailed implementation plan ready (10 sessions across 2 phases)
+**See:** [`docs/employer_size_canonicalization_epic.md`](docs/employer_size_canonicalization_epic.md) for complete architecture, schema, implementation phases, and code examples
+
+**Priority:** Medium (quality improvement, cost optimization, unblocks analytics)
+**Complexity:** Moderate-High (10 implementation sessions estimated, 2 phases)
+
+---
 
 ## Key Development Workflows
 
