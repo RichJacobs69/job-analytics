@@ -1,8 +1,8 @@
-# Repository Structure (Updated 2025-12-03)
+# Repository Structure (Updated 2025-12-16)
 
 > **Single Source of Truth for Directory Organization**
 >
-> This document is the authoritative guide for how files are organized in this repository. For development guidance and project overview, see [`CLAUDE.md`](CLAUDE.md). For system architecture details, see [`docs/architecture/`](docs/architecture/).
+> This document is the authoritative guide for how files are organized in this repository. For development guidance and project overview, see [`CLAUDE.md`](../CLAUDE.md). For system architecture details, see [`docs/architecture/`](architecture/).
 
 ## Organization Overview
 
@@ -35,72 +35,127 @@ wrappers/
 These are the production components of the job analytics pipeline:
 
 ```
-pipeline/fetch_jobs.py              # Main orchestrator with INCREMENTAL UPSERTS per company
-pipeline/classifier.py              # Claude LLM integration
-pipeline/db_connection.py           # Supabase PostgreSQL client (insert_raw_job_upsert)
-pipeline/agency_detection.py        # Agency filtering logic
-pipeline/unified_job_ingester.py    # Merge & deduplication
-pipeline/run_all_cities.py          # Parallel orchestration
-pipeline/README.md                  # Pipeline documentation
+pipeline/
+├── fetch_jobs.py              # Main orchestrator with INCREMENTAL UPSERTS per company
+├── classifier.py              # Claude LLM integration
+├── db_connection.py           # Supabase PostgreSQL client (insert_raw_job_upsert)
+├── agency_detection.py        # Agency filtering logic
+├── unified_job_ingester.py    # Merge & deduplication
+├── run_all_cities.py          # Parallel orchestration
+├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
+└── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
 ```
 
 #### Utilities Subdirectory
-Maintenance and diagnostic tools:
+Maintenance, diagnostic, and backfill tools:
 
 ```
-pipeline/utilities/check_pipeline_status.py      # Quick status checks
-pipeline/utilities/analyze_db_results.py         # Database analysis
-pipeline/utilities/backfill_missing_enriched.py  # Job recovery
-pipeline/utilities/backfill_agency_flags.py      # Agency flag updates
-pipeline/utilities/migrate_raw_jobs_schema.py    # Schema migration helper
-pipeline/utilities/derive_missing_titles.py      # Title derivation utility
-pipeline/utilities/scrape_adzuna_titles.py       # Adzuna title scraper
+pipeline/utilities/
+├── check_pipeline_status.py        # Quick status checks
+├── analyze_db_results.py           # Database analysis
+├── backfill_missing_enriched.py    # Job recovery
+├── backfill_agency_flags.py        # Agency flag updates
+├── backfill_out_of_scope.py        # Out of scope flag backfill
+├── backfill_skill_families.py      # Skill family backfill
+├── backfill_skill_family_rename.py # Skill family rename backfill
+├── backfill_source_job_id.py       # Source job ID backfill
+├── backfill_working_arrangement.py # Working arrangement backfill
+├── discover_greenhouse_slugs.py    # Greenhouse company slug discovery
+└── validate_greenhouse_slugs.py    # Greenhouse slug validation
 ```
 
-### 3. **`migrations/` Directory** (Database Migrations)
-SQL and Python scripts for database schema changes:
+### 3. **`scrapers/` Directory** (Data Source Integrations)
+
+```
+scrapers/
+├── adzuna/                    # Adzuna Jobs API client
+│   └── fetch_adzuna_jobs.py   # Paginated API fetcher
+│
+├── greenhouse/                # Greenhouse ATS scraper
+│   └── greenhouse_scraper.py  # Browser automation (Playwright)
+│
+└── lever/                     # Lever ATS scraper
+    ├── __init__.py
+    ├── lever_fetcher.py           # Main Lever job fetcher
+    ├── discover_lever_companies.py # Company discovery utility
+    └── validate_lever_sites.py    # Site validation utility
+```
+
+### 4. **`config/` Directory** (Configuration Files)
+
+```
+config/
+├── agency_blacklist.yaml              # Agency names for hard filtering
+├── company_ats_mapping.json           # Company → ATS slug mapping (302 companies)
+├── greenhouse_checked_companies.json  # Validated Greenhouse companies
+├── greenhouse_title_patterns.yaml     # Title patterns for Greenhouse filtering
+├── greenhouse_location_patterns.yaml  # Location patterns for Greenhouse filtering
+├── lever_company_mapping.json         # Lever company configurations
+├── lever_title_patterns.yaml          # Title patterns for Lever filtering
+├── lever_location_patterns.yaml       # Location patterns for Lever filtering
+├── job_family_mapping.yaml            # job_subfamily → job_family mapping (strict)
+├── skill_family_mapping.yaml          # skill → skill_family mapping (849 skills)
+├── skill_domain_mapping.yaml          # skill_family → domain mapping (32 families, 8 domains)
+└── supported_ats.yaml                 # Supported ATS platforms
+```
+
+### 5. **`migrations/` Directory** (Database Migrations)
+SQL scripts for database schema changes:
 
 ```
 migrations/
-├── README.md                           # Migration instructions
-├── 000_backfill_raw_jobs_metadata.py   # Backfill NULL company/title
-├── 001_add_raw_jobs_hash.sql           # Add hash column with UNIQUE constraint
-├── 001a_deduplicate_raw_jobs.py        # Remove duplicate records
-├── 002_add_last_seen_timestamp.sql     # Add last_seen for resume capability
-├── 003_allow_unk_city_code.sql         # Allow 'unk' city code for Greenhouse
-└── verify_001_hash_migration.py        # Migration verification
+├── README.md                              # Migration instructions
+├── 001_add_raw_jobs_hash.sql              # Add hash column with UNIQUE constraint
+├── 002_add_last_seen_timestamp.sql        # Add last_seen for resume capability
+├── 003_allow_unk_city_code.sql            # Allow 'unk' city code
+├── 004_allow_remote_city_code.sql         # Allow 'remote' city code
+├── 005_remove_hash_unique_constraint.sql  # Remove hash uniqueness
+├── 006_unique_source_job_id.sql           # Unique constraint on source_job_id
+└── 007_allow_unknown_working_arrangement.sql # Allow 'unknown' working arrangement
 ```
 
-### 4. **Other Directories**
+### 6. **`docs/` Directory** (Documentation)
 
 ```
-scrapers/              # Web scrapers (Adzuna, Greenhouse)
-  ├── adzuna/          # Adzuna API client
-  └── greenhouse/      # Greenhouse browser automation scraper
+docs/
+├── README.md                           # Documentation index
+├── REPOSITORY_STRUCTURE.md             # This file
+├── architecture/                       # Architecture design docs
+│   ├── DUAL_PIPELINE.md               # Adzuna + Greenhouse dual sources
+│   └── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
+├── costs/                              # Cost tracking and metrics
+│   ├── COST_METRICS.md                # Cost analysis & optimization
+│   └── claude_api_*.csv               # Anthropic usage exports
+├── database/
+│   └── SCHEMA_UPDATES.md              # Database schema changelog
+├── archive/                            # Historical docs
+│   └── prod_run_plan_output/          # Production run guides
+├── blacklisting_process.md            # Agency detection methodology
+├── CASE_STUDY_MVP_REPORT.md           # Project case study
+├── employer_size_canonicalization_epic.md # Future epic planning
+├── epic5_analytics_layer_planning.md  # Dashboard delivery plan
+├── marketplace_questions.yaml         # Business questions spec
+├── product_brief.yaml                 # Product requirements
+├── schema_taxonomy.yaml               # Classification taxonomy
+└── system_architecture.yaml           # System design spec
+```
 
-config/                # Configuration files
-  ├── agency_blacklist.yaml
-  ├── company_ats_mapping.json
-  ├── greenhouse_title_patterns.yaml
-  └── greenhouse_location_patterns.yaml
+### 7. **`tests/` Directory** (Test Suite)
 
-docs/                  # Documentation
-  ├── README.md        # Documentation index
-  ├── architecture/    # Architecture design docs
-  │   ├── DUAL_PIPELINE.md
-  │   └── INCREMENTAL_UPSERT_DESIGN.md  # IMPLEMENTED 2025-12-03
-  ├── costs/           # Cost tracking and metrics (NEW 2025-12-04)
-  │   ├── COST_METRICS.md              # Cost analysis & optimization
-  │   └── claude_api_*.csv             # Anthropic usage exports
-  ├── database/        # Database documentation
-  │   └── SCHEMA_UPDATES.md
-  ├── testing/         # Test documentation
-  └── archive/         # Historical docs and session notes
-
-tests/                 # Test suite
-  ├── test_*.py        # Test files
-  └── TESTING_GUIDE.md # Consolidated testing guide
-output/                # Generated outputs (gitignored)
+```
+tests/
+├── TESTING_GUIDE.md                    # Consolidated testing guide
+├── test_db_upsert.py                   # Database upsert logic
+├── test_e2e_greenhouse_filtered.py     # E2E pipeline tests
+├── test_end_to_end.py                  # Full pipeline integration
+├── test_figma_location_filter.py       # Location filtering validation
+├── test_greenhouse_scraper_filtered.py # Scraper integration tests
+├── test_greenhouse_scraper_simple.py   # Basic scraper tests
+├── test_greenhouse_title_filter_unit.py # Title filter unit tests
+├── test_incremental_pipeline.py        # Incremental upsert tests
+├── test_monzo_filtering.py             # Live company validation
+├── test_resume_capability.py           # Resume capability tests
+└── test_two_companies.py               # Multi-company scraping
 ```
 
 ## Usage Examples
@@ -150,6 +205,8 @@ python wrappers/backfill_agency_flags.py --dry-run
 from pipeline.classifier import classify_job_with_claude
 from pipeline.db_connection import supabase, insert_enriched_job, insert_raw_job_upsert
 from pipeline.unified_job_ingester import UnifiedJob, UnifiedJobIngester
+from pipeline.job_family_mapper import derive_job_family
+from pipeline.skill_family_mapper import get_skill_family
 ```
 
 **From utilities:** (allow calling from project root)
@@ -167,6 +224,7 @@ main()
    - Maintenance utilities in `pipeline/utilities/`
    - User-facing wrappers in `wrappers/`
    - Database migrations in `migrations/`
+   - Data source integrations in `scrapers/`
 
 2. **Easy discoverability:**
    - Users call scripts via wrappers: `python wrappers/fetch_jobs.py`
@@ -176,49 +234,24 @@ main()
 3. **Scalability:**
    - Easy to add new utilities without cluttering root
    - Core pipeline stays focused and clean
-   - Future additions have clear home
+   - New scrapers go in `scrapers/` with consistent structure
 
 4. **Backward compatibility:**
    - Wrapper scripts maintain existing command-line interface
    - Old scripts can be archived systematically
-
-## Changes from Previous Structure
-
-### Archived (Session 2025-12-03)
-Implementation tracking docs moved to `docs/archive/session_2025-12-03_incremental/`:
-- `PHASE_1_IMPLEMENTATION_STATUS.md` - Phase 1 tracking
-- `LAST_SEEN_IMPLEMENTATION.md` - Last seen timestamp feature
-
-Production run logs moved to `docs/archive/prod_run_plan_output/`:
-- Production run logs and metrics
-- Parallel execution guide
-
-### Deleted (2025-12-07 Cleanup)
-- Ad-hoc test files: `.check_wheely.py`, `test_wheely_scrape.py`, `test_custom_domain_companies.py`, `temp_query.py`
-- Output files: `validate_greenhouse_results.json`, `config_cleanup_results.md`
-- Duplicate documentation: `docs/epic_5_analytics_plan.md` (kept `epic5_analytics_layer_planning.md`)
-- Redundant READMEs: `pipeline/README.md`, `scrapers/greenhouse/README.md`, `tests/README_TITLE_FILTER_TESTS.md`, `tests/QUICK_REFERENCE.md`
-- Git artifact files: Various malformed git command outputs in root directory
-
-### Deleted (Previous Sessions)
-- `core/` - Empty directory removed
-- `nul` - Windows artifact removed
-- `scripts/` - Directory removed after moving contents
-
-### Consolidated
-- Database migrations now only in root `migrations/` (old `docs/database/migrations/` archived)
 
 ## File Statistics
 
 | Area | Count | Type |
 |------|-------|------|
 | Root wrappers | 8 | Python scripts |
-| Core pipeline | 6 | Python scripts |
+| Core pipeline | 8 | Python scripts |
 | Utilities | 11 | Python scripts |
-| Migrations | 6 | SQL scripts |
-| Test files | 10 | Python scripts |
-| **Total active** | **41** | **Scripts** |
-| Documentation | 3 | README files (docs/, tests/, migrations/) |
+| Scrapers | 6 | Python scripts (across 3 ATS integrations) |
+| Migrations | 7 | SQL scripts |
+| Config files | 12 | YAML/JSON files |
+| Test files | 11 | Python scripts |
+| **Total active** | **63** | **Scripts + configs** |
 
 ## Current Status
 
@@ -227,12 +260,17 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 - **Resume Capability:** `--resume-hours N` skips recently processed companies
 - **Hash-based Deduplication:** UPSERT by company+title+city hash
 - **Last Seen Tracking:** Distinguishes first discovery from most recent scrape
+- **Multi-ATS Support:** Greenhouse, Lever, and Adzuna integrations
+- **Deterministic Mapping:** Job family and skill family derived from mappings (not LLM)
+
+### Completed Epics
+- **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
+- **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
 
 ### Ready to Start
-- **Epic 5: Analytics Query Layer**
-  - Build `analytics.py` with query functions
-  - Implement common aggregation patterns
-  - Answer marketplace questions programmatically
+- **Epic 7: Automation & Operational**
+  - GitHub Actions for daily pipeline execution
+  - Monitoring and alerting for pipeline failures
 
 ### Maintaining Cleanliness
 - Archive diagnostic scripts after use in `docs/archive/session_YYYY-MM-DD/`
@@ -241,8 +279,6 @@ Production run logs moved to `docs/archive/prod_run_plan_output/`:
 
 ---
 
-**Last Updated:** 2025-12-07
-**Changes:** Major cleanup - consolidated READMEs (6→3), moved utility scripts, removed ad-hoc test files
-**Previous (2025-12-04):** Added `docs/costs/` directory with cost metrics, API usage tracking
-**Previous (2025-12-03):** Implemented incremental upsert architecture, cleaned up orphaned files
+**Last Updated:** 2025-12-16
+**Changes:** Major cleanup - deleted 7 ad-hoc root scripts, removed orphaned docs, updated to reflect Lever scraper, new configs, and current utilities
 **Status:** Clean structure, 100% compliant with documented organization
