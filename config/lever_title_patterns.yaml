@@ -1,0 +1,71 @@
+# Lever Job Title Filter Patterns
+# =======================================
+# Purpose: Identify relevant Data and Product roles before LLM classification
+# Source: Copied from greenhouse_title_patterns.yaml - same patterns work for Lever
+# Impact: Reduces classification costs by 60-70% by filtering out Sales, Marketing, HR, etc.
+#
+# Pattern Syntax:
+# - Case-insensitive matching
+# - Standard regex syntax (| for OR, .* for wildcards, \s for whitespace)
+# - Patterns applied with word boundaries for accuracy
+
+# Core title patterns for Data and Product families
+relevant_title_patterns:
+  # ===== DATA ROLES =====
+
+  # Data Analyst family
+  - 'data analyst'
+  - 'analytics (engineer|lead|manager)'
+  - 'business intelligence|bi (engineer|analyst|developer)'
+  - 'bi engineer|bi analyst'
+
+  # Data Engineer family
+  - 'data engineer'
+  - 'data platform'
+
+  # Data Scientist family
+  - 'data scientist'
+  - 'machine learning scientist'
+  - 'research scientist.*(ml|ai|machine learning|data)'
+  - 'applied (scientist|ml)'
+
+  # ML/AI Engineer family
+  - 'ml engineer|machine learning engineer'
+  - 'ai engineer'
+  - 'mlops'
+
+  # Data Architect family
+  - 'data architect'
+
+  # ===== PRODUCT ROLES =====
+
+  # Product Manager family
+  - 'product manager'
+  - 'product owner'
+  - 'technical product manager'
+
+  # Product Leadership (Director+)
+  - 'director.*(product|pm)'
+  - '(vp|vice president).*(product|pm)'
+  - 'head of product'
+  - 'chief product officer|cpo'
+
+  # Growth PM
+  - 'growth (pm|product manager)'
+
+  # Platform/Infrastructure PM
+  - 'platform (pm|product manager)'
+
+  # AI/ML Product Manager
+  - '(ai|ml|data).*(product manager|pm)'
+  - 'product manager.*(ai|ml|data)'
+
+# ===== CONFIGURATION =====
+
+# Enable/disable filtering (can be overridden in code)
+filtering_enabled: true
+
+# Version tracking
+version: "1.0"
+last_updated: "2025-12-16"
+source: "Copied from greenhouse_title_patterns.yaml"

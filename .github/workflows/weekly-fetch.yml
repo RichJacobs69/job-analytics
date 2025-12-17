@@ -1,0 +1,89 @@
+name: Weekly Job Fetch Pipeline
+
+on:
+  # Run weekly on Sunday at 2:00 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Data sources to fetch from (comma-separated)'
+        required: true
+        default: 'greenhouse,lever'
+        type: choice
+        options:
+          - greenhouse,lever
+          - greenhouse
+          - lever
+          - adzuna
+          - adzuna,greenhouse,lever
+      city:
+        description: 'City code for Adzuna (lon, nyc, den)'
+        required: false
+        default: 'lon'
+      max_jobs:
+        description: 'Max jobs per Adzuna query'
+        required: false
+        default: '100'
+      resume_hours:
+        description: 'Skip companies processed within N hours (0 = disabled)'
+        required: false
+        default: '0'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  fetch-jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3 hour timeout for long-running scrapes
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run fetch pipeline (scheduled)
+        if: github.event_name == 'schedule'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_API_KEY: ${{ secrets.ADZUNA_API_KEY }}
+        run: |
+          cd pipeline
+          python fetch_jobs.py lon 100 --sources greenhouse,lever
+
+      - name: Run fetch pipeline (manual)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_API_KEY: ${{ secrets.ADZUNA_API_KEY }}
+        run: |
+          cd pipeline
+          python fetch_jobs.py ${{ inputs.city }} ${{ inputs.max_jobs }} \
+            --sources ${{ inputs.sources }} \
+            --resume-hours ${{ inputs.resume_hours }}
+

@@ -41,6 +41,7 @@ class DataSource(Enum):
     """Enum for job data sources"""
     ADZUNA = "adzuna"
     GREENHOUSE = "greenhouse"
+    LEVER = "lever"
     HYBRID = "hybrid"  # When Adzuna job data + Greenhouse description
 
 
@@ -71,6 +72,13 @@ class UnifiedJob:
     adzuna_salary_min: Optional[float] = None
     adzuna_salary_max: Optional[float] = None
     adzuna_salary_predicted: Optional[bool] = None
+
+    # Lever API metadata (for classifier context)
+    lever_id: Optional[str] = None
+    lever_team: Optional[str] = None
+    lever_department: Optional[str] = None
+    lever_commitment: Optional[str] = None  # Full-time, Part-time, etc.
+    lever_description: Optional[str] = None  # Keep original for reference
 
     # Classification results (added after Claude processing)
     classification: Optional[Dict] = None  # Claude classification results

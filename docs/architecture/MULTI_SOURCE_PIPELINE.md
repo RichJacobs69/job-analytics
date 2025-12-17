@@ -315,6 +315,188 @@ python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
 
 ---
 
+## Classification Input by Source
+
+### What the Classifier Receives
+
+All sources call `classify_job_with_claude(job_text, structured_input)` but provide different data quality:
+
+#### Adzuna Jobs (83% of dataset)
+
+```python
+structured_input = {
+    'title': "Senior Data Engineer",
+    'company': "Tech Company Ltd",
+    'description': "We are seeking a Senior Data Engineer to join our growing team. You will be responsible for building and maintaining data pipelines using Python, SQL, and AWS. Strong experience with [TEXT TRUNCATED]",  # ~200 chars
+    'location': "London",
+    'category': "IT Jobs",
+    'salary_min': 75000,
+    'salary_max': 95000
+}
+```
+
+**Prompt sent to Claude:**
+```
+# JOB TO CLASSIFY
+
+**Job Title:** Senior Data Engineer
+**Company:** Tech Company Ltd
+**Category:** IT Jobs
+**Location:** London
+**Salary Range:** 75000 - 95000
+
+**Job Description:**
+We are seeking a Senior Data Engineer to join our growing team. You will be
+responsible for building and maintaining data pipelines using Python, SQL, and
+AWS. Strong experience with [TEXT TRUNCATED]
+```
+
+**Classification Results:**
+- ✅ Job family/subfamily (from title: "Data Engineer")
+- ✅ Seniority (from title: "Senior")
+- ⚠️ Skills (only Python, SQL, AWS mentioned before truncation)
+- ❌ Working arrangement (cut off) → **80.5% unknown rate**
+- ❌ Detailed requirements (cut off)
+- ❌ Experience range (cut off)
+
+---
+
+#### Greenhouse Jobs (14% of dataset)
+
+```python
+structured_input = {
+    'title': "Backend Engineer, Data",
+    'company': "Stripe",
+    'description': "[9,000-15,000 character COMPLETE job posting]",  # Full text
+    'location': None,
+    'category': None,
+    'salary_min': None,
+    'salary_max': None
+}
+```
+
+**Prompt sent to Claude (excerpt):**
+```
+# JOB TO CLASSIFY
+
+**Job Title:** Backend Engineer, Data
+**Company:** Stripe
+
+**Job Description:**
+## Who we are
+Stripe is a financial infrastructure platform for businesses...
+
+## What you'll do
+- Design and build scalable data infrastructure to support Stripe's rapid growth
+- Build and maintain data pipelines processing billions of events daily
+- Collaborate with data scientists, analysts, and product teams
+- Work with technologies including Python, SQL, Spark, Airflow, dbt, Snowflake
+
+## Who you are
+Minimum requirements:
+- 5+ years of software engineering experience
+- Strong programming skills in Python or similar languages
+- Experience building and maintaining data pipelines at scale
+- Deep knowledge of SQL and data modeling
+- Familiarity with distributed systems (Spark, Kafka, or similar)
+
+## Work arrangement
+This role is hybrid, with 2 days per week in our San Francisco office.
+
+[...continues for 12,000+ characters total...]
+```
+
+**Classification Results:**
+- ✅ Job family/subfamily (Data Engineer)
+- ✅ Seniority (Senior, from "5+ years")
+- ✅ Skills (Python, SQL, Spark, Airflow, dbt, Snowflake, etc.)
+- ✅ Working arrangement (Hybrid - 2 days in office) → **5.8% unknown rate**
+- ✅ Experience range (5+ years explicitly stated)
+- ✅ Company size estimate (large enterprise from context)
+- ✅ Track (IC - no management mentioned)
+
+---
+
+#### Lever Jobs (3% of dataset)
+
+```python
+structured_input = {
+    'title': "Data Scientist - Fraud",
+    'company': "Plaid",
+    'description': "[Complete job posting from Lever API]",  # Full text
+    'location': "San Francisco",
+    'category': None,
+    'salary_min': None,
+    'salary_max': None
+}
+```
+
+**Prompt sent to Claude (excerpt):**
+```
+# JOB TO CLASSIFY
+
+**Job Title:** Data Scientist - Fraud
+**Company:** Plaid
+**Location:** San Francisco
+
+**Job Description:**
+We're looking for a Data Scientist to join our Fraud Detection team at Plaid.
+
+## Responsibilities
+- Build and deploy machine learning models to detect fraudulent transactions
+- Analyze transaction patterns to identify emerging fraud trends
+- Collaborate with engineering teams to integrate models into production
+
+## Requirements
+- PhD or MS in Computer Science, Statistics, Mathematics, or related field
+- 3+ years of experience in data science or machine learning
+- Strong programming skills in Python
+- Proficiency with scikit-learn, TensorFlow, or PyTorch
+
+## Location & Work Arrangement
+This role can be based in San Francisco, New York, or Raleigh-Durham. We offer
+a hybrid work model with 3 days per week in the office.
+
+[...full job posting...]
+```
+
+**Classification Results:**
+- ✅ Job family/subfamily (Data Scientist)
+- ✅ Seniority (Senior/Mid from "3+ years, PhD/MS")
+- ✅ Skills (Python, SQL, scikit-learn, TensorFlow, PyTorch)
+- ✅ Working arrangement (Hybrid - 3 days in office) → **0% unknown rate**
+- ✅ Experience range (3+ years)
+- ✅ Compensation ($150k-$200k if stated)
+- ✅ Location (Multi-location: SF/NYC/Raleigh-Durham)
+
+---
+
+### Data Quality Comparison
+
+| Field | Adzuna | Greenhouse | Lever |
+|-------|--------|------------|-------|
+| **Title** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Company** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Description** | ⚠️ Truncated (~200 chars) | ✅ Full (9K-15K chars) | ✅ Full |
+| **Location Metadata** | ✅ Yes | ❌ No | ✅ Yes |
+| **Category Metadata** | ✅ Yes ("IT Jobs") | ❌ No | ❌ No |
+| **Salary Metadata** | ⚠️ Sometimes | ❌ No | ❌ No |
+| **Working Arr. in Text** | ❌ Usually cut off | ✅ Present | ✅ Present |
+| **Skills in Text** | ⚠️ Partial | ✅ Detailed | ✅ Detailed |
+| **Requirements in Text** | ❌ Cut off | ✅ Complete | ✅ Complete |
+
+### Classification Accuracy Impact
+
+| Source | Working Arr. Unknown | Jobs in DB | Avg Description |
+|--------|---------------------|------------|-----------------|
+| **Adzuna** | 80.5% | 7,193 | ~200 chars |
+| **Greenhouse** | 5.8% | 1,243 | ~12,000 chars |
+| **Lever** | 0% | 232 | Full text |
+
+**Key Insight:** Adzuna has great metadata but truncated text. Greenhouse/Lever have full text but no metadata. The multi-source approach combines strengths: use Adzuna for volume/discovery, use Greenhouse/Lever for quality classification.
+
+---
+
 ## Future Expansion
 
 Potential additional ATS platforms:

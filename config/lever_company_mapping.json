@@ -1,0 +1,317 @@
+{
+  "lever": {
+    "15Five": {
+      "slug": "15five",
+      "instance": "global",
+      "job_count": 1
+    },
+    "Anchorage": {
+      "slug": "anchorage",
+      "instance": "global",
+      "job_count": 62
+    },
+    "Anyscale": {
+      "slug": "anyscale",
+      "instance": "global",
+      "job_count": 1
+    },
+    "Attentive": {
+      "slug": "attentive",
+      "instance": "global",
+      "job_count": 45
+    },
+    "Ciandt": {
+      "slug": "ciandt",
+      "instance": "global",
+      "job_count": 256
+    },
+    "Labelbox": {
+      "slug": "labelbox",
+      "instance": "global",
+      "job_count": 349
+    },
+    "Lever": {
+      "slug": "lever",
+      "instance": "eu",
+      "job_count": 6
+    },
+    "Malt": {
+      "slug": "malt",
+      "instance": "global",
+      "job_count": 22
+    },
+    "Neon": {
+      "slug": "neon",
+      "instance": "global",
+      "job_count": 19
+    },
+    "Outreach": {
+      "slug": "outreach",
+      "instance": "global",
+      "job_count": 31
+    },
+    "Paytm": {
+      "slug": "paytm",
+      "instance": "global",
+      "job_count": 392
+    },
+    "Plaid": {
+      "slug": "plaid",
+      "instance": "global",
+      "job_count": 74
+    },
+    "Rackspace": {
+      "slug": "rackspace",
+      "instance": "global",
+      "job_count": 84
+    },
+    "Spotify": {
+      "slug": "spotify",
+      "instance": "global",
+      "job_count": 116
+    },
+    "Veepee": {
+      "slug": "veepee",
+      "instance": "global",
+      "job_count": 96
+    },
+    "Wealthfront": {
+      "slug": "wealthfront",
+      "instance": "global",
+      "job_count": 12
+    },
+    "Zoox": {
+      "slug": "zoox",
+      "instance": "global",
+      "job_count": 198
+    },
+    "Agicap": {
+      "slug": "agicap",
+      "instance": "global",
+      "job_count": 55
+    },
+    "Appen": {
+      "slug": "appen",
+      "instance": "global",
+      "job_count": 79
+    },
+    "Applydigital": {
+      "slug": "applydigital",
+      "instance": "global",
+      "job_count": 30
+    },
+    "Bee Talents": {
+      "slug": "bee-talents",
+      "instance": "global",
+      "job_count": 34
+    },
+    "Binance": {
+      "slug": "binance",
+      "instance": "global",
+      "job_count": 315
+    },
+    "Bloomon": {
+      "slug": "bloomon",
+      "instance": "global",
+      "job_count": 11
+    },
+    "Cloudinary": {
+      "slug": "cloudinary",
+      "instance": "global",
+      "job_count": 40
+    },
+    "Ethenalabs": {
+      "slug": "ethenalabs",
+      "instance": "global",
+      "job_count": 11
+    },
+    "Ethereumfoundation": {
+      "slug": "ethereumfoundation",
+      "instance": "global",
+      "job_count": 8
+    },
+    "Find": {
+      "slug": "find",
+      "instance": "global",
+      "job_count": 2
+    },
+    "Fnatic": {
+      "slug": "fnatic",
+      "instance": "global",
+      "job_count": 3
+    },
+    "Form": {
+      "slug": "form",
+      "instance": "global",
+      "job_count": 5
+    },
+    "Fresha": {
+      "slug": "fresha",
+      "instance": "global",
+      "job_count": 88
+    },
+    "Gettyimages": {
+      "slug": "gettyimages",
+      "instance": "global",
+      "job_count": 8
+    },
+    "Gohighlevel": {
+      "slug": "gohighlevel",
+      "instance": "global",
+      "job_count": 141
+    },
+    "Imagexmedia": {
+      "slug": "imagexmedia",
+      "instance": "global",
+      "job_count": 4
+    },
+    "Instructure": {
+      "slug": "instructure",
+      "instance": "global",
+      "job_count": 27
+    },
+    "Jiostar": {
+      "slug": "jiostar",
+      "instance": "global",
+      "job_count": 160
+    },
+    "Metabase": {
+      "slug": "metabase",
+      "instance": "global",
+      "job_count": 14
+    },
+    "Mistral": {
+      "slug": "mistral",
+      "instance": "global",
+      "job_count": 139
+    },
+    "Moonpig": {
+      "slug": "moonpig",
+      "instance": "global",
+      "job_count": 9
+    },
+    "Nekohealth": {
+      "slug": "nekohealth",
+      "instance": "global",
+      "job_count": 33
+    },
+    "Octoenergy": {
+      "slug": "octoenergy",
+      "instance": "global",
+      "job_count": 203
+    },
+    "Offchainlabs": {
+      "slug": "offchainlabs",
+      "instance": "global",
+      "job_count": 17
+    },
+    "Openx": {
+      "slug": "openx",
+      "instance": "global",
+      "job_count": 18
+    },
+    "Palantir": {
+      "slug": "palantir",
+      "instance": "global",
+      "job_count": 228
+    },
+    "Panopto": {
+      "slug": "panopto",
+      "instance": "global",
+      "job_count": 14
+    },
+    "Parcelvision": {
+      "slug": "parcelvision",
+      "instance": "global",
+      "job_count": 7
+    },
+    "Pibenchmark": {
+      "slug": "pibenchmark",
+      "instance": "global",
+      "job_count": 8
+    },
+    "Playonsports": {
+      "slug": "playonsports",
+      "instance": "global",
+      "job_count": 18
+    },
+    "Proof": {
+      "slug": "proof",
+      "instance": "global",
+      "job_count": 7
+    },
+    "Quantco ": {
+      "slug": "quantco-",
+      "instance": "global",
+      "job_count": 21
+    },
+    "Rws": {
+      "slug": "rws",
+      "instance": "global",
+      "job_count": 30
+    },
+    "Safetyculture 2": {
+      "slug": "safetyculture-2",
+      "instance": "global",
+      "job_count": 70
+    },
+    "Sapiosciences": {
+      "slug": "sapiosciences",
+      "instance": "global",
+      "job_count": 3
+    },
+    "Scottlogic": {
+      "slug": "scottlogic",
+      "instance": "global",
+      "job_count": 10
+    },
+    "Sumo Digital": {
+      "slug": "sumo-digital",
+      "instance": "global",
+      "job_count": 4
+    },
+    "Swissborg": {
+      "slug": "swissborg",
+      "instance": "global",
+      "job_count": 5
+    },
+    "Teleport": {
+      "slug": "teleport",
+      "instance": "global",
+      "job_count": 20
+    },
+    "Thepieexecsearch": {
+      "slug": "thepieexecsearch",
+      "instance": "global",
+      "job_count": 9
+    },
+    "Trendyol": {
+      "slug": "trendyol",
+      "instance": "global",
+      "job_count": 69
+    },
+    "Welocalize": {
+      "slug": "welocalize",
+      "instance": "global",
+      "job_count": 339
+    },
+    "Wintermute Trading": {
+      "slug": "wintermute-trading",
+      "instance": "global",
+      "job_count": 23
+    },
+    "Zopa": {
+      "slug": "zopa",
+      "instance": "global",
+      "job_count": 34
+    }
+  },
+  "_meta": {
+    "validated_at": "2025-12-16T16:58:56.517539Z",
+    "discovery_sources": [
+      "cli"
+    ],
+    "total_companies": 61,
+    "total_jobs_available": 4137
+  }
+}

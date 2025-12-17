@@ -1,54 +1,53 @@
 """
-Unified Job Fetcher: Adzuna + Greenhouse Dual Pipeline Orchestrator
+Unified Job Fetcher: Adzuna + Greenhouse + Lever Triple Pipeline Orchestrator
 
 Purpose:
 --------
-Main entry point for fetching jobs from multiple sources (Adzuna API + Greenhouse scraper).
+Main entry point for fetching jobs from multiple sources (Adzuna API, Greenhouse scraper, Lever API).
 Orchestrates the full pipeline: fetch -> merge -> classify -> store.
 
 Supports:
-- Single or dual source fetching (--sources adzuna,greenhouse)
+- Single, dual, or triple source fetching (--sources adzuna,greenhouse,lever)
 - Multiple cities (lon, nyc, den)
 - Agency filtering (hard + soft detection)
 - Classification via Claude 3.5 Haiku
 - Storage in Supabase PostgreSQL
 
+Data Sources:
+- Adzuna: REST API, mass market jobs, 100-200 char descriptions
+- Greenhouse: Browser scraping, premium companies, 9,000-15,000+ char descriptions
+- Lever: REST API (no auth), full descriptions like Greenhouse
+
 Usage:
 ------
-# Dual pipeline (default):
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse
+# Triple pipeline (all sources):
+python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever
 
 # Adzuna only:
 python fetch_jobs.py lon 100 --sources adzuna
 
-# Greenhouse only (premium companies):
+# Greenhouse only (browser scraping):
 python fetch_jobs.py --sources greenhouse
 
+# Lever only (simple HTTP API):
+python fetch_jobs.py --sources lever
+
 # NYC with more jobs:
-python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
+python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever
 
 # With filtering:
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse --min-description-length 500
+python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever --min-description-length 500
 
-# With companies filter:
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse --companies "company1,company2,company3"
+# With companies filter (applies to Greenhouse and Lever):
+python fetch_jobs.py lon 100 --sources greenhouse,lever --companies "spotify,plaid,figma"
 
-# with resume hours:
+# With resume hours (Greenhouse only):
 python fetch_jobs.py lon 100 --sources adzuna,greenhouse --resume-hours 24
+
+# With adzuna max days old:
+python fetch_jobs.py lon 100 --sources adzuna --adzuna-max-days-old 30
+
 Author: Claude Code
-
-# with adzuna max days old:
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse --adzuna-max-days-old 30
-
-# With full terminal output capture AND live monitoring (recommended):
-# PowerShell approach - shows live output in terminal AND saves to file:
-# $transcriptPath = "output/cursor_session_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
-# Start-Transcript -Path $transcriptPath
-# python fetch_jobs.py lon 100 --sources adzuna,greenhouse
-# Stop-Transcript
-
-# Or use tee for cross-platform (shows live output + captures to file):
-# python fetch_jobs.py lon 100 --sources adzuna,greenhouse 2>&1 | tee "output/cursor_session_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
 """
 
 import asyncio
@@ -209,6 +208,68 @@ async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
 
     except Exception as e:
         logger.error(f"Failed to fetch from Greenhouse: {str(e)}")
+        return []
+
+
+async def fetch_from_lever(companies: Optional[List[str]] = None) -> List:
+    """Fetch jobs from Lever API and convert to UnifiedJob objects
+
+    Args:
+        companies: Optional list of company slugs to fetch. If None, uses mapping.
+
+    Returns:
+        List of UnifiedJob objects from Lever
+    """
+    try:
+        from scrapers.lever.lever_fetcher import fetch_all_lever_companies, LeverJob
+        from pipeline.unified_job_ingester import UnifiedJob, DataSource
+
+        logger.info("Fetching jobs from Lever API...")
+
+        # Fetch jobs from Lever (filtering enabled by default)
+        lever_jobs, stats = fetch_all_lever_companies(
+            companies=companies,
+            filter_titles=True,
+            filter_locations=True
+        )
+
+        logger.info(f"Lever API Stats:")
+        logger.info(f"  - Companies processed: {stats['companies_processed']}")
+        logger.info(f"  - Total jobs fetched: {stats['total_jobs_fetched']}")
+        logger.info(f"  - Filtered by title: {stats['total_filtered_by_title']}")
+        logger.info(f"  - Filtered by location: {stats['total_filtered_by_location']}")
+        logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
+
+        # Convert LeverJob objects to UnifiedJob objects
+        unified_jobs = []
+        for job in lever_jobs:
+            try:
+                unified_job = UnifiedJob(
+                    company=job.company_slug.replace('-', ' ').title(),
+                    title=job.title,
+                    location=job.location,
+                    description=job.description,
+                    url=job.url,
+                    job_id=job.id,
+                    department=job.department,
+                    source=DataSource.LEVER,
+                    description_source=DataSource.LEVER,
+                    lever_id=job.id,
+                    lever_team=job.team,
+                    lever_department=job.department,
+                    lever_commitment=job.commitment,
+                    lever_description=job.description
+                )
+                unified_jobs.append(unified_job)
+            except Exception as e:
+                logger.warning(f"Failed to convert Lever job: {str(e)}")
+                continue
+
+        logger.info(f"Successfully converted {len(unified_jobs)} Lever jobs to UnifiedJob format")
+        return unified_jobs
+
+    except Exception as e:
+        logger.error(f"Failed to fetch from Lever: {str(e)}")
         return []
 
 
@@ -456,7 +517,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
                     city_code=location.get('city_code') or 'unk',
-                    working_arrangement=location.get('working_arrangement') or 'onsite',
+                    working_arrangement=location.get('working_arrangement') or 'unknown',
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
                     last_seen_date=date.today(),
@@ -860,6 +921,321 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
     return stats
 
 
+async def process_lever_incremental(companies: Optional[List[str]] = None) -> Dict:
+    """Process Lever jobs incrementally with per-company database writes
+
+    This function implements the incremental architecture (same as Greenhouse):
+    1. Fetch jobs from Lever API (with filtering)
+    2. Write to raw_jobs using insert_raw_job_upsert()
+    3. Classify jobs immediately
+    4. Write to enriched_jobs
+    5. Log progress clearly per company
+
+    Args:
+        companies: Optional list of company slugs to process. If None, processes all from mapping.
+
+    Returns:
+        Dict with processing statistics
+    """
+    from scrapers.lever.lever_fetcher import fetch_lever_jobs, load_company_mapping
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.classifier import classify_job_with_claude
+    from pipeline.agency_detection import is_agency_job, validate_agency_classification
+    from pipeline.unified_job_ingester import DataSource
+    from datetime import date
+    import json
+    import time
+
+    start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("="*80)
+    logger.info("LEVER INCREMENTAL PROCESSING")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info("="*80)
+
+    # Time tracking
+    pipeline_start_time = time.time()
+
+    # Statistics tracking
+    stats = {
+        'companies_processed': 0,
+        'companies_with_jobs': 0,
+        'total_jobs_fetched': 0,
+        'total_jobs_kept': 0,
+        'total_filtered_by_title': 0,
+        'total_filtered_by_location': 0,
+        'jobs_written_raw': 0,
+        'jobs_duplicate': 0,
+        'jobs_classified': 0,
+        'jobs_agency_filtered': 0,
+        'jobs_written_enriched': 0,
+        'cost_saved_filtering': 0.0,
+        'cost_classification': 0.0,
+        'errors': []
+    }
+
+    # Load company mapping
+    mapping = load_company_mapping()
+    lever_companies = mapping.get('lever', {})
+
+    if not lever_companies:
+        logger.warning("No companies in Lever mapping")
+        return stats
+
+    # Filter to specified companies if provided
+    if companies:
+        companies_to_process = {
+            name: data for name, data in lever_companies.items()
+            if data['slug'] in companies
+        }
+    else:
+        companies_to_process = lever_companies
+
+    logger.info(f"Processing {len(companies_to_process)} Lever companies...\n")
+
+    # Load filter patterns once (for cost savings calculation)
+    cost_per_classification = 0.00388  # Haiku cost per job
+
+    for company_name, company_data in companies_to_process.items():
+        slug = company_data['slug']
+        instance = company_data.get('instance', 'global')
+        company_start_time = time.time()
+
+        logger.info(f"\n{'='*80}")
+        logger.info(f"COMPANY: {company_name.upper()} ({slug})")
+        logger.info(f"{'='*80}")
+
+        # Fetch jobs for this company
+        jobs, fetch_stats = fetch_lever_jobs(
+            site_slug=slug,
+            instance=instance,
+            filter_titles=True,
+            filter_locations=True
+        )
+
+        # Update stats
+        stats['companies_processed'] += 1
+        stats['total_jobs_fetched'] += fetch_stats['jobs_fetched']
+        stats['total_jobs_kept'] += fetch_stats['jobs_kept']
+        stats['total_filtered_by_title'] += fetch_stats['filtered_by_title']
+        stats['total_filtered_by_location'] += fetch_stats['filtered_by_location']
+
+        # Calculate cost savings from filtering
+        filtered_count = fetch_stats['filtered_by_title'] + fetch_stats['filtered_by_location']
+        stats['cost_saved_filtering'] += filtered_count * cost_per_classification
+
+        logger.info(f"Fetch Summary:")
+        logger.info(f"  - Jobs fetched: {fetch_stats['jobs_fetched']}")
+        logger.info(f"  - Filtered (title): {fetch_stats['filtered_by_title']}")
+        logger.info(f"  - Filtered (location): {fetch_stats['filtered_by_location']}")
+        logger.info(f"  - Jobs to process: {len(jobs)}")
+        logger.info(f"  - Cost saved: ${filtered_count * cost_per_classification:.2f}")
+
+        if fetch_stats['error']:
+            stats['errors'].append(f"{slug}: {fetch_stats['error']}")
+            logger.warning(f"  Error: {fetch_stats['error']}")
+            continue
+
+        if not jobs:
+            logger.info(f"  No jobs to process for {company_name}")
+            continue
+
+        stats['companies_with_jobs'] += 1
+        logger.info(f"{'-'*80}")
+
+        # Process each job
+        company_jobs_written = 0
+        company_jobs_duplicate = 0
+        company_jobs_classified = 0
+        company_jobs_enriched = 0
+        company_agencies_blocked = 0
+
+        for i, job in enumerate(jobs, 1):
+            try:
+                # Step 1: Write to raw_jobs using UPSERT
+                upsert_result = insert_raw_job_upsert(
+                    source='lever',
+                    posting_url=job.url,
+                    title=job.title,
+                    company=job.company_slug.replace('-', ' ').title(),
+                    raw_text=job.description,
+                    city_code='unk',  # Lever doesn't use city codes
+                    source_job_id=job.id,
+                    metadata={
+                        'company_slug': job.company_slug,
+                        'lever_instance': job.instance,
+                        'lever_team': job.team,
+                        'lever_department': job.department,
+                        'lever_commitment': job.commitment
+                    }
+                )
+
+                raw_job_id = upsert_result['id']
+                was_duplicate = upsert_result['was_duplicate']
+
+                if was_duplicate:
+                    stats['jobs_duplicate'] += 1
+                    company_jobs_duplicate += 1
+                    logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {job.title[:50]}... (skipped)")
+                    continue
+
+                stats['jobs_written_raw'] += 1
+                company_jobs_written += 1
+                logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:50]}... (classifying...)")
+
+                # Step 2: Hard filter - check if agency before classification
+                company_display = job.company_slug.replace('-', ' ').title()
+                if is_agency_job(company_display):
+                    stats['jobs_agency_filtered'] += 1
+                    company_agencies_blocked += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
+                    continue
+
+                # Step 3: Classify the job
+                try:
+                    structured_input = {
+                        'title': job.title,
+                        'company': company_display,
+                        'description': job.description,
+                        'location': job.location,
+                        'category': None,
+                        'salary_min': None,
+                        'salary_max': None,
+                    }
+                    classification = classify_job_with_claude(
+                        job_text=job.description,
+                        structured_input=structured_input
+                    )
+                    stats['jobs_classified'] += 1
+                    company_jobs_classified += 1
+
+                    # Track classification cost
+                    if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
+                        cost = classification['_cost_data']['total_cost']
+                        stats['cost_classification'] += cost
+                        logger.info(f"  [{i}/{len(jobs)}] Classified (${cost:.4f})")
+                    else:
+                        logger.info(f"  [{i}/{len(jobs)}] Classified")
+
+                except Exception as e:
+                    logger.warning(f"  [{i}/{len(jobs)}] Classification FAILED: {str(e)[:100]}")
+                    continue
+
+                # Step 4: Soft agency detection
+                is_agency, agency_conf = validate_agency_classification(
+                    employer_name=company_display,
+                    claude_is_agency=None,
+                    claude_confidence=None,
+                    job_description=job.description
+                )
+
+                if is_agency:
+                    stats['jobs_agency_filtered'] += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
+
+                # Inject agency flags
+                if 'employer' not in classification:
+                    classification['employer'] = {}
+                classification['employer']['is_agency'] = is_agency
+                classification['employer']['agency_confidence'] = agency_conf
+
+                # Step 5: Write to enriched_jobs
+                role = classification.get('role', {})
+                location = classification.get('location', {})
+                compensation = classification.get('compensation', {})
+                employer = classification.get('employer', {})
+
+                enriched_job_id = insert_enriched_job(
+                    raw_job_id=raw_job_id,
+                    employer_name=company_display,
+                    title_display=job.title,
+                    job_family=role.get('job_family') or 'out_of_scope',
+                    city_code=location.get('city_code') or 'unk',
+                    working_arrangement=location.get('working_arrangement') or 'unknown',
+                    position_type=role.get('position_type') or 'full_time',
+                    posted_date=date.today(),
+                    last_seen_date=date.today(),
+                    job_subfamily=role.get('job_subfamily'),
+                    seniority=role.get('seniority'),
+                    track=role.get('track'),
+                    experience_range=role.get('experience_range'),
+                    employer_department=employer.get('department'),
+                    employer_size=employer.get('company_size_estimate'),
+                    is_agency=employer.get('is_agency'),
+                    agency_confidence=employer.get('agency_confidence'),
+                    currency=compensation.get('currency'),
+                    salary_min=compensation.get('base_salary_range', {}).get('min'),
+                    salary_max=compensation.get('base_salary_range', {}).get('max'),
+                    equity_eligible=compensation.get('equity_eligible'),
+                    skills=classification.get('skills', []),
+                    data_source='lever',
+                    description_source='lever',
+                    deduplicated=False
+                )
+
+                stats['jobs_written_enriched'] += 1
+                company_jobs_enriched += 1
+                logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
+
+            except Exception as e:
+                logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
+                continue
+
+        # Company summary
+        company_elapsed = time.time() - company_start_time
+        logger.info(f"{'-'*80}")
+        logger.info(f"Company Summary:")
+        logger.info(f"  - New jobs written: {company_jobs_written}")
+        logger.info(f"  - Duplicates skipped: {company_jobs_duplicate}")
+        logger.info(f"  - Agencies blocked: {company_agencies_blocked}")
+        logger.info(f"  - Jobs classified: {company_jobs_classified}")
+        logger.info(f"  - Jobs enriched: {company_jobs_enriched}")
+        logger.info(f"  - Processing time: {company_elapsed:.1f}s")
+        logger.info(f"{'='*80}")
+
+    # Final summary
+    total_elapsed = time.time() - pipeline_start_time
+    end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("\n" + "="*80)
+    logger.info("LEVER INCREMENTAL PROCESSING COMPLETE")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info(f"Ended: {end_timestamp}")
+    logger.info(f"Total time: {total_elapsed/60:.1f} min ({total_elapsed:.1f}s)")
+    logger.info("="*80)
+
+    logger.info(f"\nCompany Processing:")
+    logger.info(f"  - Companies processed: {stats['companies_processed']}")
+    logger.info(f"  - Companies with jobs: {stats['companies_with_jobs']}")
+
+    logger.info(f"\nJob Fetching & Filtering:")
+    logger.info(f"  - Jobs fetched: {stats['total_jobs_fetched']}")
+    logger.info(f"  - Filtered (title): {stats['total_filtered_by_title']}")
+    logger.info(f"  - Filtered (location): {stats['total_filtered_by_location']}")
+    logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
+
+    logger.info(f"\nDatabase Writes:")
+    logger.info(f"  - New raw jobs: {stats['jobs_written_raw']}")
+    logger.info(f"  - Duplicates skipped: {stats['jobs_duplicate']}")
+    logger.info(f"  - Jobs classified: {stats['jobs_classified']}")
+    logger.info(f"  - Enriched jobs: {stats['jobs_written_enriched']}")
+    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
+
+    logger.info(f"\nCost Analysis:")
+    logger.info(f"  - Saved from filtering: ${stats['cost_saved_filtering']:.2f}")
+    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
+    logger.info(f"  - Net cost: ${stats['cost_classification']:.2f}")
+
+    if stats['errors']:
+        logger.info(f"\nErrors:")
+        for error in stats['errors']:
+            logger.info(f"  - {error}")
+
+    logger.info("="*80)
+
+    return stats
+
+
 async def merge_jobs(
     adzuna_jobs: List,
     greenhouse_jobs: List,
@@ -1039,7 +1415,7 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     title_display=title,
                     job_family=role.get('job_family') or 'out_of_scope',
                     city_code=location.get('city_code') or source_city or 'unk',
-                    working_arrangement=location.get('working_arrangement') or 'onsite',
+                    working_arrangement=location.get('working_arrangement') or 'unknown',
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
                     last_seen_date=date.today(),
@@ -1088,21 +1464,24 @@ async def main():
     """Main orchestration function"""
 
     parser = argparse.ArgumentParser(
-        description='Unified job fetcher: Adzuna + Greenhouse dual pipeline',
+        description='Unified job fetcher: Adzuna + Greenhouse + Lever triple pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Dual pipeline (default)
-  python fetch_jobs.py lon 100 --sources adzuna,greenhouse
+  # Triple pipeline (all sources)
+  python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever
 
   # Adzuna only
   python fetch_jobs.py lon 100 --sources adzuna
 
-  # Greenhouse only
+  # Greenhouse only (browser scraping)
   python fetch_jobs.py --sources greenhouse
 
+  # Lever only (simple HTTP API)
+  python fetch_jobs.py --sources lever
+
   # NYC with more jobs
-  python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
+  python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever
         """
     )
 
@@ -1123,13 +1502,13 @@ Examples:
 
     parser.add_argument(
         '--sources',
-        default='adzuna,greenhouse',
-        help='Comma-separated sources: adzuna, greenhouse. Default: adzuna,greenhouse'
+        required=True,
+        help='Comma-separated sources: adzuna, greenhouse, lever (required). Example: --sources adzuna,greenhouse'
     )
 
     parser.add_argument(
         '--companies',
-        help='Comma-separated list of Greenhouse companies (if --sources includes greenhouse)'
+        help='Comma-separated list of company slugs (applies to both Greenhouse and Lever sources)'
     )
 
     parser.add_argument(
@@ -1167,26 +1546,38 @@ Examples:
 
     args = parser.parse_args()
 
+    # Parse sources first
+    sources = [s.strip().lower() for s in args.sources.split(',')]
+
     logger.info("="*80)
-    logger.info("DUAL PIPELINE JOB FETCHER")
+    logger.info("JOB FETCHER PIPELINE")
     logger.info("="*80)
-    logger.info(f"City: {args.city}")
-    logger.info(f"Max jobs per role query (Adzuna): {args.max_jobs}")
     logger.info(f"Sources: {args.sources}")
     logger.info(f"Min description length: {args.min_description_length}")
-    if 'adzuna' in [s.strip().lower() for s in args.sources.split(',')]:
-        from scrapers.adzuna.fetch_adzuna_jobs import DEFAULT_SEARCH_QUERIES
-        logger.info(f"Adzuna will search {len(DEFAULT_SEARCH_QUERIES)} role types: {', '.join(DEFAULT_SEARCH_QUERIES[:3])}...")
-        logger.info(f"Adzuna max_days_old filter: {args.adzuna_max_days_old} days")
-    logger.info("="*80 + "\n")
 
-    # Parse sources
-    sources = [s.strip().lower() for s in args.sources.split(',')]
+    # Only show Adzuna-specific options if Adzuna is being used
+    if 'adzuna' in sources:
+        logger.info(f"Adzuna city: {args.city}")
+        logger.info(f"Adzuna max jobs per role query: {args.max_jobs}")
+        from scrapers.adzuna.fetch_adzuna_jobs import DEFAULT_SEARCH_QUERIES
+        logger.info(f"Adzuna will search {len(DEFAULT_SEARCH_QUERIES)} role types")
+        logger.info(f"Adzuna max_days_old filter: {args.adzuna_max_days_old} days")
+
+    # Only show Greenhouse-specific options if Greenhouse is being used
+    if 'greenhouse' in sources:
+        logger.info(f"Greenhouse: Resume mode {args.resume_hours}h window" if args.resume_hours > 0 else "Greenhouse: No resume mode")
+
+    # Show companies if specified
+    if args.companies:
+        logger.info(f"Companies (Greenhouse/Lever): {args.companies}")
+
+    logger.info("="*80 + "\n")
 
     # Track total statistics
     total_stats = {
         'greenhouse': None,
-        'adzuna': None
+        'adzuna': None,
+        'lever': None
     }
 
     # GREENHOUSE PIPELINE: Incremental processing (scrape → write raw → classify → write enriched)
@@ -1214,9 +1605,23 @@ Examples:
         )
         total_stats['adzuna'] = adzuna_stats
 
+    # LEVER PIPELINE: Incremental processing (same pattern as Greenhouse)
+    # Simple HTTP API (no browser automation), full job descriptions like Greenhouse
+    if 'lever' in sources:
+        lever_companies = None
+        if args.companies:
+            lever_companies = [c.strip() for c in args.companies.split(',')]
+
+        logger.info("\n" + "="*80)
+        logger.info("STARTING LEVER INCREMENTAL PIPELINE")
+        logger.info("="*80 + "\n")
+
+        lever_stats = await process_lever_incremental(lever_companies)
+        total_stats['lever'] = lever_stats
+
     # FINAL SUMMARY
     logger.info("\n" + "="*80)
-    logger.info("DUAL PIPELINE COMPLETE")
+    logger.info("TRIPLE PIPELINE COMPLETE")
     logger.info("="*80)
 
     if total_stats['greenhouse']:
@@ -1248,11 +1653,28 @@ Examples:
         logger.info(f"  Cost of classification: ${total_stats['adzuna']['cost_classification']:.2f}")
         logger.info(f"  Cost saved (duplicates): ${total_stats['adzuna']['cost_saved_duplicates']:.2f}")
 
+    if total_stats['lever']:
+        logger.info("\nLever Pipeline:")
+        logger.info(f"  Companies processed: {total_stats['lever']['companies_processed']}")
+        logger.info(f"  Companies with jobs: {total_stats['lever']['companies_with_jobs']}")
+        logger.info(f"  Jobs fetched: {total_stats['lever']['total_jobs_fetched']}")
+        logger.info(f"  Filtered (title): {total_stats['lever']['total_filtered_by_title']}")
+        logger.info(f"  Filtered (location): {total_stats['lever']['total_filtered_by_location']}")
+        logger.info(f"  Jobs kept: {total_stats['lever']['total_jobs_kept']}")
+        logger.info(f"  New jobs (written to raw): {total_stats['lever']['jobs_written_raw']}")
+        logger.info(f"  Duplicates skipped: {total_stats['lever']['jobs_duplicate']}")
+        logger.info(f"  Jobs classified: {total_stats['lever']['jobs_classified']}")
+        logger.info(f"  Jobs written to enriched_jobs: {total_stats['lever']['jobs_written_enriched']}")
+        logger.info(f"  Cost saved from filtering: ${total_stats['lever']['cost_saved_filtering']:.2f}")
+        logger.info(f"  Cost of classification: ${total_stats['lever']['cost_classification']:.2f}")
+
     total_jobs = 0
     if total_stats['greenhouse']:
         total_jobs += total_stats['greenhouse']['jobs_written_enriched']
     if total_stats['adzuna']:
         total_jobs += total_stats['adzuna']['jobs_written_enriched']
+    if total_stats['lever']:
+        total_jobs += total_stats['lever']['jobs_written_enriched']
 
     logger.info(f"\nTotal jobs processed: {total_jobs}")
     logger.info("="*80)

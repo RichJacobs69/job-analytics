@@ -196,7 +196,7 @@ Return JSON with this EXACT structure:
   }},
   "location": {{
     "city_code": "lon|nyc|den|remote|unk (required - map using context, use 'remote' for WFH/remote-first jobs, 'unk' only if truly unknown)",
-    "working_arrangement": "onsite|hybrid|remote|flexible (required - default: onsite if not stated)"
+    "working_arrangement": "onsite|hybrid|remote|flexible|unknown (required - use 'unknown' if not stated or unclear)"
   }},
   "compensation": {{
     "currency": "gbp|usd|null",
@@ -223,7 +223,8 @@ Return JSON with this EXACT structure:
 - "Remote or hybrid" → flexible
 - "Hybrid (2 days office)" → hybrid
 - "Remote-first" → remote
-- Nothing stated → onsite
+- "Office-based" or "Onsite" explicitly stated → onsite
+- Nothing stated or truncated text → unknown
 
 # SKILLS ONTOLOGY - Use these family_codes when extracting skills
 {skills_ontology_text}

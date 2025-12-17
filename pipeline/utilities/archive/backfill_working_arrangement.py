@@ -1,4 +1,14 @@
 """
+DEPRECATED: 2025-12-16 - Archived after pipeline classifier changes
+============================================================================
+This script is no longer needed. Working arrangement handling was updated:
+- Classifier now returns 'unknown' instead of defaulting to 'onsite'
+- Pipeline defaults changed from 'onsite' to 'unknown'
+- Future: Pattern-based detection will be added to pipeline at ingestion time
+
+This file is preserved for reference only. Do not use for new data.
+============================================================================
+
 Backfill Working Arrangement for Adzuna and Greenhouse Jobs
 
 PURPOSE:
