@@ -1,17 +1,48 @@
 """
 Analyze database results for today's pipeline run and overall totals.
 Shows comprehensive breakdown by all dimensions in enriched_jobs table.
+
+Updated 2025-12-21: Now uses `locations` JSONB column instead of deprecated `city_code`.
+See: docs/architecture/GLOBAL_LOCATION_EXPANSION_EPIC.md
 """
 
 import sys
 sys.path.insert(0, '.')
 import os
+import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from collections import defaultdict
 import pandas as pd
 from tabulate import tabulate
+
+
+def extract_primary_city(locations) -> str:
+    """Extract primary city from locations JSONB for display purposes."""
+    if not locations:
+        return 'unknown'
+    if isinstance(locations, str):
+        try:
+            locations = json.loads(locations)
+        except (json.JSONDecodeError, TypeError):
+            return 'unknown'
+    if not isinstance(locations, list) or len(locations) == 0:
+        return 'unknown'
+
+    first_loc = locations[0]
+    loc_type = first_loc.get('type', 'unknown')
+
+    if loc_type == 'city':
+        return first_loc.get('city', 'unknown')
+    elif loc_type == 'remote':
+        scope = first_loc.get('scope', 'global')
+        country = first_loc.get('country_code', '')
+        return f"remote_{country.lower()}" if country else 'remote_global'
+    elif loc_type == 'country':
+        return first_loc.get('country_code', 'unknown').lower()
+    else:
+        return 'unknown'
 
 # Load environment variables
 load_dotenv()
@@ -36,7 +67,7 @@ def analyze_enriched_jobs_dimensions():
 
     while True:
         jobs_page = supabase.table("enriched_jobs").select(
-            "city_code, job_family, job_subfamily, seniority, working_arrangement, "
+            "locations, job_family, job_subfamily, seniority, working_arrangement, "
             "data_source, description_source, deduplicated"
         ).range(offset, offset + page_size - 1).execute()
 
@@ -63,12 +94,15 @@ def analyze_enriched_jobs_dimensions():
     df = pd.DataFrame(all_jobs.data)
     total_jobs = len(df)
 
+    # Extract primary city from locations JSONB for analysis
+    df['location_city'] = df['locations'].apply(extract_primary_city)
+
     print(f"\nTotal enriched jobs analyzed: {total_jobs:,}")
     print("\n" + "-" * 100)
 
     # Define dimensions to analyze
     dimensions = [
-        ('city_code', 'City'),
+        ('location_city', 'Location (from JSONB)'),
         ('job_family', 'Job Family'),
         ('job_subfamily', 'Job Subfamily'),
         ('seniority', 'Seniority Level'),
@@ -117,10 +151,10 @@ def analyze_enriched_jobs_dimensions():
     print("CROSS-DIMENSION ANALYSIS")
     print("=" * 100)
 
-    # Cross-analysis: Job Family by City
-    print(f"\n{chr(9654)} Job Family by City")
+    # Cross-analysis: Job Family by Location
+    print(f"\n{chr(9654)} Job Family by Location")
     print("-" * 30)
-    cross_city_family = pd.crosstab(df['city_code'], df['job_family'], margins=True)
+    cross_city_family = pd.crosstab(df['location_city'], df['job_family'], margins=True)
     print(tabulate(cross_city_family, headers='keys', tablefmt='grid'))
 
     # Cross-analysis: Seniority by Job Family
@@ -129,10 +163,10 @@ def analyze_enriched_jobs_dimensions():
     cross_family_seniority = pd.crosstab(df['job_family'], df['seniority'], margins=True)
     print(tabulate(cross_family_seniority, headers='keys', tablefmt='grid'))
 
-    # Cross-analysis: Working Arrangement by City
-    print(f"\n{chr(9654)} Working Arrangement by City")
+    # Cross-analysis: Working Arrangement by Location
+    print(f"\n{chr(9654)} Working Arrangement by Location")
     print("-" * 35)
-    cross_city_arrangement = pd.crosstab(df['city_code'], df['working_arrangement'], margins=True)
+    cross_city_arrangement = pd.crosstab(df['location_city'], df['working_arrangement'], margins=True)
     print(tabulate(cross_city_arrangement, headers='keys', tablefmt='grid'))
 
     # Data Source Analysis
@@ -204,62 +238,66 @@ def analyze_database():
     print(f"\nOVERALL TOTALS (All Time):")
     print(f"  Total enriched jobs: {total_enriched_count:,}")
 
-    # Breakdown by city - TODAY
-    print(f"\n--- Today's Enriched Jobs by City ---")
-    for city in ['lon', 'nyc', 'den']:
-        city_today = supabase.table("enriched_jobs").select("*", count="exact").eq("city_code", city).gte("classified_at", today_str).execute()
-        print(f"  {city.upper()}: {city_today.count:,}")
-
-    # Breakdown by city - OVERALL
-    print(f"\n--- Overall Enriched Jobs by City (All Time) ---")
-    for city in ['lon', 'nyc', 'den']:
-        city_total = supabase.table("enriched_jobs").select("*", count="exact").eq("city_code", city).execute()
-        print(f"  {city.upper()}: {city_total.count:,}")
+    # Note: City breakdowns now use locations JSONB column
+    # Detailed location analysis is available in the CROSS-DIMENSION ANALYSIS section
+    print(f"\n--- Location breakdowns available in dimension analysis below ---")
 
     # ========== JOB FAMILY BREAKDOWN ==========
     print("\n" + "=" * 80)
     print("JOB FAMILY BREAKDOWN (Enriched Jobs)")
     print("=" * 80)
 
-    # Get all enriched jobs from today to analyze
-    today_jobs_data = supabase.table("enriched_jobs").select("job_family, city_code").gte("classified_at", today_str).execute()
+    # Get all enriched jobs from today to analyze (using locations JSONB)
+    today_jobs_data = supabase.table("enriched_jobs").select("job_family, locations").gte("classified_at", today_str).execute()
 
     # Count by job family - TODAY
     family_counts_today = defaultdict(int)
-    family_by_city_today = defaultdict(lambda: defaultdict(int))
+    family_by_location_today = defaultdict(lambda: defaultdict(int))
 
     for job in today_jobs_data.data:
         family = job.get('job_family') or 'unknown'
-        city = job.get('city_code') or 'unknown'
+        location = extract_primary_city(job.get('locations'))
         family_counts_today[family] += 1
-        family_by_city_today[family][city] += 1
+        family_by_location_today[family][location] += 1
 
     print(f"\n--- Today's Jobs by Family ({today_str}) ---")
     for family in sorted(family_counts_today.keys()):
         print(f"  {family}: {family_counts_today[family]:,}")
-        for city in ['lon', 'nyc', 'den']:
-            if city in family_by_city_today[family]:
-                print(f"    - {city.upper()}: {family_by_city_today[family][city]:,}")
+        # Show top locations for each family
+        locations_sorted = sorted(family_by_location_today[family].items(), key=lambda x: -x[1])
+        for loc, count in locations_sorted[:5]:
+            print(f"    - {loc}: {count:,}")
 
-    # Get all enriched jobs (all time) to analyze
-    all_jobs_data = supabase.table("enriched_jobs").select("job_family, city_code").execute()
+    # Get all enriched jobs (all time) to analyze - using pagination
+    all_jobs_data = []
+    offset = 0
+    page_size = 1000
+    while True:
+        batch = supabase.table("enriched_jobs").select("job_family, locations").range(offset, offset + page_size - 1).execute()
+        if not batch.data:
+            break
+        all_jobs_data.extend(batch.data)
+        if len(batch.data) < page_size:
+            break
+        offset += page_size
 
     # Count by job family - OVERALL
     family_counts_all = defaultdict(int)
-    family_by_city_all = defaultdict(lambda: defaultdict(int))
+    family_by_location_all = defaultdict(lambda: defaultdict(int))
 
-    for job in all_jobs_data.data:
+    for job in all_jobs_data:
         family = job.get('job_family') or 'unknown'
-        city = job.get('city_code') or 'unknown'
+        location = extract_primary_city(job.get('locations'))
         family_counts_all[family] += 1
-        family_by_city_all[family][city] += 1
+        family_by_location_all[family][location] += 1
 
     print(f"\n--- Overall Jobs by Family (All Time) ---")
     for family in sorted(family_counts_all.keys()):
         print(f"  {family}: {family_counts_all[family]:,}")
-        for city in ['lon', 'nyc', 'den']:
-            if city in family_by_city_all[family]:
-                print(f"    - {city.upper()}: {family_by_city_all[family][city]:,}")
+        # Show top locations for each family
+        locations_sorted = sorted(family_by_location_all[family].items(), key=lambda x: -x[1])
+        for loc, count in locations_sorted[:5]:
+            print(f"    - {loc}: {count:,}")
 
     # ========== DATA SOURCE BREAKDOWN ==========
     print("\n" + "=" * 80)

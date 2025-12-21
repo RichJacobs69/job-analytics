@@ -1,7 +1,22 @@
 """
+DEPRECATED: This script is no longer maintained.
+
+Reason: As of 2025-12-21, the pipeline uses the `locations` JSONB column instead of
+`city_code`. This script relies on the old city_code approach and has not been
+updated to use the new location extraction system.
+
+For re-classifying jobs, use the main pipeline with appropriate filters, or
+create a new utility that uses the locations JSONB column.
+
+See: docs/architecture/GLOBAL_LOCATION_EXPANSION_EPIC.md for details on the new
+location architecture.
+
+---
+
+Original Purpose:
 Backfill Script: Re-classify out_of_scope jobs using improved classifier
 
-Usage:
+Usage (DEPRECATED):
 ------
 # Dry run (no database changes):
 python pipeline/utilities/backfill_out_of_scope.py --dry-run --limit 10
@@ -16,8 +31,15 @@ python pipeline/utilities/backfill_out_of_scope.py --dry-run --raw-job-id 12345
 python pipeline/utilities/backfill_out_of_scope.py --live
 """
 
-import os
 import sys
+
+# Prevent accidental execution of deprecated script
+print("ERROR: This script is DEPRECATED and should not be used.")
+print("The pipeline now uses `locations` JSONB instead of `city_code`.")
+print("See: docs/architecture/GLOBAL_LOCATION_EXPANSION_EPIC.md")
+sys.exit(1)
+
+import os
 import argparse
 import time
 from datetime import datetime

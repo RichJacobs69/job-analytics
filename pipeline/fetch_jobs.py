@@ -61,6 +61,9 @@ from pathlib import Path
 # Add project root to path so we can import scrapers module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Import location extraction for the new locations JSONB column
+from pipeline.location_extractor import extract_locations
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -431,7 +434,10 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     raw_text=job.description,
                     city_code='unk',  # Greenhouse doesn't specify city in listings
                     source_job_id=job.job_id,
-                    metadata={'company_slug': company_slug}
+                    metadata={
+                        'company_slug': company_slug,
+                        'greenhouse_location': job.location if job.location and job.location != 'Unspecified' else None
+                    }
                 )
 
                 raw_job_id = upsert_result['id']
@@ -511,12 +517,25 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 compensation = classification.get('compensation', {})
                 employer = classification.get('employer', {})
 
+                # Extract locations from Greenhouse job.location field (Global Location Expansion Epic)
+                greenhouse_location = job.location if job.location and job.location != 'Unspecified' else None
+                extracted_locations = extract_locations(greenhouse_location) if greenhouse_location else [{"type": "unknown"}]
+
+                # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+                legacy_city_code = 'unk'
+                if extracted_locations and extracted_locations[0].get('type') == 'city':
+                    city_name = extracted_locations[0].get('city', '')
+                    city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+                    legacy_city_code = city_to_code.get(city_name, 'unk')
+                elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+                    legacy_city_code = 'remote'
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=job.company,
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
-                    city_code=location.get('city_code') or 'unk',
+                    city_code=legacy_city_code,  # DEPRECATED - use locations instead
                     working_arrangement=location.get('working_arrangement') or 'unknown',
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
@@ -536,7 +555,8 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     skills=classification.get('skills', []),
                     data_source='greenhouse',
                     description_source='greenhouse',
-                    deduplicated=False
+                    deduplicated=False,
+                    locations=extracted_locations  # NEW: Structured location data
                 )
 
                 stats['jobs_written_enriched'] += 1
@@ -769,6 +789,8 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
             source = job.source.value if isinstance(job.source, DataSource) else str(job.source)
             
             # Step 1: Upsert to raw_jobs (updates last_seen for existing jobs)
+            # Store both the search city code AND the actual location from Adzuna API
+            adzuna_location = job.location if hasattr(job, 'location') else None
             upsert_result = insert_raw_job_upsert(
                 source='adzuna',
                 posting_url=url,
@@ -777,7 +799,10 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                 raw_text=description,
                 city_code=city_code,
                 source_job_id=job_id,
-                metadata={'adzuna_city': city_code}
+                metadata={
+                    'adzuna_city': city_code,
+                    'adzuna_location': adzuna_location  # Actual location from API for accurate extraction
+                }
             )
             
             raw_job_id = upsert_result['id']
@@ -812,7 +837,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                     'title': title,
                     'company': company,
                     'description': description,
-                    'location': job.location if hasattr(job, 'location') else None,
+                    'location': None,  # Location extracted deterministically via extract_locations()
                     'category': job.adzuna_category if hasattr(job, 'adzuna_category') else None,
                     'salary_min': job.adzuna_salary_min if hasattr(job, 'adzuna_salary_min') else None,
                     'salary_max': job.adzuna_salary_max if hasattr(job, 'adzuna_salary_max') else None,
@@ -856,17 +881,27 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
             location = classification.get('location', {})
             compensation = classification.get('compensation', {})
             employer = classification.get('employer', {})
-            
-            # Use extracted city_code, fall back to source city
-            extracted_city = location.get('city_code')
-            final_city = extracted_city if extracted_city and extracted_city != 'unk' else city_code
-            
+
+            # Extract locations from Adzuna API location field (Global Location Expansion Epic)
+            # This replaces the legacy city_code approach
+            extracted_locations = extract_locations(adzuna_location) if adzuna_location else [{"type": "unknown"}]
+
+            # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+            # This will be removed once all queries use the locations JSONB column
+            legacy_city_code = 'unk'
+            if extracted_locations and extracted_locations[0].get('type') == 'city':
+                city_name = extracted_locations[0].get('city', '')
+                city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+                legacy_city_code = city_to_code.get(city_name, 'unk')
+            elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+                legacy_city_code = 'remote'
+
             enriched_job_id = insert_enriched_job(
                 raw_job_id=raw_job_id,
                 employer_name=company,
                 title_display=title,
                 job_family=role.get('job_family') or 'out_of_scope',
-                city_code=final_city,
+                city_code=legacy_city_code,  # DEPRECATED - use locations instead
                 working_arrangement=location.get('working_arrangement') or 'onsite',
                 position_type=role.get('position_type') or 'full_time',
                 posted_date=date.today(),
@@ -886,7 +921,8 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                 skills=classification.get('skills', []),
                 data_source='adzuna',
                 description_source='adzuna',
-                deduplicated=False
+                deduplicated=False,
+                locations=extracted_locations  # NEW: Structured location data
             )
             
             stats['jobs_written_enriched'] += 1
@@ -1059,11 +1095,12 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                     title=job.title,
                     company=job.company_slug.replace('-', ' ').title(),
                     raw_text=job.description,
-                    city_code='unk',  # Lever doesn't use city codes
+                    city_code='unk',  # Lever doesn't use city codes - location is in metadata
                     source_job_id=job.id,
                     metadata={
                         'company_slug': job.company_slug,
                         'lever_instance': job.instance,
+                        'lever_location': job.location,  # Lever's location field from API
                         'lever_team': job.team,
                         'lever_department': job.department,
                         'lever_commitment': job.commitment
@@ -1097,7 +1134,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                         'title': job.title,
                         'company': company_display,
                         'description': job.description,
-                        'location': job.location,
+                        'location': None,  # Location extracted deterministically via extract_locations()
                         'category': None,
                         'salary_min': None,
                         'salary_max': None,
@@ -1145,12 +1182,26 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                 compensation = classification.get('compensation', {})
                 employer = classification.get('employer', {})
 
+                # Extract locations from Lever job.location field (Global Location Expansion Epic)
+                # Note: job.location now contains allLocations joined with " / " (fixed in lever_fetcher.py)
+                lever_location = job.location if job.location else None
+                extracted_locations = extract_locations(lever_location) if lever_location else [{"type": "unknown"}]
+
+                # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+                legacy_city_code = 'unk'
+                if extracted_locations and extracted_locations[0].get('type') == 'city':
+                    city_name = extracted_locations[0].get('city', '')
+                    city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+                    legacy_city_code = city_to_code.get(city_name, 'unk')
+                elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+                    legacy_city_code = 'remote'
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company_display,
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
-                    city_code=location.get('city_code') or 'unk',
+                    city_code=legacy_city_code,  # DEPRECATED - use locations instead
                     working_arrangement=location.get('working_arrangement') or 'unknown',
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
@@ -1170,6 +1221,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                     skills=classification.get('skills', []),
                     data_source='lever',
                     description_source='lever',
+                    locations=extracted_locations,  # NEW: Structured location data
                     deduplicated=False
                 )
 
@@ -1489,7 +1541,7 @@ Examples:
         'city',
         nargs='?',
         default='lon',
-        help='City code: lon (London), nyc (New York), den (Denver). Default: lon'
+        help='City code: lon (London), nyc (New York), den (Denver), sfo (San Francisco), sgp (Singapore). Default: lon'
     )
 
     parser.add_argument(

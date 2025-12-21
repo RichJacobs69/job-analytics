@@ -22,6 +22,11 @@ import re
 from urllib.parse import urljoin
 from pathlib import Path
 import yaml
+import sys
+import os
+
+# Add parent directories to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 try:
     from playwright.async_api import async_playwright, Browser, Page, BrowserContext
@@ -36,6 +41,13 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Import location extraction utilities
+try:
+    from pipeline.location_extractor import extract_locations
+except ImportError:
+    logger.warning("Could not import extract_locations - location extraction from descriptions disabled")
+    extract_locations = None
 
 
 def load_title_patterns(config_path: Optional[Path] = None) -> List[str]:
@@ -1200,6 +1212,11 @@ class GreenhouseScraper:
                     logger.warning(f"[{company_slug}] Bot detection page detected for {job_url} - skipping job")
                     return None  # Skip this job entirely
 
+                # POST-EXTRACTION LOCATION MINING:
+                # If location still "Unspecified" after initial extraction, mine from description
+                if location == "Unspecified" and description and extract_locations:
+                    location = self._extract_location_from_description(description, company_slug)
+
             return Job(
                 company=company_slug,
                 title=title,
@@ -1214,6 +1231,67 @@ class GreenhouseScraper:
         except Exception as e:
             logger.warning(f"[{company_slug}] Error extracting job: {str(e)}")
             return None
+
+    def _extract_location_from_description(self, description: str, company_slug: str) -> str:
+        """
+        Extract location from job description text.
+
+        Looks for location mentions in common formats like "Location: ...", "Based in: ...", etc.
+        Uses extract_locations to parse found location strings.
+
+        Args:
+            description: Full job description text
+            company_slug: Company slug for logging
+
+        Returns:
+            Extracted location string, or "Unspecified" if not found
+        """
+        if not description or not extract_locations:
+            return "Unspecified"
+
+        try:
+            # Look for common location patterns in description
+            # Patterns: "Location: San Francisco, CA", "Based in: London, UK", "Locations: NYC or Remote", etc.
+            location_patterns = [
+                r'(?:Location|Based|Headquarters|Office|Offices|Duty\s+(?:station|location))s?:\s*([^\n]+)',
+                r'(?:Location|Based|Work\s+(?:location|arrangement)):\s*([^\n]+)',
+                r'^(?:Location|Based|Work\s+Location):\s*(.+?)(?:\n|$)',
+            ]
+
+            description_lower = description.lower()
+
+            for pattern in location_patterns:
+                matches = re.finditer(pattern, description, re.IGNORECASE | re.MULTILINE)
+                for match in matches:
+                    location_str = match.group(1).strip()
+
+                    # Clean up: remove bullet points, extra whitespace, etc.
+                    location_str = re.sub(r'^[\s•\-]*', '', location_str)
+                    location_str = re.sub(r'[\s•\-]*$', '', location_str)
+                    location_str = ' '.join(location_str.split())  # Normalize whitespace
+
+                    # Skip generic/placeholder text
+                    if location_str and len(location_str) > 2 and len(location_str) < 200:
+                        if not any(skip in location_str.lower() for skip in ['tbd', 'to be', 'flexible', 'varies']):
+                            # Found a valid location mention
+                            logger.debug(f"[{company_slug}] Extracted location from description: '{location_str}'")
+                            return location_str
+
+            # If pattern matching didn't work, try looking for city names in the description
+            # This is a fallback that looks for known city names
+            if self.location_patterns:
+                description_text = ' ' + description + ' '  # Add space padding for word boundaries
+                for pattern in self.location_patterns:
+                    # Use word boundaries to find whole city mentions
+                    if re.search(r'\b' + re.escape(pattern) + r'\b', description_text, re.IGNORECASE):
+                        logger.debug(f"[{company_slug}] Found location pattern in description: '{pattern}'")
+                        return pattern
+
+            return "Unspecified"
+
+        except Exception as e:
+            logger.debug(f"[{company_slug}] Error extracting location from description: {str(e)[:50]}")
+            return "Unspecified"
 
     async def _get_job_description(self, job_url: str) -> str:
         """Navigate to job detail page and extract full description.

@@ -143,11 +143,19 @@ def parse_lever_job(job_data: Dict, company_slug: str, instance: str = "global")
     """
     categories = job_data.get('categories', {})
 
+    # Use allLocations if available (contains full list like ["Paris", "London"])
+    # Fall back to single location field if allLocations not present
+    all_locations = categories.get('allLocations', [])
+    if all_locations and isinstance(all_locations, list):
+        location = ' / '.join(all_locations)
+    else:
+        location = categories.get('location', '')
+
     return LeverJob(
         id=job_data.get('id', ''),
         title=job_data.get('text', ''),
         company_slug=company_slug,
-        location=categories.get('location', ''),
+        location=location,
         description=build_full_description(job_data),
         url=job_data.get('hostedUrl', ''),
         apply_url=job_data.get('applyUrl', ''),
@@ -237,7 +245,13 @@ def fetch_lever_jobs(
         jobs = []
         for job_data in jobs_data:
             title = job_data.get('text', '')
-            location = job_data.get('categories', {}).get('location', '')
+            # Use allLocations if available for filtering (contains full list like ["Paris", "London"])
+            categories = job_data.get('categories', {})
+            all_locations = categories.get('allLocations', [])
+            if all_locations and isinstance(all_locations, list):
+                location = ' / '.join(all_locations)
+            else:
+                location = categories.get('location', '')
 
             # Apply title filter
             if filter_titles and title_patterns:

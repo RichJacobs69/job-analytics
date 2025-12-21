@@ -36,15 +36,22 @@ if not ADZUNA_APP_ID or not ADZUNA_API_KEY:
     raise ValueError("Missing ADZUNA_APP_ID or ADZUNA_API_KEY in .env file")
 
 ADZUNA_BASE_URLS = {
+    # UK
     "lon": "https://api.adzuna.com/v1/api/jobs/gb/search",
+    # US
     "nyc": "https://api.adzuna.com/v1/api/jobs/us/search",
     "den": "https://api.adzuna.com/v1/api/jobs/us/search",
+    "sfo": "https://api.adzuna.com/v1/api/jobs/us/search",
+    # Singapore
+    "sgp": "https://api.adzuna.com/v1/api/jobs/sg/search",
 }
 
 LOCATION_QUERIES = {
     "lon": "London",
     "nyc": "New York",
-    "den": "Colorado"  # Changed from "Denver" to capture entire state (Denver, Boulder, Colorado Springs, etc.)
+    "den": "Colorado",  # Changed from "Denver" to capture entire state (Denver, Boulder, Colorado Springs, etc.)
+    "sfo": "San Francisco",
+    "sgp": "Singapore",
 }
 
 # Rate limiting configuration

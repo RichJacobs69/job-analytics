@@ -1,0 +1,321 @@
+# Master Location Configuration
+# Cities, countries, and regions for the job analytics pipeline
+#
+# This file replaces:
+# - greenhouse_location_patterns.yaml (for filtering)
+# - lever_location_patterns.yaml (for filtering)
+#
+# Usage:
+# - Location extraction: pipeline/location_extractor.py
+# - Pre-filtering: scrapers/greenhouse/greenhouse_scraper.py, scrapers/lever/lever_fetcher.py
+# - Migration: pipeline/utilities/migrate_locations.py
+#
+# Location object structure (stored in enriched_jobs.locations JSONB):
+# - type: "city" | "country" | "region" | "remote"
+# - country_code: ISO 3166-1 alpha-2 (US, GB, SG, etc.)
+# - city: snake_case city name (san_francisco, london, etc.)
+# - region: EMEA | AMER | APAC (for regional remote)
+# - scope: "global" | "country" | "region" (for remote jobs)
+
+version: "1.0"
+last_updated: "2025-12-18"
+
+# =============================================================================
+# CITIES
+# =============================================================================
+# Format: snake_case key -> {country_code, display_name, patterns[]}
+# Patterns are case-insensitive substring matches
+#
+# Phase 1 scope: London, NYC, Denver + San Francisco, Singapore
+
+cities:
+  # -------------------------
+  # United States
+  # -------------------------
+  new_york:
+    country_code: US
+    display_name: New York
+    patterns:
+      - new york
+      - nyc
+      - manhattan
+      - brooklyn
+      - queens
+      - bronx
+      - staten island
+      - new york, ny
+      - new york city
+      - ny metro
+
+  san_francisco:
+    country_code: US
+    display_name: San Francisco
+    patterns:
+      - san francisco
+      - sf
+      - bay area
+      - san francisco, ca
+      - san francisco, california
+      - sf bay
+      - sfba
+      - south bay
+      - east bay
+      - palo alto
+      - mountain view
+      - sunnyvale
+      - menlo park
+      - redwood city
+
+  denver:
+    country_code: US
+    display_name: Denver
+    patterns:
+      - denver
+      - denver, co
+      - denver, colorado
+      - boulder
+      - boulder, co
+      - colorado springs
+      - denver metro
+
+  # -------------------------
+  # United Kingdom
+  # -------------------------
+  london:
+    country_code: GB
+    display_name: London
+    patterns:
+      - london
+      - greater london
+      - london, uk
+      - london, england
+      - london, united kingdom
+      - central london
+      - city of london
+      - canary wharf
+
+  # -------------------------
+  # Singapore (city-state)
+  # -------------------------
+  singapore:
+    country_code: SG
+    display_name: Singapore
+    patterns:
+      - singapore
+      - sg
+
+# =============================================================================
+# COUNTRIES
+# =============================================================================
+# ISO 3166-1 alpha-2 codes
+# Only countries relevant to Phase 1 cities
+
+countries:
+  US:
+    display_name: United States
+    aliases:
+      - us
+      - usa
+      - united states
+      - united states of america
+      - america
+  GB:
+    display_name: United Kingdom
+    aliases:
+      - uk
+      - united kingdom
+      - great britain
+      - britain
+      - england
+  SG:
+    display_name: Singapore
+    aliases: []
+
+# =============================================================================
+# REGIONS
+# =============================================================================
+# For regional remote job scope
+
+regions:
+  EMEA:
+    display_name: Europe, Middle East & Africa
+    patterns:
+      - emea
+      - europe
+      - european
+    countries:
+      - GB
+
+  AMER:
+    display_name: Americas
+    patterns:
+      - amer
+      - americas
+      - north america
+    countries:
+      - US
+
+  APAC:
+    display_name: Asia Pacific
+    patterns:
+      - apac
+      - asia pacific
+      - asia
+    countries:
+      - SG
+
+# =============================================================================
+# REMOTE PATTERNS
+# =============================================================================
+# Patterns for identifying remote jobs and their scope
+
+remote_patterns:
+  # Global remote (no geographic restriction)
+  global:
+    scope: global
+    patterns:
+      - remote
+      - fully remote
+      - 100% remote
+      - work from anywhere
+      - anywhere
+      - worldwide
+      - global remote
+      - work from home
+      - wfh
+
+  # US-specific remote
+  us_only:
+    scope: country
+    country_code: US
+    patterns:
+      - remote - us
+      - remote - usa
+      - remote (us)
+      - us remote
+      - remote united states
+      - work from home - us
+      - remote, us
+      - remote - united states
+      - remote (united states)
+
+  # UK-specific remote
+  uk_only:
+    scope: country
+    country_code: GB
+    patterns:
+      - remote - uk
+      - remote - gb
+      - remote (uk)
+      - uk remote
+      - remote united kingdom
+      - work from home - uk
+      - remote, uk
+      - remote - united kingdom
+      - remote (united kingdom)
+      - remote - england
+      - remote - great britain
+
+  # EMEA remote
+  emea:
+    scope: region
+    region: EMEA
+    patterns:
+      - remote - emea
+      - emea remote
+      - remote (emea)
+      - remote, emea
+
+  # APAC remote
+  apac:
+    scope: region
+    region: APAC
+    patterns:
+      - remote - apac
+      - apac remote
+      - remote (apac)
+      - remote - asia
+      - asia remote
+
+  # Americas remote
+  americas:
+    scope: region
+    region: AMER
+    patterns:
+      - remote - americas
+      - americas remote
+      - remote (americas)
+      - remote - amer
+      - amer remote
+
+# =============================================================================
+# ADZUNA ENDPOINT MAPPING
+# =============================================================================
+# Maps country codes to Adzuna API endpoints and city queries
+
+adzuna_endpoints:
+  US:
+    base_url: https://api.adzuna.com/v1/api/jobs/us/search
+    cities:
+      new_york:
+        query: New York
+      san_francisco:
+        query: San Francisco
+      denver:
+        query: Colorado
+
+  GB:
+    base_url: https://api.adzuna.com/v1/api/jobs/gb/search
+    cities:
+      london:
+        query: London
+
+  SG:
+    base_url: https://api.adzuna.com/v1/api/jobs/sg/search
+    cities:
+      singapore:
+        query: Singapore
+
+# =============================================================================
+# LEGACY CITY CODE MAPPING
+# =============================================================================
+# Maps old city_code values to new locations structure for migration
+
+legacy_city_codes:
+  lon:
+    type: city
+    country_code: GB
+    city: london
+  nyc:
+    type: city
+    country_code: US
+    city: new_york
+  den:
+    type: city
+    country_code: US
+    city: denver
+  sfo:
+    type: city
+    country_code: US
+    city: san_francisco
+  sgp:
+    type: city
+    country_code: SG
+    city: singapore
+  remote:
+    type: remote
+    scope: unknown  # Will be inferred from metadata during migration
+  unk:
+    type: unknown  # Will be re-processed with pattern matcher
+
+# =============================================================================
+# ACTIVE CITIES
+# =============================================================================
+# Cities currently enabled for pipeline ingestion
+
+active_cities:
+  - london
+  - new_york
+  - denver
+  - san_francisco
+  - singapore

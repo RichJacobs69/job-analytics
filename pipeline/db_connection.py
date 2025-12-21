@@ -263,30 +263,38 @@ def insert_enriched_job(
     description_source: Optional[str] = "adzuna",
     deduplicated: Optional[bool] = False,
     original_url_secondary: Optional[str] = None,
-    merged_from_source: Optional[str] = None
+    merged_from_source: Optional[str] = None,
+    # Location expansion (Global Location Expansion Epic)
+    locations: Optional[List[Dict]] = None
 ) -> int:
     """
     Insert a classified/enriched job into the database.
     Uses upsert to handle duplicates based on job_hash.
-    
+
     Args:
         raw_job_id: Foreign key to raw_jobs table
         employer_name: Company name
         title_display: Original job title from posting
         job_family: 'product', 'data', or 'out_of_scope'
-        city_code: 'lon', 'nyc', or 'den'
+        city_code: 'lon', 'nyc', or 'den' (legacy, being replaced by locations)
         working_arrangement: 'onsite', 'hybrid', 'remote', or 'flexible'
         position_type: 'full_time', 'part_time', 'contract', or 'internship'
         posted_date: Date job was posted
         last_seen_date: Date job was last seen active
+        locations: Array of location objects (Global Location Expansion)
         ... (other optional fields)
-    
+
     Returns:
         ID of inserted/updated enriched job
-    
+
     Skills format: [
         {"name": "Python", "family_code": "programming"},
         {"name": "PyTorch", "family_code": "deep_learning"}
+    ]
+
+    Locations format: [
+        {"type": "city", "country_code": "GB", "city": "london"},
+        {"type": "remote", "scope": "country", "country_code": "US"}
     ]
     """
     # VALIDATION: Check required fields
@@ -326,6 +334,7 @@ def insert_enriched_job(
         # Location
         "city_code": city_code,
         "working_arrangement": working_arrangement,
+        "locations": locations or [],
 
         # Compensation
         "currency": currency,

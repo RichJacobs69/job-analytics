@@ -49,6 +49,7 @@ python migrations/verify_001_hash_migration.py
 | 005 | `005_remove_hash_unique_constraint.sql` | 2025-12-03 | Remove hash unique constraint | ✅ Done |
 | 006 | `006_unique_source_job_id.sql` | 2025-12-03 | Add unique constraint on source_job_id | ✅ Done |
 | 007 | `007_allow_unknown_working_arrangement.sql` | 2025-12-14 | Allow 'unknown' as valid working_arrangement | ⏳ Pending |
+| 008 | `008_add_locations_jsonb.sql` | 2025-12-18 | Add locations JSONB column for global expansion | ⏳ Pending |
 
 ## Current Migration: 001_add_raw_jobs_hash.sql
 

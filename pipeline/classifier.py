@@ -182,12 +182,10 @@ Return JSON with this EXACT structure:
 
 {{
   "employer": {{
-    "name": "string (required - exact company name from input)",
     "department": "product|data|null (only if explicitly stated)",
     "company_size_estimate": "startup|scaleup|enterprise|null (infer from context if clear)"
   }},
   "role": {{
-    "title_display": "string (required - exact title from input)",
     "job_subfamily": "string from subfamilies above (required - choose the most specific match, or 'out_of_scope' if none fit)",
     "seniority": "junior|mid|senior|staff_principal|director_plus|null",
     "track": "ic|management|null",
@@ -195,7 +193,6 @@ Return JSON with this EXACT structure:
     "experience_range": "string or null (ONLY if explicitly stated, e.g. '5-7 years')"
   }},
   "location": {{
-    "city_code": "lon|nyc|den|remote|unk (required - map using context, use 'remote' for WFH/remote-first jobs, 'unk' only if truly unknown)",
     "working_arrangement": "onsite|hybrid|remote|flexible|unknown (required - use 'unknown' if not stated or unclear)"
   }},
   "compensation": {{
@@ -212,14 +209,7 @@ Return JSON with this EXACT structure:
   ]
 }}
 
-# LOCATION MAPPING GUIDANCE
-- London, UK / London, England / Greater London → lon
-- New York, NY / NYC / Any NYC borough (Manhattan, Brooklyn, Queens, Bronx, Staten Island) / NY Metro Area → nyc  
-- Denver, CO / Any Colorado city (Denver, Boulder, Colorado Springs, Fort Collins, Aurora, Lakewood, etc.) → den
-- Remote / Work from Home / WFH / Remote-first / Anywhere → remote
-- If location cannot be determined → unk
-
-# WORKING ARRANGEMENT GUIDANCE
+# WORKING ARRANGEMENT GUIDANCE (location is extracted separately from source metadata)
 - "Remote or hybrid" → flexible
 - "Hybrid (2 days office)" → hybrid
 - "Remote-first" → remote

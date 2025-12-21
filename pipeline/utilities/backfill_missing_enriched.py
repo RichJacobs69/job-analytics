@@ -30,6 +30,7 @@ sys.path.insert(0, '.')
 from pipeline.db_connection import supabase, insert_enriched_job
 from pipeline.classifier import classify_job_with_claude
 from pipeline.agency_detection import is_agency_job, validate_agency_classification
+from pipeline.location_extractor import extract_locations
 
 logging.basicConfig(
     level=logging.INFO,
@@ -218,13 +219,31 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
         compensation = classification.get('compensation', {})
         employer = classification.get('employer', {})
 
-        # Determine final city code (prefer classification, then inferred, then default)
-        final_city = location.get('city_code') or inferred_city
-        # Accept all valid city codes: lon, nyc, den, remote, unk
-        valid_city_codes = ['lon', 'nyc', 'den', 'remote', 'unk']
-        if final_city not in valid_city_codes:
-            logger.warning(f"Skipping job {raw_job_id}: invalid city code '{final_city}'")
-            return False
+        # Extract locations from source metadata (Global Location Expansion Epic)
+        # Priority: adzuna_location > lever_location > greenhouse_location > fallback
+        metadata = raw_job.get('metadata') or {}
+        if isinstance(metadata, str):
+            import json
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                metadata = {}
+
+        source_location = (
+            metadata.get('adzuna_location') or
+            metadata.get('lever_location') or
+            metadata.get('greenhouse_location')
+        )
+        extracted_locations = extract_locations(source_location) if source_location else [{"type": "unknown"}]
+
+        # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+        legacy_city_code = 'unk'
+        if extracted_locations and extracted_locations[0].get('type') == 'city':
+            city_name = extracted_locations[0].get('city', '')
+            city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+            legacy_city_code = city_to_code.get(city_name, 'unk')
+        elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+            legacy_city_code = 'remote'
 
         # Insert enriched job with null-safe job_family
         enriched_job_id = insert_enriched_job(
@@ -232,7 +251,7 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             employer_name=employer_name,
             title_display=job_title,
             job_family=role.get('job_family') or 'out_of_scope',  # NULL-SAFE
-            city_code=final_city,
+            city_code=legacy_city_code,  # DEPRECATED - use locations instead
             working_arrangement=location.get('working_arrangement') or 'unknown',
             position_type=role.get('position_type') or 'full_time',
             posted_date=date.today(),
@@ -254,7 +273,8 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             # Source tracking
             data_source=source,
             description_source=source,
-            deduplicated=False
+            deduplicated=False,
+            locations=extracted_locations  # NEW: Structured location data
         )
 
         logger.debug(f"Successfully processed job {raw_job_id} -> enriched {enriched_job_id}")
