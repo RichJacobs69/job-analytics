@@ -2,7 +2,7 @@
 
 This directory contains all specifications, guides, and architectural documentation for the job-analytics platform.
 
-> **⚙️ For development setup, architecture implementation, and troubleshooting, see [`../CLAUDE.md`](../CLAUDE.md)** - It provides development commands, code walkthroughs, key implementation details, and solutions to common issues.
+> **For development setup, architecture implementation, and troubleshooting, see [`../CLAUDE.md`](../CLAUDE.md)** - It provides development commands, code walkthroughs, key implementation details, and solutions to common issues.
 
 ## License
 

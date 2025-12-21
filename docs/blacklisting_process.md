@@ -16,12 +16,12 @@ SELECT
     agency_confidence,
     -- Check for agency keywords in name
     CASE 
-        WHEN employer_name ILIKE '%recruitment%' THEN '🚩 recruitment'
-        WHEN employer_name ILIKE '%staffing%' THEN '🚩 staffing'
-        WHEN employer_name ILIKE '%talent%' THEN '🚩 talent'
-        WHEN employer_name ILIKE '%resourcing%' THEN '🚩 resourcing'
-        WHEN employer_name ILIKE '%search%' THEN '🚩 search'
-        ELSE '✓ clean'
+        WHEN employer_name ILIKE '%recruitment%' THEN '[FLAG] recruitment'
+        WHEN employer_name ILIKE '%staffing%' THEN '[FLAG] staffing'
+        WHEN employer_name ILIKE '%talent%' THEN '[FLAG] talent'
+        WHEN employer_name ILIKE '%resourcing%' THEN '[FLAG] resourcing'
+        WHEN employer_name ILIKE '%search%' THEN '[FLAG] search'
+        ELSE '[OK] clean'
     END as keyword_flag
 FROM enriched_jobs
 WHERE posted_date >= CURRENT_DATE - INTERVAL '30 days'
@@ -32,11 +32,11 @@ LIMIT 50;
 ```
 
 **Look for:**
-- ✅ High job count (5+ jobs/month)
-- ✅ Generic job titles across different roles
-- ✅ `is_agency=false` but has suspicious keywords
-- ✅ Multiple contract positions
-- ✅ Vague company names ("Solutions", "Group", "Associates")
+- [OK] High job count (5+ jobs/month)
+- [OK] Generic job titles across different roles
+- [OK] `is_agency=false` but has suspicious keywords
+- [OK] Multiple contract positions
+- [OK] Vague company names ("Solutions", "Group", "Associates")
 
 ---
 
@@ -93,7 +93,7 @@ python backfill_agency_flags.py --force
 python backfill_agency_flags.py --verify
 ```
 
-**The `--force` flag is critical here!** Without it, jobs with `is_agency=false` won't be reprocessed.
+**The `--force` flag is critical here!** Without it, jobs with `is_agency=false` won't be reprocessed. This shows it's being corrected
 
 ---
 
@@ -281,13 +281,13 @@ print('High-volume employers to review:', result.stdout.decode())
 
 ## BEST PRACTICES
 
-1. **Always use `--force` flag** when reprocessing after blacklist updates
-2. **Always use lowercase** in agency_blacklist.yaml
-3. **Always test in dry-run mode** before applying changes
-4. **Always verify** with SQL queries after changes
-5. **Document your changes** in metadata and changelog
-6. **Review monthly** for new high-volume agencies
-7. **Keep legitimate_companies list** updated to avoid false positives
+1. Always use `--force` flag when reprocessing after blacklist updates
+2. Always use lowercase in agency_blacklist.yaml
+3. Always test in dry-run mode before applying changes
+4. Always verify with SQL queries after changes
+5. Document your changes in metadata and changelog
+6. Review monthly for new high-volume agencies
+7. Keep legitimate_companies list updated to avoid false positives
 
 ---
 
@@ -326,10 +326,10 @@ python backfill_agency_flags.py --force
 ## SUMMARY
 
 **When to reprocess:**
-- ✅ After adding agencies to hard_filter → Use `--force`
-- ✅ After adding companies to legitimate_companies → Use `--force`
-- ✅ Monthly maintenance routine → Use `--force`
-- ❌ Initial setup (all jobs have NULL) → Default mode is fine
+- [GOOD] After adding agencies to hard_filter → Use `--force`
+- [GOOD] After adding companies to legitimate_companies → Use `--force`
+- [GOOD] Monthly maintenance routine → Use `--force`
+- [NOT NEEDED] Initial setup (all jobs have NULL) → Default mode is fine
 
 **Key commands:**
 ```bash

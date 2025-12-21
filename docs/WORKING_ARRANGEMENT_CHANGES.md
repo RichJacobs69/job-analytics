@@ -1,7 +1,7 @@
 # Working Arrangement Classification - Architectural Changes
 
 **Date:** 2025-12-16
-**Status:** ✅ Complete
+**Status:** [DONE]
 
 ## Problem Statement
 
@@ -102,13 +102,13 @@ working_arrangement=location.get('working_arrangement') or 'unknown',
 
 ## Impact
 
-### Positive Changes ✅
+### Positive Changes [DONE]
 1. **Honest data quality** - 'unknown' reflects reality of truncated Adzuna text
 2. **No false confidence** - Not claiming to know what we don't know
 3. **Consistent defaults** - 'unknown' across all pipeline entry points
 4. **Simplified codebase** - Removed backfill utility that's no longer needed
 
-### Remaining Issues ⚠️
+### Remaining Issues [NEEDS ATTENTION]
 1. **80.5% unknown rate on Adzuna** - Still a data quality problem
 2. **No pattern-based detection** - Could improve unknown rate to ~40% with title pattern matching
 

@@ -2,7 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **📚 For documentation navigation and specification references, see [`docs/README.md`](docs/README.md)** - It provides a structured index of all specs (marketplace questions, taxonomy, architecture, etc.) and a recommended reading order for understanding the project.
+## IMPORTANT: No Emojis in Code or Documentation
+
+**PROHIBITION:** Do NOT use any emojis (including checkmarks, X marks, warning signs, flags, etc.) in any code files, markdown files, or YAML configuration files.
+
+**Reason:** Emoji characters can cause encoding issues on Windows systems and in some terminal environments.
+
+**Acceptable Alternatives:**
+- Status indicators: Use `[DONE]`, `[TODO]`, `[IN PROGRESS]`, `[NEEDS ATTENTION]` instead of ✅, ❌, etc.
+- Warnings: Use `[WARNING]` instead of ⚠️
+- Flags: Use `[FLAG]` instead of 🚩
+- Generic markers: Use `[OK]`, `[NOT OK]` instead of checkmarks/crosses
+- Bullets and separators: Use ASCII characters only: `-`, `*`, `|`, `/`, `\`, `=`, etc.
+
+**Examples:**
+- WRONG: `- ✅ This is done`
+- RIGHT: `- [DONE] This is done`
+
+- WRONG: `⚠️ Warning: This needs attention`
+- RIGHT: `[WARNING] This needs attention`
+
+Apply this rule consistently across all documentation and configuration files.
+
+> **For documentation navigation and specification references, see [`docs/README.md`](docs/README.md)** - It provides a structured index of all specs (marketplace questions, taxonomy, architecture, etc.) and a recommended reading order for understanding the project.
 
 ## Project Overview
 
@@ -15,13 +37,13 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 - **For employers:** "Which competitors are hiring most aggressively?" "What skills should we require?" "Are we competitive on comp/flexibility?"
 
 **Current Status:**
-- ✅ Epic 1: Data Ingestion Pipeline - Dual-source (Adzuna + Greenhouse) operational
-- ✅ Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
-- ✅ Epic 3: Database & Data Layer - Schema and connections stable
-- ✅ Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
-- ✅ Epic 5: Analytics Query Layer - COMPLETE (Next.js API routes implementation, 2025-12-16)
-- ✅ Epic 6: Dashboard & Visualization - COMPLETE (richjacobs.me/projects/hiring-market, 2025-12-16)
-- ⏳ Epic 7: Automation & Operational - Ready to start
+- [DONE] Epic 1: Data Ingestion Pipeline - Dual-source (Adzuna + Greenhouse) operational
+- [DONE] Epic 2: Job Classification & Enrichment - Claude LLM integration with agency filtering working
+- [DONE] Epic 3: Database & Data Layer - Schema and connections stable
+- [DONE] Epic 4: Pipeline Validation & Economics - COMPLETE (validated 2025-11-25)
+- [DONE] Epic 5: Analytics Query Layer - COMPLETE (Next.js API routes implementation, 2025-12-16)
+- [DONE] Epic 6: Dashboard & Visualization - COMPLETE (richjacobs.me/projects/hiring-market, 2025-12-16)
+- [PLANNED] Epic 7: Automation & Operational - Ready to start
 
 **Current Dataset (Supabase - Source of Truth, updated 2025-12-07):**
 - **Raw jobs:** 6,178 total (Adzuna: 4,963 | Greenhouse: 1,213 | Manual: 2)
@@ -80,7 +102,7 @@ python tests/test_monzo_filtering.py
 
 **Valid cities:** `lon` (London), `nyc` (New York), `den` (Denver)
 
-## 🚨 CRITICAL: Long-Running Command Protocol
+## CRITICAL: Long-Running Command Protocol
 
 **WHEN EXECUTING LONG-RUNNING COMMANDS (>5 minutes), ALWAYS:**
 
@@ -109,9 +131,9 @@ bash_result = Bash(
 - Hours of work can be lost with no visibility
 
 **If a long-running job is started without shell ID:**
-- ❌ Cannot check progress
-- ❌ Cannot determine if stuck or still running
-- ❌ Must kill and restart to regain control
+- [CANNOT] Cannot check progress
+- [CANNOT] Cannot determine if stuck or still running
+- [CANNOT] Must kill and restart to regain control
 
 **Environment setup:**
 Create `.env` file in project root with:
@@ -200,7 +222,7 @@ streamlit_app.py (User-Facing Dashboards)
 
 ### Greenhouse Scraper Status
 
-**✅ GREENHOUSE SCRAPING IMPLEMENTED:**
+**[DONE] GREENHOUSE SCRAPING IMPLEMENTED:**
 - **Company coverage:** 302 Greenhouse companies configured in `config/company_ats_mapping.json`
 - **Full descriptions captured:** 9,000-15,000+ chars per job (vs. 4,000 from main description alone)
 - **Complete sections included:** Main responsibilities, Hybrid work arrangements, Pay & benefits, In-office expectations, Remote work policies
@@ -241,41 +263,41 @@ streamlit_app.py (User-Facing Dashboards)
 - **Filter pipeline:** Extract title + location → Title filter → Location filter → Fetch description
 - **See:** `tests/test_figma_location_filter.py` for validation
 
-**✅ Phase 2 Integration Complete:**
-1. ✅ ATS mapping validated for 109 companies → 62 verified with active jobs in production run (2025-11-28)
-2. ✅ Greenhouse scraper integrated into `fetch_jobs.py` main pipeline orchestrator
-3. ✅ Deduplication logic implemented in `unified_job_ingester.py` (Adzuna + Greenhouse merge)
-4. ✅ Production validation: 3,913 jobs scraped, 94.7% filter rate, 184 jobs stored to database
+**[DONE] Phase 2 Integration Complete:**
+1. [DONE] ATS mapping validated for 109 companies - 62 verified with active jobs in production run (2025-11-28)
+2. [DONE] Greenhouse scraper integrated into `fetch_jobs.py` main pipeline orchestrator
+3. [DONE] Deduplication logic implemented in `unified_job_ingester.py` (Adzuna + Greenhouse merge)
+4. [DONE] Production validation: 3,913 jobs scraped, 94.7% filter rate, 184 jobs stored to database
 
 ### Implementation Roadmap: Dual Pipeline Integration
 
-> **Status:** Phases 1-4 ✅ COMPLETE - See "Project Roadmap (Weeks 1-5)" section below for current progress
+> **Status:** Phases 1-4 [DONE] - See "Project Roadmap (Weeks 1-5)" section below for current progress
 
-**Phase 1: ATS Validation** ✅ (COMPLETE)
+**Phase 1: ATS Validation** [DONE]
 - Test 91 companies in config to confirm which still use Greenhouse
 - Some companies may have migrated (e.g., Brex) - update mapping
 - Output: Updated `config/company_ats_mapping.json` with company slugs
 
-**Phase 2: Create Unified Job Ingester** ✅ (COMPLETE)
-- ✅ File: `unified_job_ingester.py` implemented
-- ✅ Accepts jobs from multiple sources (Adzuna + Greenhouse)
-- ✅ Deduplicates: MD5 hash of (company + title + location)
-- ✅ Prioritizes Greenhouse descriptions (9,000+ chars vs 100-200)
-- ✅ Tracks source for each job (adzuna, greenhouse, hybrid)
-- ✅ Normalizes format for unified classifier pipeline
+**Phase 2: Create Unified Job Ingester** [DONE]
+- [DONE] File: `unified_job_ingester.py` implemented
+- [DONE] Accepts jobs from multiple sources (Adzuna + Greenhouse)
+- [DONE] Deduplicates: MD5 hash of (company + title + location)
+- [DONE] Prioritizes Greenhouse descriptions (9,000+ chars vs 100-200)
+- [DONE] Tracks source for each job (adzuna, greenhouse, hybrid)
+- [DONE] Normalizes format for unified classifier pipeline
 
-**Phase 3: Update Main Pipeline** ✅ (COMPLETE)
-- ✅ Created: `fetch_jobs.py` dual-source orchestrator
-- ✅ Supports: `python fetch_jobs.py [city] [max_jobs] --sources adzuna,greenhouse`
-- ✅ Fetches from both Adzuna API and Greenhouse in parallel
-- ✅ Merges via unified_job_ingester.py
-- ✅ Passes merged jobs to classifier pipeline
+**Phase 3: Update Main Pipeline** [DONE]
+- [DONE] Created: `fetch_jobs.py` dual-source orchestrator
+- [DONE] Supports: `python fetch_jobs.py [city] [max_jobs] --sources adzuna,greenhouse`
+- [DONE] Fetches from both Adzuna API and Greenhouse in parallel
+- [DONE] Merges via unified_job_ingester.py
+- [DONE] Passes merged jobs to classifier pipeline
 
-**Phase 4: Run Greenhouse Scraper at Scale** ✅ (COMPLETE 2025-11-28, Ongoing)
-- ✅ Initial production run: 109 companies processed, 62 with active jobs
-- ✅ Scraper integrated into main pipeline and running continuously
-- ✅ Current dataset: 1,213 Greenhouse jobs successfully stored (as of 2025-12-07)
-- ✅ Ready: For analytics queries and compensation benchmarking
+**Phase 4: Run Greenhouse Scraper at Scale** [DONE] (2025-11-28, Ongoing)
+- [DONE] Initial production run: 109 companies processed, 62 with active jobs
+- [DONE] Scraper integrated into main pipeline and running continuously
+- [DONE] Current dataset: 1,213 Greenhouse jobs successfully stored (as of 2025-12-07)
+- [DONE] Ready: For analytics queries and compensation benchmarking
 
 ### Key Implementation Notes
 
@@ -658,7 +680,7 @@ This is why the Greenhouse integration is critical - it's not just about data qu
 
 The project is organized into discrete epics that can be addressed in any order or in parallel. These are not time-dependent milestones but rather distinct work packages.
 
-### Epic 1: Data Ingestion Pipeline ✅ COMPLETE
+### Epic 1: Data Ingestion Pipeline [DONE]
 **Goal:** Fetch jobs from multiple sources and merge with deduplication
 
 **Components:**
@@ -680,7 +702,7 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ---
 
-### Epic 2: Job Classification & Enrichment ✅ COMPLETE
+### Epic 2: Job Classification & Enrichment [DONE]
 **Goal:** Extract structured insights from job postings using Claude LLM
 
 **Components:**
@@ -705,7 +727,7 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ---
 
-### Epic 3: Database & Data Layer ✅ COMPLETE
+### Epic 3: Database & Data Layer [DONE]
 **Goal:** Persist raw and enriched job data in queryable form
 
 **Components:**
@@ -719,20 +741,20 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ---
 
-### Epic 4: Pipeline Validation & Economics ✅ COMPLETE
+### Epic 4: Pipeline Validation & Economics [DONE]
 **Goal:** Validate that the dual pipeline is viable before investing in analytics layer
 
-**Status:** COMPLETE (validated 2025-11-25)
+**Status:** DONE (validated 2025-11-25)
 
 **Validation Results:**
-- ✅ Dual-source integration working (Adzuna + Greenhouse)
-- ✅ Deduplication logic operational (0 duplicates in test batches)
-- ✅ Classification: 93% accuracy on Greenhouse full text
-- ✅ Storage: 100% success rate with proper source tracking
-- ✅ Agency filtering: Working (blocks 10-15% pre-LLM, flags 5-10% post-LLM)
-- ✅ Unit economics: **$0.00388/job actual measured cost** (well under $0.005 target)
-- ✅ Token usage tracking: Implemented in classifier.py using Anthropic API metrics
-- ✅ Pipeline reliability: <5% failure rate achieved
+- [DONE] Dual-source integration working (Adzuna + Greenhouse)
+- [DONE] Deduplication logic operational (0 duplicates in test batches)
+- [DONE] Classification: 93% accuracy on Greenhouse full text
+- [DONE] Storage: 100% success rate with proper source tracking
+- [DONE] Agency filtering: Working (blocks 10-15% pre-LLM, flags 5-10% post-LLM)
+- [DONE] Unit economics: **$0.00388/job actual measured cost** (well under $0.005 target)
+- [DONE] Token usage tracking: Implemented in classifier.py using Anthropic API metrics
+- [DONE] Pipeline reliability: <5% failure rate achieved
 
 **Actual Cost Metrics (Measured 2025-11-25):**
 - **Input tokens:** ~4,156 tokens/job (Greenhouse full-text, 11K+ chars)
@@ -745,11 +767,11 @@ The project is organized into discrete epics that can be addressed in any order 
 **Key Achievement:** Cost tracking now embedded in production pipeline via `classifier.py`, not just validation
 
 **Production Data Collection (Cumulative as of 2025-12-07):**
-- ✅ **Adzuna Pipeline:** Ongoing continuous collection from all 3 cities (London, NYC, Denver)
+- [DONE] **Adzuna Pipeline:** Ongoing continuous collection from all 3 cities (London, NYC, Denver)
   - **Current total:** 4,963 raw jobs → 4,676 enriched jobs
   - **All 11 role types covered:** Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM
   - **Storage:** All jobs successfully stored in Supabase (raw_jobs + enriched_jobs tables)
-- ✅ **Greenhouse Pipeline:** Ongoing scraping from configured companies
+- [DONE] **Greenhouse Pipeline:** Ongoing scraping from configured companies
   - **Current total:** 1,213 Greenhouse raw jobs → 953 enriched jobs
   - **Storage:** All jobs successfully stored with proper source tracking
   - **Combined dataset:** 4,676 Adzuna + 953 Greenhouse = 5,629 total enriched jobs ready for analytics
@@ -763,10 +785,10 @@ The project is organized into discrete epics that can be addressed in any order 
 
 ---
 
-### Epic 5: Analytics Query Layer ✅ COMPLETE
+### Epic 5: Analytics Query Layer [DONE]
 **Goal:** Programmatically answer marketplace questions from enriched job data
 
-**Status:** COMPLETE (2025-12-16)
+**Status:** DONE (2025-12-16)
 
 **Implementation Approach:**
 - **Architecture:** Next.js API routes (TypeScript) instead of Python `analytics.py`
@@ -775,13 +797,13 @@ The project is organized into discrete epics that can be addressed in any order 
 - **Deployed:** Live at `richjacobs.me/projects/hiring-market`
 
 **Completed Components:**
-- ✅ `/api/hiring-market/role-demand` - Role demand by city/subfamily
-- ✅ `/api/hiring-market/top-skills` - 3-level skill hierarchy (domain → family → skill)
-- ✅ `/api/hiring-market/working-arrangement` - Remote/Hybrid/Onsite split
-- ✅ `/api/hiring-market/top-companies` - Employer hiring activity
-- ✅ `/api/hiring-market/experience-distribution` - Seniority level distribution
-- ✅ `/api/hiring-market/count` - Job count with filters
-- ✅ `/api/hiring-market/last-updated` - Pipeline freshness indicator
+- [DONE] `/api/hiring-market/role-demand` - Role demand by city/subfamily
+- [DONE] `/api/hiring-market/top-skills` - 3-level skill hierarchy (domain → family → skill)
+- [DONE] `/api/hiring-market/working-arrangement` - Remote/Hybrid/Onsite split
+- [DONE] `/api/hiring-market/top-companies` - Employer hiring activity
+- [DONE] `/api/hiring-market/experience-distribution` - Seniority level distribution
+- [DONE] `/api/hiring-market/count` - Job count with filters
+- [DONE] `/api/hiring-market/last-updated` - Pipeline freshness indicator
 
 **Query Patterns Implemented:**
 - Time series filtering (7/30/90 days, all time)
@@ -791,24 +813,24 @@ The project is organized into discrete epics that can be addressed in any order 
 - Employer activity ranking
 
 **Success Criteria Met:**
-- ✅ 5 marketplace questions answered programmatically
-- ✅ Query latency <5s with caching optimizations
-- ✅ Server-side filtering reduces bandwidth
-- ✅ Type-safe contracts between API and frontend
-- ✅ Unit tests completed
-- ✅ E2E tests completed
+- [DONE] 5 marketplace questions answered programmatically
+- [DONE] Query latency <5s with caching optimizations
+- [DONE] Server-side filtering reduces bandwidth
+- [DONE] Type-safe contracts between API and frontend
+- [DONE] Unit tests completed
+- [DONE] E2E tests completed
 
 **See:** `docs/epic5_analytics_layer_planning.md` for detailed implementation phases
 
-**Depends On:** Epic 4 ✅ COMPLETE
-**Unblocks:** Epic 6 ✅ COMPLETE
+**Depends On:** Epic 4 [DONE]
+**Unblocks:** Epic 6 [DONE]
 
 ---
 
-### Epic 6: Dashboard & Visualization ✅ COMPLETE
+### Epic 6: Dashboard & Visualization [DONE]
 **Goal:** Non-technical users can explore insights without SQL
 
-**Status:** COMPLETE (2025-12-16)
+**Status:** DONE (2025-12-16)
 
 **Implementation Approach:**
 - **Architecture:** Next.js dashboard (React 19) instead of Streamlit
@@ -818,10 +840,10 @@ The project is organized into discrete epics that can be addressed in any order 
 - **Deployed:** Live at `richjacobs.me/projects/hiring-market`
 
 **Completed Components:**
-- ✅ Global filter system (date range, city, job family)
-- ✅ Custom dropdowns with smooth animations
-- ✅ Real-time job count display
-- ✅ Five interactive visualizations:
+- [DONE] Global filter system (date range, city, job family)
+- [DONE] Custom dropdowns with smooth animations
+- [DONE] Real-time job count display
+- [DONE] Five interactive visualizations:
   1. **Role Demand Chart** - Bar chart with gradient coloring by volume
   2. **Skills Demand Chart** - 3-level sunburst (domain → family → skill)
   3. **Working Arrangement Chart** - Stacked bar chart (Remote/Hybrid/Onsite)
@@ -829,30 +851,30 @@ The project is organized into discrete epics that can be addressed in any order 
   5. **Experience Distribution Chart** - Seniority level distribution
 
 **Features Implemented:**
-- ✅ Interactive filters with URL-ready architecture
-- ✅ Chart.js visualizations with custom styling
-- ✅ Smooth loading states with skeleton loaders
-- ✅ Frontend caching for instant role switching
-- ✅ Last updated timestamp with relative time
-- ✅ Data source indicators for quality transparency
-- ✅ Share functionality with Web Share API + clipboard fallback
-- ✅ Responsive design (desktop-focused for portfolio demos)
-- ✅ Error handling and empty states
+- [DONE] Interactive filters with URL-ready architecture
+- [DONE] Chart.js visualizations with custom styling
+- [DONE] Smooth loading states with skeleton loaders
+- [DONE] Frontend caching for instant role switching
+- [DONE] Last updated timestamp with relative time
+- [DONE] Data source indicators for quality transparency
+- [DONE] Share functionality with Web Share API + clipboard fallback
+- [DONE] Responsive design (desktop-focused for portfolio demos)
+- [DONE] Error handling and empty states
 
 **Success Criteria Met:**
-- ✅ 5 marketplace questions answered with visualizations
-- ✅ Consistent with richjacobs.me design system
-- ✅ Loads in <3s with caching
-- ✅ Professional polish suitable for portfolio
-- ✅ Added to main site's projects page
-- ✅ GitHub repo documentation available
-- ✅ Browser tested (Chrome, Firefox, Safari)
-- ✅ Unit tests completed
-- ✅ E2E tests completed
+- [DONE] 5 marketplace questions answered with visualizations
+- [DONE] Consistent with richjacobs.me design system
+- [DONE] Loads in <3s with caching
+- [DONE] Professional polish suitable for portfolio
+- [DONE] Added to main site's projects page
+- [DONE] GitHub repo documentation available
+- [DONE] Browser tested (Chrome, Firefox, Safari)
+- [DONE] Unit tests completed
+- [DONE] E2E tests completed
 
 **See:** `docs/epic5_analytics_layer_planning.md` for detailed implementation phases
 
-**Depends On:** Epic 5 ✅ COMPLETE (implemented together)
+**Depends On:** Epic 5 [DONE] (implemented together)
 **Unblocks:** Epic 7 (automation to keep dashboard fresh)
 
 ---
@@ -913,7 +935,7 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 
 ## Current State & Known Limitations
 
-### ✅ Working Well
+### [WORKING] Positive Items
 - **Dual-source pipeline operational:** Adzuna API + Greenhouse scraper both functioning
 - Unified job ingestion with deduplication (MD5 hashing) reliable and tested
 - Agency hard filtering prevents 10-15% of wasted API calls
@@ -922,7 +944,7 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
 - Greenhouse scraper captures full job text (9,000-15,000+ chars)
 - Greenhouse production run complete: 109 companies processed, 62 with active jobs, 184 jobs stored (2025-11-28)
 
-### 🚨 Active Issues
+### [NEEDS ATTENTION] Active Issues
 1. **Skills/Work Arrangement Classification:** Limited by Adzuna's truncated text
    - For Adzuna-only jobs: Skills extraction ~29%, Work arrangement F1=0.565
    - For Greenhouse jobs: Both improve significantly with full text
@@ -933,7 +955,7 @@ Cost tracking now embedded in production pipeline, not just validation scripts. 
    - Greenhouse data has less agency spam (better quality sources)
    - May need more sophisticated detection patterns beyond hard blacklist
 
-### 📋 Immediate Next Steps
+### [TODO] Immediate Next Steps
 **Epic 7: Automation & Operational Excellence** (ready to start)
 - **Status:** Epics 1-6 ✅ COMPLETE - Full pipeline operational, dashboard live at richjacobs.me/projects/hiring-market
 - **Dataset:** 5,629 enriched jobs (4,676 Adzuna + 953 Greenhouse) across all 3 cities and 11 role types (as of 2025-12-07)
