@@ -125,14 +125,14 @@ docs/
 ├── architecture/                       # Architecture design docs
 │   ├── DUAL_PIPELINE.md               # Adzuna + Greenhouse dual sources
 │   ├── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
-│   ├── GLOBAL_LOCATION_EXPANSION_EPIC.md # Location system epic (COMPLETE)
 │   └── ADDING_NEW_LOCATIONS.md        # Guide for adding new cities/countries/regions
 ├── costs/                              # Cost tracking and metrics
 │   ├── COST_METRICS.md                # Cost analysis & optimization
 │   └── claude_api_*.csv               # Anthropic usage exports
 ├── database/
 │   └── SCHEMA_UPDATES.md              # Database schema changelog
-├── archive/                            # Historical docs
+├── archive/                            # Historical docs and completed epics
+│   ├── GLOBAL_LOCATION_EXPANSION_EPIC.md # Completed location system epic (2025-12-22)
 │   └── prod_run_plan_output/          # Production run guides
 ├── blacklisting_process.md            # Agency detection methodology
 ├── CASE_STUDY_MVP_REPORT.md           # Project case study
@@ -269,7 +269,7 @@ main()
 ### Completed Epics
 - **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
 - **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
-- **Global Location Expansion Epic** - JSONB location system supporting 14 cities, 9 countries, 3 regions (completed 2025-12-22)
+- **Global Location Expansion Epic** - JSONB location system supporting 14 cities, 9 countries, 3 regions (archived: docs/archive/GLOBAL_LOCATION_EXPANSION_EPIC.md)
 
 ### Ready to Start
 - **Epic 7: Automation & Operational**
