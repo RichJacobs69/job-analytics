@@ -166,11 +166,15 @@ def fetch_jobs_to_migrate(
     if not remigrate_all:
         query = query.is_("locations", "null")
 
-    if limit:
-        query = query.limit(limit)
-
-    if offset:
+    # Use .range() for pagination (handles both offset and limit)
+    # Note: .range() is inclusive on both ends
+    if offset and limit:
         query = query.range(offset, offset + limit - 1)
+    elif limit:
+        query = query.limit(limit)
+    elif offset:
+        # Offset without limit - use Supabase default (1000 rows max)
+        query = query.range(offset, offset + 999)
 
     result = query.execute()
     return result.data
@@ -218,7 +222,7 @@ def update_job_locations(
 
     try:
         supabase.table("enriched_jobs").update({
-            "locations": json.dumps(locations)
+            "locations": locations  # Pass list directly, not JSON string
         }).eq("id", job_id).execute()
 
         return True
@@ -310,7 +314,8 @@ def run_migration(
     limit: Optional[int] = None,
     verbose: bool = False,
     batch_size: int = 100,
-    remigrate_all: bool = False
+    remigrate_all: bool = False,
+    offset: int = 0
 ):
     """
     Run the migration from city_code to locations.
@@ -321,6 +326,7 @@ def run_migration(
         verbose: Print detailed progress
         batch_size: Number of jobs to process per batch
         remigrate_all: If True, re-migrate ALL jobs (not just NULL locations)
+        offset: Start from this job offset (for resuming failed migrations)
     """
     load_dotenv()
 
@@ -341,6 +347,8 @@ def run_migration(
     print(f"Re-migrating ALL jobs: {remigrate_all}")
     print(f"Limit: {limit if limit else 'ALL'}")
     print(f"Batch size: {batch_size}")
+    if offset > 0:
+        print(f"RESUME MODE: Starting from offset {offset}")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
@@ -355,7 +363,11 @@ def run_migration(
     count_result = count_query.execute()
 
     total_to_migrate = count_result.count
-    print(f"\nTotal jobs to migrate: {total_to_migrate}")
+    print(f"\nTotal jobs in database: {total_to_migrate}")
+
+    if offset > 0:
+        total_to_migrate = total_to_migrate - offset
+        print(f"Skipping first {offset} jobs (resume mode)")
 
     if limit:
         total_to_migrate = min(total_to_migrate, limit)
@@ -363,7 +375,8 @@ def run_migration(
     print(f"Will process: {total_to_migrate}\n")
 
     # Process in batches
-    offset = 0
+    # Note: offset variable name used for loop control, starts from passed offset param
+    batch_offset = offset
     processed = 0
     batch_num = 0
     reconnect_interval = 40  # Reconnect every N batches to avoid HTTP2 connection limits
@@ -377,13 +390,13 @@ def run_migration(
             print(f"  [Reconnecting to Supabase to avoid connection limits...]")
             supabase = create_client(supabase_url, supabase_key)
 
-        print(f"\nFetching batch {offset // batch_size + 1} (jobs {processed + 1}-{processed + current_batch_size})...")
+        print(f"\nFetching batch {batch_offset // batch_size + 1} (jobs {batch_offset + 1}-{batch_offset + current_batch_size})...")
 
         # Retry logic for transient connection errors
         max_retries = 3
         for retry in range(max_retries):
             try:
-                jobs = fetch_jobs_to_migrate(supabase, limit=current_batch_size, offset=offset, remigrate_all=remigrate_all)
+                jobs = fetch_jobs_to_migrate(supabase, limit=current_batch_size, offset=batch_offset, remigrate_all=remigrate_all)
                 break
             except Exception as e:
                 if retry < max_retries - 1:
@@ -469,7 +482,7 @@ def run_migration(
             if processed % 50 == 0:
                 print(f"  Progress: {processed}/{total_to_migrate} ({processed*100//total_to_migrate}%)")
 
-        offset += batch_size
+        batch_offset += batch_size
 
     # Print summary
     stats.print_summary()
@@ -516,6 +529,12 @@ def main():
         default=100,
         help="Number of jobs to process per batch (default: 100)"
     )
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Start from this job offset (for resuming failed migrations)"
+    )
 
     args = parser.parse_args()
 
@@ -524,7 +543,8 @@ def main():
         limit=args.limit,
         verbose=args.verbose,
         batch_size=args.batch_size,
-        remigrate_all=args.remigrate_all
+        remigrate_all=args.remigrate_all,
+        offset=args.offset
     )
 
 

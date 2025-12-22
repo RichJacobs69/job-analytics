@@ -398,6 +398,143 @@ job-analytics/
 - Used when agency blacklist is updated or soft detection rules change
 - Processes `enriched_jobs` table in batches
 
+**location_extractor.py** (Location Extraction Module)
+- Deterministic pattern-matching system for location extraction
+- Reads configuration from `config/location_mapping.yaml`
+- Supports cities, countries, regions, and remote work scopes
+- Handles multi-location jobs (e.g., "NYC or Remote", "London or Stockholm")
+- Returns JSONB array of location objects for database storage
+- No LLM calls needed - uses regex patterns for cost-free extraction
+- Test suite: `tests/test_location_extractor.py` with 50+ test cases
+
+### Location Architecture
+
+**Schema:** Flexible JSONB array system (replaces legacy `city_code` enum)
+
+**Database Column:**
+```sql
+locations JSONB NOT NULL DEFAULT '[]'
+-- Example: [{"type": "city", "country_code": "GB", "city": "london"}]
+-- GIN index for efficient querying: CREATE INDEX idx_enriched_jobs_locations ON enriched_jobs USING GIN (locations);
+```
+
+**Location Object Structure:**
+```typescript
+interface Location {
+  type: "city" | "country" | "region" | "remote" | "unknown";
+
+  // For type="city"
+  country_code?: string;  // ISO 3166-1 alpha-2: US, GB, SG, DE, etc.
+  city?: string;          // snake_case: london, new_york, san_francisco
+
+  // For type="country"
+  country_code?: string;  // Jobs open to "Anywhere in US"
+
+  // For type="region"
+  region?: string;        // EMEA | AMER | APAC
+
+  // For type="remote"
+  scope?: "global" | "country" | "region";
+  country_code?: string;  // For country-scoped remote (e.g., "Remote - US")
+  region?: string;        // For region-scoped remote (e.g., "Remote - EMEA")
+}
+```
+
+**Examples:**
+| Job Posting | `locations` JSONB |
+|-------------|-------------------|
+| "London, UK" | `[{"type": "city", "country_code": "GB", "city": "london"}]` |
+| "San Francisco, CA" | `[{"type": "city", "country_code": "US", "city": "san_francisco"}]` |
+| "Remote - US" | `[{"type": "remote", "scope": "country", "country_code": "US"}]` |
+| "Remote - Global" | `[{"type": "remote", "scope": "global"}]` |
+| "NYC or Remote" | `[{"type": "city", "country_code": "US", "city": "new_york"}, {"type": "remote", "scope": "country", "country_code": "US"}]` |
+| "Remote - EMEA" | `[{"type": "remote", "scope": "region", "region": "EMEA"}]` |
+
+**Configuration:** `config/location_mapping.yaml`
+- Master configuration for all cities, countries, regions
+- Pattern-based matching (case-insensitive regex)
+- Supports aliases and variations (e.g., "SF" → san_francisco, "NYC" → new_york)
+- Adzuna endpoint mapping per country
+- Easy to extend - just add new city/country/region to YAML
+
+**Supported Locations (as of 2025-12-22):**
+- **Cities:** London (GB), New York (US), Denver (US), San Francisco (US), Singapore (SG), Seattle (US), Austin (US), Berlin (DE), Amsterdam (NL), Dublin (IE), Stockholm (SE), Bangalore (IN), Mumbai (IN), Sydney (AU)
+- **Countries:** US, GB, SG, DE, NL, IE, SE, IN, AU
+- **Regions:** EMEA (Europe/Middle East/Africa), AMER (Americas), APAC (Asia Pacific)
+
+**Inclusive Filtering (Frontend):**
+
+When filtering by city, results automatically include:
+1. Direct city matches (e.g., jobs in London)
+2. Global remote jobs (available anywhere)
+3. Country-scoped remote jobs (e.g., "Remote - UK" for London)
+4. Country-wide jobs (e.g., "Anywhere in UK" for London)
+5. Regional jobs (e.g., EMEA region for London)
+
+Example: `?city=london` returns:
+- `locations.cs.[{"city":"london"}]` (direct match)
+- `locations.cs.[{"scope":"global"}]` (global remote)
+- `locations.cs.[{"scope":"country"}]` (country-scoped remote - ALL countries, filtered by city presence)
+- `locations.cs.[{"type":"country"}]` (country-wide jobs - ALL countries, filtered by city presence)
+
+This is implemented in `portfolio-site/lib/location-queries.ts` using PostgREST JSONB operators.
+
+**Query Examples:**
+
+```typescript
+// Frontend (TypeScript) - using location-queries.ts helper
+import { applyLocationFilter, parseLocationParams } from '@/lib/location-queries';
+
+const params = parseLocationParams(searchParams);
+// { cities: ['london'], includeRemote: true }
+
+let query = supabase.from('enriched_jobs').select('*');
+query = applyLocationFilter(query, params);
+// Automatically builds JSONB .or() filter with inclusive logic
+```
+
+```sql
+-- Backend (SQL) - direct JSONB queries
+-- Filter by city (exact match)
+SELECT * FROM enriched_jobs WHERE locations @> '[{"city":"london"}]';
+
+-- Filter by country (any city in country)
+SELECT * FROM enriched_jobs WHERE locations @> '[{"country_code":"GB"}]';
+
+-- Filter by remote scope
+SELECT * FROM enriched_jobs WHERE locations @> '[{"scope":"global"}]';
+
+-- Multi-location OR (inclusive filtering via PostgREST)
+-- In frontend, this is: .or('locations.cs.[{"city":"london"}],locations.cs.[{"scope":"global"}]')
+```
+
+**Migration Status:**
+- [DONE] Schema added (migration 008): `locations` JSONB column with GIN index
+- [DONE] Backfill complete: 8,670/8,670 existing jobs migrated from `city_code`
+- [DONE] Pipeline integration: All scrapers use location_extractor.py
+- [DONE] Frontend integration: Dashboard uses JSONB filtering
+- [DONE] Data collection: SF and Singapore jobs actively collected
+- [DEPRECATED] `city_code` column: Kept for backward compatibility, no longer used in queries
+
+**Adding New Locations:**
+
+See [`docs/architecture/ADDING_NEW_LOCATIONS.md`](docs/architecture/ADDING_NEW_LOCATIONS.md) for complete guide.
+
+Quick steps:
+1. Add city/country/region to `config/location_mapping.yaml`
+2. Update `portfolio-site/lib/location-queries.ts` with display names and mappings
+3. Add to frontend dropdown in `GlobalFilters.tsx`
+4. Test with `tests/test_location_extractor.py`
+5. Run pipeline to collect data
+
+**Key Benefits:**
+- **Flexibility:** Support any city/country/region without schema changes
+- **Multi-location:** Jobs can have multiple locations (e.g., "London or Remote")
+- **Remote granularity:** Distinguish global vs country vs region remote
+- **Inclusive filtering:** City filters automatically include relevant remote/regional jobs
+- **Cost-free extraction:** Pattern matching (no LLM calls) for location detection
+- **Extensible:** Adding new locations requires only config changes, no code changes
+
 ### Classification Taxonomy
 
 Defined in `docs/schema_taxonomy.yaml` - all rules centralized, code-independent.
@@ -434,7 +571,9 @@ Defined in `docs/schema_taxonomy.yaml` - all rules centralized, code-independent
 
 ### Target Scope
 
-**Locations:** London, New York City, Denver
+**Locations:** London, New York City, Denver, San Francisco, Singapore
+
+**Location System:** Uses flexible JSONB array schema supporting multi-location jobs, remote work scopes (global/country/region), and inclusive filtering. See [Location Architecture](#location-architecture) section below.
 
 **Job Titles:** Data Analyst, Data Engineer, Analytics Engineer, Data Scientist, ML Engineer, AI Engineer, Data Architect, Technical Product Manager, Product Manager, Product Owner, Growth PM, AI PM
 

@@ -682,12 +682,23 @@ class GreenhouseScraper:
             for job_element in job_elements:
                 try:
                     # STEP 1: Extract basic job info WITHOUT description (fast, cheap)
-                    job = await self._extract_job_listing(
-                        job_element,
-                        company_slug,
-                        page,
-                        fetch_description=False  # Don't fetch description yet
-                    )
+                    # Add timeout to prevent hanging on problematic pages
+                    try:
+                        job = await asyncio.wait_for(
+                            self._extract_job_listing(
+                                job_element,
+                                company_slug,
+                                page,
+                                fetch_description=False  # Don't fetch description yet
+                            ),
+                            timeout=5  # 5 second timeout per job extraction
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(f"[{company_slug}] Timeout extracting job listing (5s) - skipping job")
+                        continue
+                    except Exception as e:
+                        logger.warning(f"[{company_slug}] Error extracting job listing: {str(e)[:100]}")
+                        continue
 
                     if not job or job.url in seen_urls:
                         continue
@@ -697,22 +708,30 @@ class GreenhouseScraper:
 
                     # STEP 2: Apply title filter
                     if self.filter_titles and self.title_patterns:
-                        if not is_relevant_role(job.title, self.title_patterns):
-                            # Job filtered out by title - don't fetch description
-                            self.filter_stats['jobs_filtered'] += 1
-                            self.filter_stats['filtered_by_title'] += 1
-                            self.filter_stats['filtered_titles'].append(job.title)
-                            logger.info(f"[{company_slug}] Filtered by title: '{job.title}'")
+                        try:
+                            if not is_relevant_role(job.title, self.title_patterns):
+                                # Job filtered out by title - don't fetch description
+                                self.filter_stats['jobs_filtered'] += 1
+                                self.filter_stats['filtered_by_title'] += 1
+                                self.filter_stats['filtered_titles'].append(job.title)
+                                logger.info(f"[{company_slug}] Filtered by title: '{job.title}'")
+                                continue
+                        except Exception as e:
+                            logger.warning(f"[{company_slug}] Error filtering by title: {str(e)[:100]}")
                             continue
 
                     # STEP 3: Apply location filter
                     if self.filter_locations and self.location_patterns:
-                        if not matches_target_location(job.location, self.location_patterns):
-                            # Job filtered out by location - don't fetch description
-                            self.filter_stats['jobs_filtered'] += 1
-                            self.filter_stats['filtered_by_location'] += 1
-                            self.filter_stats['filtered_locations'].append(job.location)
-                            logger.info(f"[{company_slug}] Filtered by location: '{job.title}' at '{job.location}'")
+                        try:
+                            if not matches_target_location(job.location, self.location_patterns):
+                                # Job filtered out by location - don't fetch description
+                                self.filter_stats['jobs_filtered'] += 1
+                                self.filter_stats['filtered_by_location'] += 1
+                                self.filter_stats['filtered_locations'].append(job.location)
+                                logger.info(f"[{company_slug}] Filtered by location: '{job.title}' at '{job.location}'")
+                                continue
+                        except Exception as e:
+                            logger.warning(f"[{company_slug}] Error filtering by location: {str(e)[:100]}")
                             continue
 
                     # STEP 4: Job passed all filters - fetch full description (expensive)
@@ -1077,10 +1096,19 @@ class GreenhouseScraper:
 
             for selector in job_title_selectors:
                 try:
-                    title_elem = await search_element.query_selector(selector)
+                    title_elem = await asyncio.wait_for(
+                        search_element.query_selector(selector),
+                        timeout=1  # 1 second timeout per selector search
+                    )
                     if title_elem:
-                        title = await title_elem.text_content()
+                        title = await asyncio.wait_for(
+                            title_elem.text_content(),
+                            timeout=1  # 1 second timeout for text extraction
+                        )
                         break
+                except asyncio.TimeoutError:
+                    logger.debug(f"[{company_slug}] Timeout extracting title with selector: {selector}")
+                    continue
                 except:
                     continue
 
@@ -1148,12 +1176,21 @@ class GreenhouseScraper:
                 # Try searching within the job_element first
                 for selector in location_selectors:
                     try:
-                        location_elem = await job_element.query_selector(selector)
+                        location_elem = await asyncio.wait_for(
+                            job_element.query_selector(selector),
+                            timeout=1  # 1 second timeout per selector search
+                        )
                         if location_elem:
-                            location_text = await location_elem.text_content()
+                            location_text = await asyncio.wait_for(
+                                location_elem.text_content(),
+                                timeout=1  # 1 second timeout for text extraction
+                            )
                             if location_text and location_text.strip():
                                 location = location_text.strip()
                                 break
+                    except asyncio.TimeoutError:
+                        logger.debug(f"[{company_slug}] Timeout extracting location with selector: {selector}")
+                        continue
                     except:
                         continue
 
@@ -1161,19 +1198,33 @@ class GreenhouseScraper:
                 # (Handles cases like Dojo where location is a sibling: <a>Title</a> <span class="location">...</span>)
                 if location == "Unspecified":
                     try:
-                        parent = await job_element.evaluate_handle('el => el.parentElement')
+                        parent = await asyncio.wait_for(
+                            job_element.evaluate_handle('el => el.parentElement'),
+                            timeout=1  # 1 second timeout
+                        )
                         for selector in location_selectors:
                             try:
-                                location_elem = await parent.query_selector(selector)
+                                location_elem = await asyncio.wait_for(
+                                    parent.query_selector(selector),
+                                    timeout=1  # 1 second timeout per selector search
+                                )
                                 if location_elem:
-                                    location_text = await location_elem.text_content()
+                                    location_text = await asyncio.wait_for(
+                                        location_elem.text_content(),
+                                        timeout=1  # 1 second timeout for text extraction
+                                    )
                                     if location_text and location_text.strip():
                                         location = location_text.strip()
                                         break
+                            except asyncio.TimeoutError:
+                                logger.debug(f"[{company_slug}] Timeout extracting location from parent with selector: {selector}")
+                                continue
                             except:
                                 continue
                             if location != "Unspecified":
                                 break
+                    except asyncio.TimeoutError:
+                        logger.debug(f"[{company_slug}] Timeout accessing parent element")
                     except:
                         pass
 
