@@ -247,6 +247,10 @@ class GreenhouseScraper:
             'div[class*="meta"]',
             'p[class*="body__secondary"]',  # Airtable: <p class="body body__secondary body--metadata">
             'p.body__secondary',  # Airtable location (secondary paragraph)
+            '[data-test-id*="location"]',  # Data test ID (some modern boards)
+            '[class*="metadata"]',  # Metadata container
+            '[class*="jobmeta"]',  # Job metadata section
+            'div > span:last-of-type',  # Last span in container (sometimes location is trailing text)
         ],
         # Pagination selectors - Greenhouse uses different pagination styles
         'pagination': {
@@ -1173,7 +1177,25 @@ class GreenhouseScraper:
                     except:
                         pass
 
-                # Method 2: If no HTML element found, extract from concatenated text
+                # Method 3: Last resort - try to extract location from full job element text content
+                # (Handles cases where location is mixed into the general text, like Wayve Greenhouse boards)
+                if location == "Unspecified":
+                    try:
+                        full_text = await job_element.text_content()
+                        if full_text:
+                            # Look for patterns like "Sunnyvale, California" or "London, UK"
+                            # Pattern: City, State/Country (with optional "USA")
+                            location_match = re.search(
+                                r'([A-Z][a-z]+(?: [A-Z][a-z]+)*),\s*([A-Z]{2}|[A-Z][a-z]+ [A-Z][a-z]+|[A-Za-z]+),?\s*(?:USA|US)?',
+                                full_text
+                            )
+                            if location_match:
+                                location = location_match.group(0).strip()
+                                logger.debug(f"[{company_slug}] Extracted location from full text: '{location}'")
+                    except:
+                        pass
+
+                # Method 4: If no HTML element found, extract from concatenated text
                 # (Handles table layouts where title+location are in same element)
                 if location == "Unspecified" and self.location_patterns:
                     title_lower = title.lower()
