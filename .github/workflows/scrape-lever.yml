@@ -1,0 +1,42 @@
+name: Scrape Lever (Every 48h)
+
+on:
+  schedule:
+    - cron: '0 6 */2 * *'  # Every other day at 6:00 AM UTC
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  lever:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # 61 companies with rate limiting
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Lever scraper
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python wrappers/fetch_jobs.py --sources lever
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Lever Scrape Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Companies:** 61" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source:** lever_company_mapping.json" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY

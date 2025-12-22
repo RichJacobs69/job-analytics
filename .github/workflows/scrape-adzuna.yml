@@ -1,0 +1,62 @@
+name: Scrape Adzuna (Every 48h)
+
+on:
+  schedule:
+    - cron: '30 6 */2 * *'  # Every other day at 6:30 AM UTC
+  workflow_dispatch:
+    inputs:
+      city:
+        description: 'Specific city to scrape (or "all" for all cities)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - lon
+          - nyc
+          - den
+          - sfo
+          - sgp
+
+jobs:
+  adzuna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        city: ${{ github.event.inputs.city == 'all' && fromJson('["lon", "nyc", "den", "sfo", "sgp"]') || fromJson(format('["{0}"]', github.event.inputs.city)) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Adzuna scraper for ${{ matrix.city }}
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_API_KEY: ${{ secrets.ADZUNA_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "Scraping Adzuna for city: ${{ matrix.city }}"
+          python wrappers/fetch_jobs.py ${{ matrix.city }} 100 --sources adzuna
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Adzuna Scrape Complete (${{ matrix.city }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **City:** ${{ matrix.city }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Max jobs:** 100" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,137 @@
+name: Scrape Greenhouse (Daily Batch)
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'  # Monday at 7:00 AM UTC
+    - cron: '0 7 * * 2'  # Tuesday at 7:00 AM UTC
+    - cron: '0 7 * * 3'  # Wednesday at 7:00 AM UTC
+    - cron: '0 7 * * 4'  # Thursday at 7:00 AM UTC
+  workflow_dispatch:
+    inputs:
+      batch_override:
+        description: 'Force specific batch (1-4), or leave empty for auto based on day'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+
+jobs:
+  greenhouse-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps
+
+      - name: Compute batch and run scraper
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BATCH_OVERRIDE: ${{ github.event.inputs.batch_override }}
+        run: |
+          python << 'EOF'
+          import json
+          import subprocess
+          import os
+          from datetime import datetime
+
+          # Load companies from config
+          with open('config/company_ats_mapping.json') as f:
+              data = json.load(f)
+
+          greenhouse = data.get('greenhouse', {})
+          companies = sorted(greenhouse.keys())
+          total_companies = len(companies)
+          batch_size = total_companies // 4 + 1
+
+          # Determine batch number (allow manual override)
+          override = os.environ.get('BATCH_OVERRIDE', '').strip()
+          if override:
+              batch_num = int(override) - 1  # Convert 1-4 to 0-3
+              print(f"Using manual override: Batch {override}")
+          else:
+              batch_num = datetime.now().weekday() % 4  # Mon=0, Tue=1, Wed=2, Thu=3
+              days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday']
+              print(f"Auto-detected: {days[batch_num]} -> Batch {batch_num + 1}")
+
+          # Calculate batch slice
+          start = batch_num * batch_size
+          end = min(start + batch_size, total_companies)
+          batch_companies = companies[start:end]
+
+          # Get slugs for the batch
+          slugs = [greenhouse[c]['slug'] for c in batch_companies]
+
+          print(f"\n{'='*60}")
+          print(f"GREENHOUSE BATCH {batch_num + 1}")
+          print(f"{'='*60}")
+          print(f"Companies: {len(slugs)} of {total_companies}")
+          print(f"Range: {batch_companies[0]} -> {batch_companies[-1]}")
+          print(f"Indices: [{start}:{end}]")
+          print(f"{'='*60}\n")
+
+          # Run the scraper
+          result = subprocess.run([
+              'python', 'wrappers/fetch_jobs.py',
+              '--sources', 'greenhouse',
+              '--companies', ','.join(slugs)
+          ])
+
+          exit(result.returncode)
+          EOF
+
+      - name: Summary
+        if: always()
+        env:
+          BATCH_OVERRIDE: ${{ github.event.inputs.batch_override }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          from datetime import datetime
+
+          with open('config/company_ats_mapping.json') as f:
+              data = json.load(f)
+
+          greenhouse = data.get('greenhouse', {})
+          companies = sorted(greenhouse.keys())
+          batch_size = len(companies) // 4 + 1
+
+          override = os.environ.get('BATCH_OVERRIDE', '').strip()
+          if override:
+              batch_num = int(override) - 1
+          else:
+              batch_num = datetime.now().weekday() % 4
+
+          start = batch_num * batch_size
+          end = min(start + batch_size, len(companies))
+          batch_companies = companies[start:end]
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(f"## Greenhouse Batch {batch_num + 1} Complete\n\n")
+              f.write(f"| Metric | Value |\n")
+              f.write(f"|--------|-------|\n")
+              f.write(f"| **Batch** | {batch_num + 1} of 4 |\n")
+              f.write(f"| **Companies** | {len(batch_companies)} |\n")
+              f.write(f"| **Range** | {batch_companies[0]} -> {batch_companies[-1]} |\n")
+              f.write(f"| **Timestamp** | {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} |\n")
+          EOF
