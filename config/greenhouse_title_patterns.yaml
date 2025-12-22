@@ -21,15 +21,17 @@ relevant_title_patterns:
   # Data Analyst family
   - 'data analyst'
   - 'analytics (engineer|lead|manager)'
-  - 'business intelligence|bi (engineer|analyst|developer)'
+  - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
   - 'bi engineer|bi analyst'
 
   # Data Engineer family
   - 'data engineer'
   - 'data platform'
+  - 'data engineering (manager|lead)'
 
   # Data Scientist family
   - 'data scientist'
+  - 'data science (engineer|manager|lead)'
   - 'machine learning scientist'
   - 'research scientist.*(ml|ai|machine learning|data)'
   - 'applied (scientist|ml)'
@@ -38,6 +40,7 @@ relevant_title_patterns:
   - 'ml engineer|machine learning engineer'
   - 'ai engineer'
   - 'mlops'
+  - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
 
   # Data Architect family
   - 'data architect'
@@ -87,6 +90,9 @@ pattern_notes: |
   - "Senior ML Engineer" ✓
   - "Applied Research Scientist" ✓
   - "Data Platform Engineer" ✓
+  - "Senior Data Science Manager" ✓ (added 2025-12-22)
+  - "Data Engineering Manager" ✓ (added 2025-12-22)
+  - "ML Manager" ✓ (added 2025-12-22)
 
   Known Filtered Roles (expected to NOT match):
   - "Account Executive" ✗
@@ -107,8 +113,8 @@ pattern_notes: |
   - "Growth Engineer" - Engineering role, not product/data focus
 
 # Version tracking
-version: "1.0"
-last_updated: "2025-11-26"
+version: "1.1"
+last_updated: "2025-12-22"
 validated_on:
   - company: "Stripe"
     jobs_scraped: 100
