@@ -1,0 +1,62 @@
+# Greenhouse Location Filter Patterns
+# Jobs must match at least one pattern (case-insensitive substring match)
+# These should align with location_mapping.yaml
+
+target_locations:
+  # London
+  - london
+  - greater london
+  - canary wharf
+  - city of london
+
+  # New York Metro
+  - new york
+  - nyc
+  - manhattan
+  - brooklyn
+  - queens
+  - jersey city
+  - hoboken
+  - newark
+  - white plains
+  - stamford
+  - long island
+
+  # San Francisco Bay Area
+  - san francisco
+  - bay area
+  - silicon valley
+  - palo alto
+  - mountain view
+  - sunnyvale
+  - menlo park
+  - redwood city
+  - foster city
+  - san mateo
+  - san jose
+  - cupertino
+  - oakland
+  - berkeley
+  - fremont
+
+  # Denver Metro
+  - denver
+  - boulder
+  - colorado springs
+
+  # Singapore
+  - singapore
+
+  # Remote patterns (include remote jobs)
+  - remote
+  - work from home
+  - wfh
+  - anywhere
+  - worldwide
+  - global
+
+  # US/UK general (catches "Remote - US", "UK based", etc.)
+  - united states
+  - united kingdom
+  - " us"
+  - " uk"
