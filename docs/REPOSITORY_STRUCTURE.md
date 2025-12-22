@@ -42,6 +42,7 @@ pipeline/
 ├── agency_detection.py        # Agency filtering logic
 ├── unified_job_ingester.py    # Merge & deduplication
 ├── run_all_cities.py          # Parallel orchestration
+├── location_extractor.py      # Location extraction from job postings (pattern-based)
 ├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
 └── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
 ```
@@ -60,6 +61,7 @@ pipeline/utilities/
 ├── backfill_skill_family_rename.py # Skill family rename backfill
 ├── backfill_source_job_id.py       # Source job ID backfill
 ├── backfill_working_arrangement.py # Working arrangement backfill
+├── migrate_locations.py            # Migrate city_code to locations JSONB (one-time)
 ├── discover_greenhouse_slugs.py    # Greenhouse company slug discovery
 └── validate_greenhouse_slugs.py    # Greenhouse slug validation
 ```
@@ -89,10 +91,9 @@ config/
 ├── company_ats_mapping.json           # Company → ATS slug mapping (302 companies)
 ├── greenhouse_checked_companies.json  # Validated Greenhouse companies
 ├── greenhouse_title_patterns.yaml     # Title patterns for Greenhouse filtering
-├── greenhouse_location_patterns.yaml  # Location patterns for Greenhouse filtering
 ├── lever_company_mapping.json         # Lever company configurations
 ├── lever_title_patterns.yaml          # Title patterns for Lever filtering
-├── lever_location_patterns.yaml       # Location patterns for Lever filtering
+├── location_mapping.yaml              # Master location config (cities, countries, regions)
 ├── job_family_mapping.yaml            # job_subfamily → job_family mapping (strict)
 ├── skill_family_mapping.yaml          # skill → skill_family mapping (849 skills)
 ├── skill_domain_mapping.yaml          # skill_family → domain mapping (32 families, 8 domains)
@@ -111,7 +112,8 @@ migrations/
 ├── 004_allow_remote_city_code.sql         # Allow 'remote' city code
 ├── 005_remove_hash_unique_constraint.sql  # Remove hash uniqueness
 ├── 006_unique_source_job_id.sql           # Unique constraint on source_job_id
-└── 007_allow_unknown_working_arrangement.sql # Allow 'unknown' working arrangement
+├── 007_allow_unknown_working_arrangement.sql # Allow 'unknown' working arrangement
+└── 008_add_locations_jsonb.sql            # Add locations JSONB column with GIN index
 ```
 
 ### 6. **`docs/` Directory** (Documentation)
@@ -122,7 +124,9 @@ docs/
 ├── REPOSITORY_STRUCTURE.md             # This file
 ├── architecture/                       # Architecture design docs
 │   ├── DUAL_PIPELINE.md               # Adzuna + Greenhouse dual sources
-│   └── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
+│   ├── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
+│   ├── GLOBAL_LOCATION_EXPANSION_EPIC.md # Location system epic (COMPLETE)
+│   └── ADDING_NEW_LOCATIONS.md        # Guide for adding new cities/countries/regions
 ├── costs/                              # Cost tracking and metrics
 │   ├── COST_METRICS.md                # Cost analysis & optimization
 │   └── claude_api_*.csv               # Anthropic usage exports
@@ -153,6 +157,7 @@ tests/
 ├── test_greenhouse_scraper_simple.py   # Basic scraper tests
 ├── test_greenhouse_title_filter_unit.py # Title filter unit tests
 ├── test_incremental_pipeline.py        # Incremental upsert tests
+├── test_location_extractor.py          # Location extraction tests (50+ cases)
 ├── test_monzo_filtering.py             # Live company validation
 ├── test_resume_capability.py           # Resume capability tests
 └── test_two_companies.py               # Multi-company scraping
@@ -245,13 +250,13 @@ main()
 | Area | Count | Type |
 |------|-------|------|
 | Root wrappers | 8 | Python scripts |
-| Core pipeline | 8 | Python scripts |
-| Utilities | 11 | Python scripts |
+| Core pipeline | 9 | Python scripts |
+| Utilities | 12 | Python scripts |
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
-| Migrations | 7 | SQL scripts |
-| Config files | 12 | YAML/JSON files |
-| Test files | 11 | Python scripts |
-| **Total active** | **63** | **Scripts + configs** |
+| Migrations | 8 | SQL scripts |
+| Config files | 10 | YAML/JSON files |
+| Test files | 12 | Python scripts |
+| **Total active** | **65** | **Scripts + configs** |
 
 ## Current Status
 
@@ -266,6 +271,7 @@ main()
 ### Completed Epics
 - **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
 - **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
+- **Global Location Expansion Epic** - JSONB location system supporting 14 cities, 9 countries, 3 regions (completed 2025-12-22)
 
 ### Ready to Start
 - **Epic 7: Automation & Operational**
@@ -279,6 +285,6 @@ main()
 
 ---
 
-**Last Updated:** 2025-12-16
-**Changes:** Major cleanup - deleted 7 ad-hoc root scripts, removed orphaned docs, updated to reflect Lever scraper, new configs, and current utilities
+**Last Updated:** 2025-12-22
+**Changes:** Updated after Global Location Expansion Epic completion - added location_extractor.py, location_mapping.yaml, migrate_locations.py, test_location_extractor.py, migration 008, and architecture docs. Removed deprecated greenhouse_location_patterns.yaml and lever_location_patterns.yaml. Ruthlessly cleaned 36 debug files from repository.
 **Status:** Clean structure, 100% compliant with documented organization
