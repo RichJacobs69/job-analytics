@@ -336,7 +336,7 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
                 result['role']['job_family'] = 'out_of_scope'
             else:
                 # Get correct family from mapping
-                from job_family_mapper import get_correct_job_family
+                from pipeline.job_family_mapper import get_correct_job_family
                 job_family = get_correct_job_family(job_subfamily)
 
                 if job_family:
@@ -355,7 +355,7 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
         # Enrich skills with family codes using deterministic mapping
         # Claude extracts skill names; Python assigns families
         if 'skills' in result and result['skills']:
-            from skill_family_mapper import enrich_skills_with_families
+            from pipeline.skill_family_mapper import enrich_skills_with_families
             result['skills'] = enrich_skills_with_families(result['skills'])
             if verbose:
                 mapped = sum(1 for s in result['skills'] if s.get('family_code'))
