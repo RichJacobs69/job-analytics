@@ -229,9 +229,10 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             except (json.JSONDecodeError, TypeError):
                 metadata = {}
 
+        # Prefer adzuna_city (normalized code) over adzuna_location (free text)
         source_location = (
-            metadata.get('adzuna_location') or
-            metadata.get('adzuna_city') or  # Common field name for Adzuna jobs
+            metadata.get('adzuna_city') or  # Normalized city code (lon, nyc, etc.)
+            metadata.get('adzuna_location') or  # Free text fallback
             metadata.get('lever_location') or
             metadata.get('greenhouse_location')
         )

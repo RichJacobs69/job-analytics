@@ -125,9 +125,10 @@ def extract_location_from_metadata(metadata: Dict) -> Tuple[List[Dict], str]:
     Returns:
         Tuple of (locations list, legacy city_code)
     """
+    # Prefer adzuna_city (normalized code) over adzuna_location (free text)
     source_location = (
-        metadata.get('adzuna_location') or
-        metadata.get('adzuna_city') or
+        metadata.get('adzuna_city') or  # Normalized city code (lon, nyc, etc.)
+        metadata.get('adzuna_location') or  # Free text fallback
         metadata.get('lever_location') or
         metadata.get('greenhouse_location')
     )
