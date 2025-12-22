@@ -253,6 +253,60 @@ def split_multi_location(raw_location: str) -> List[str]:
 
 
 # =============================================================================
+# Working Arrangement Detection (Not Locations)
+# =============================================================================
+
+# Some companies put working arrangement in the location field instead of actual locations
+# These are NOT geographic locations - handle them specially
+WORKING_ARRANGEMENT_TERMS = {
+    # Terms that indicate remote work (return remote type)
+    'remote': {'type': 'remote', 'scope': 'global'},
+    'work from home': {'type': 'remote', 'scope': 'global'},
+    'wfh': {'type': 'remote', 'scope': 'global'},
+    'anywhere': {'type': 'remote', 'scope': 'global'},
+    'fully remote': {'type': 'remote', 'scope': 'global'},
+    'remote only': {'type': 'remote', 'scope': 'global'},
+
+    # Terms that are working arrangements but NOT locations (return unknown)
+    # We can't infer geographic location from these
+    'hybrid': None,  # None means return unknown
+    'in-office': None,
+    'in office': None,
+    'on-site': None,
+    'onsite': None,
+    'office-based': None,
+    'office based': None,
+}
+
+
+def check_working_arrangement_term(text: str) -> Optional[Dict]:
+    """
+    Check if text is a working arrangement term (not a location).
+
+    Some companies (e.g., Cloudflare) put "Hybrid" or "In-Office" in
+    the location field. These are working arrangements, not locations.
+
+    Args:
+        text: Normalized (lowercase) location text
+
+    Returns:
+        - Location dict if it's a remote term (e.g., {"type": "remote", "scope": "global"})
+        - Empty dict {} if it's a non-location arrangement (Hybrid, In-Office)
+        - None if it's not a working arrangement term (continue with location matching)
+    """
+    text_lower = text.lower().strip()
+
+    # Exact match check
+    if text_lower in WORKING_ARRANGEMENT_TERMS:
+        result = WORKING_ARRANGEMENT_TERMS[text_lower]
+        if result is None:
+            return {}  # Signal: it's an arrangement term but not a location
+        return result.copy()
+
+    return None  # Not a working arrangement term
+
+
+# =============================================================================
 # Main Extraction Function
 # =============================================================================
 
@@ -265,10 +319,11 @@ def extract_locations(
     Extract structured locations from a raw location string.
 
     This is the main entry point for location extraction. It:
-    1. Splits multi-location strings
-    2. Matches each part against patterns (remote, city, country, region)
-    3. Infers remote scope from co-located cities if applicable
-    4. Returns a list of location objects
+    1. Checks for working arrangement terms (Hybrid, Remote, In-Office)
+    2. Splits multi-location strings
+    3. Matches each part against patterns (remote, city, country, region)
+    4. Infers remote scope from co-located cities if applicable
+    5. Returns a list of location objects
 
     Args:
         raw_location: Raw location string from job posting
@@ -290,9 +345,20 @@ def extract_locations(
             {"type": "city", "country_code": "US", "city": "new_york"},
             {"type": "remote", "scope": "country", "country_code": "US"}
         ]
+
+        >>> extract_locations("Hybrid")
+        [{"type": "unknown"}]  # Working arrangement, not a location
     """
     if not raw_location or not raw_location.strip():
         return [{"type": "unknown"}]
+
+    # Early check: is the entire string just a working arrangement term?
+    arrangement = check_working_arrangement_term(raw_location)
+    if arrangement is not None:
+        if arrangement:  # Remote type
+            return [arrangement]
+        else:  # Empty dict = arrangement term but not location (Hybrid, In-Office)
+            return [{"type": "unknown"}]
 
     config = load_location_config()
     locations: List[Dict] = []

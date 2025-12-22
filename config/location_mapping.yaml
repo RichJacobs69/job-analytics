@@ -36,35 +36,92 @@ cities:
     country_code: US
     display_name: New York
     patterns:
+      # Core NYC
       - new york
       - nyc
+      - new york, ny
+      - new york city
+      - ny metro
+      # NYC Boroughs
       - manhattan
       - brooklyn
       - queens
       - bronx
       - staten island
-      - new york, ny
-      - new york city
-      - ny metro
+      # New Jersey (NYC Metro)
+      - jersey city
+      - hoboken
+      - newark
+      - weehawken
+      - secaucus
+      - edgewater
+      - fort lee
+      - union city
+      - bayonne
+      - harrison, nj
+      # Long Island
+      - long island
+      - long island city
+      - garden city
+      - hempstead
+      - mineola
+      # Westchester County
+      - westchester
+      - white plains
+      - yonkers
+      - tarrytown
+      - new rochelle
+      - stamford
+      - greenwich
 
   san_francisco:
     country_code: US
     display_name: San Francisco
     patterns:
+      # Core SF
       - san francisco
       - sf
-      - bay area
       - san francisco, ca
       - san francisco, california
+      # Bay Area general
+      - bay area
       - sf bay
       - sfba
       - south bay
       - east bay
+      - silicon valley
+      # Peninsula (San Mateo County)
+      - foster city
+      - san mateo
+      - redwood city
+      - menlo park
       - palo alto
+      - burlingame
+      - san carlos
+      - belmont
+      - daly city
+      - south san francisco
+      - millbrae
+      # South Bay (Santa Clara County)
       - mountain view
       - sunnyvale
-      - menlo park
-      - redwood city
+      - santa clara
+      - san jose
+      - cupertino
+      - los gatos
+      - campbell
+      - milpitas
+      # East Bay (Alameda County)
+      - oakland
+      - berkeley
+      - fremont
+      - hayward
+      - alameda
+      - emeryville
+      # North Bay (Marin County)
+      - marin
+      - san rafael
+      - sausalito
 
   denver:
     country_code: US
