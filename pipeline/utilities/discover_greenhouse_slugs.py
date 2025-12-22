@@ -629,7 +629,7 @@ async def discover_batch(companies: dict, batch_size: int = 5) -> dict:
 
 def load_existing_mapping() -> set:
     """Load existing company names from mapping file."""
-    mapping_path = Path(__file__).parent.parent.parent / 'config' / 'company_ats_mapping.json'
+    mapping_path = Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
 
     try:
         with open(mapping_path) as f:
@@ -646,7 +646,7 @@ def load_existing_mapping() -> set:
 
 def get_checked_log_path() -> Path:
     """Get path to the checked companies log."""
-    return Path(__file__).parent.parent.parent / 'config' / 'greenhouse_checked_companies.json'
+    return Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'checked_companies.json'
 
 
 def load_checked_companies() -> tuple[set, set]:
@@ -821,7 +821,7 @@ def main():
 
     # Save if requested
     if args.save and results['valid']:
-        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'company_ats_mapping.json'
+        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
         save_results(results, mapping_path)
     elif args.save:
         print("\nNo valid slugs to save.")

@@ -51,7 +51,7 @@ def get_zero_job_slugs():
     greenhouse_companies_in_db = set(job['company'] for job in response.data if job.get('company'))
 
     # Load all companies from mapping
-    mapping_path = Path(__file__).parent.parent.parent / 'config' / 'company_ats_mapping.json'
+    mapping_path = Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
     with open(mapping_path) as f:
         mapping = json.load(f)
 
@@ -273,7 +273,7 @@ def main():
         print("RECOMMENDATIONS")
         print("=" * 80)
         print(f"\n{len(results['invalid'])} companies have invalid boards and should be removed from:")
-        print("  config/company_ats_mapping.json")
+        print("  config/greenhouse/company_ats_mapping.json")
         print("\nThese companies either:")
         print("  - Migrated to a different ATS")
         print("  - Changed their Greenhouse slug")

@@ -67,7 +67,7 @@ pytest tests/ -m "not integration" -q
 ```
 
 ### 2. After Updating Title Patterns
-When you edit `config/greenhouse_title_patterns.yaml`:
+When you edit `config/greenhouse/title_patterns.yaml`:
 
 ```bash
 # Run pattern matching tests
@@ -187,7 +187,7 @@ pytest -m "not integration and not slow"
 
 ### Adding New Title Patterns
 
-**Step 1:** Add pattern to `config/greenhouse_title_patterns.yaml`
+**Step 1:** Add pattern to `config/greenhouse/title_patterns.yaml`
 
 ```yaml
 relevant_title_patterns:
@@ -236,7 +236,7 @@ FAILED test_is_relevant_role_data_scientist - AssertionError: assert False == Tr
 ```
 
 **Cause:** Pattern doesn't match expected title  
-**Fix:** Update pattern in `config/greenhouse_title_patterns.yaml` or adjust test expectations
+**Fix:** Update pattern in `config/greenhouse/title_patterns.yaml` or adjust test expectations
 
 #### Integration Test Failure
 ```
@@ -272,7 +272,7 @@ pytest tests/test_greenhouse_title_filter_unit.py --pdb
 
 ### Pattern Testing Workflow
 
-1. **Edit** `config/greenhouse_title_patterns.yaml`
+1. **Edit** `config/greenhouse/title_patterns.yaml`
 2. **Test** patterns:
    ```bash
    pytest tests/test_greenhouse_title_filter_unit.py::TestIntegrationWithRealPatterns -v
@@ -378,7 +378,7 @@ After deploying pattern changes:
 ### 5. Document Pattern Changes
 When updating patterns:
 ```yaml
-# config/greenhouse_title_patterns.yaml
+# config/greenhouse/title_patterns.yaml
 relevant_title_patterns:
   # Added 2025-12-07: Cover "Data Architect" roles
   - 'data architect'
@@ -389,8 +389,8 @@ relevant_title_patterns:
 ## Related Documentation
 
 **Configuration:**
-- `config/greenhouse_title_patterns.yaml` - Title patterns
-- `config/greenhouse_location_patterns.yaml` - Location patterns
+- `config/greenhouse/title_patterns.yaml` - Title patterns
+- `config/greenhouse/location_patterns.yaml` - Location patterns
 - `pytest.ini` - Pytest configuration
 
 **Implementation:**
@@ -442,7 +442,7 @@ pytest tests/ -x
 4. Review test architecture section above
 
 **Pattern questions:**
-- See `config/greenhouse_title_patterns.yaml` comments
+- See `config/greenhouse/title_patterns.yaml` comments
 - Check validation notes in config file
 - Review pattern testing workflow above
 

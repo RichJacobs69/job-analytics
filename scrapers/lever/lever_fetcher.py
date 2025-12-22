@@ -228,13 +228,13 @@ def fetch_lever_jobs(
         if filter_titles and title_patterns is None:
             from scrapers.greenhouse.greenhouse_scraper import load_title_patterns
             title_patterns = load_title_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever_title_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'title_patterns.yaml'
             )
 
         if filter_locations and location_patterns is None:
             from scrapers.greenhouse.greenhouse_scraper import load_location_patterns
             location_patterns = load_location_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever_location_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'location_patterns.yaml'
             )
 
         # Import filter functions
@@ -311,13 +311,13 @@ def load_company_mapping(mapping_path: Optional[Path] = None) -> Dict:
     Load company mapping from config file.
 
     Args:
-        mapping_path: Path to lever_company_mapping.json
+        mapping_path: Path to lever/company_mapping.json
 
     Returns:
         Dict with 'lever' key containing company data
     """
     if mapping_path is None:
-        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'lever_company_mapping.json'
+        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'lever' / 'company_mapping.json'
 
     if not mapping_path.exists():
         logger.warning(f"Company mapping not found: {mapping_path}")
@@ -383,7 +383,7 @@ def fetch_all_lever_companies(
         try:
             from scrapers.greenhouse.greenhouse_scraper import load_title_patterns
             title_patterns = load_title_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever_title_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'title_patterns.yaml'
             )
         except Exception as e:
             logger.warning(f"Could not load title patterns: {e}")
@@ -392,7 +392,7 @@ def fetch_all_lever_companies(
         try:
             from scrapers.greenhouse.greenhouse_scraper import load_location_patterns
             location_patterns = load_location_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever_location_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'location_patterns.yaml'
             )
         except Exception as e:
             logger.warning(f"Could not load location patterns: {e}")

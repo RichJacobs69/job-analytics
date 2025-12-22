@@ -48,7 +48,7 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 **Current Dataset (Supabase - Source of Truth, updated 2025-12-07):**
 - **Raw jobs:** 6,178 total (Adzuna: 4,963 | Greenhouse: 1,213 | Manual: 2)
 - **Enriched jobs:** 5,629 total (Adzuna: 4,676 | Greenhouse: 953)
-- **Companies scraped:** 302 Greenhouse companies configured (in `config/company_ats_mapping.json`)
+- **Companies scraped:** 302 Greenhouse companies configured (in `config/greenhouse/company_ats_mapping.json`)
 - **Geographic distribution:** London: 2,187 (38.9%) | NYC: 1,980 (35.2%) | Denver: 888 (15.8%) | Remote: 269 (4.8%) | Unknown: 305 (5.4%)
 - **Filtering rate:** 8.9% filtered, 91.1% kept
 - **Note:** Cumulative dataset from continuous scraping; numbers grow with each pipeline run
@@ -223,7 +223,7 @@ streamlit_app.py (User-Facing Dashboards)
 ### Greenhouse Scraper Status
 
 **[DONE] GREENHOUSE SCRAPING IMPLEMENTED:**
-- **Company coverage:** 302 Greenhouse companies configured in `config/company_ats_mapping.json`
+- **Company coverage:** 302 Greenhouse companies configured in `config/greenhouse/company_ats_mapping.json`
 - **Full descriptions captured:** 9,000-15,000+ chars per job (vs. 4,000 from main description alone)
 - **Complete sections included:** Main responsibilities, Hybrid work arrangements, Pay & benefits, In-office expectations, Remote work policies
 - **Current jobs collected:** 1,213 Greenhouse jobs across configured companies in dataset (as of 2025-12-07)
@@ -241,7 +241,7 @@ streamlit_app.py (User-Facing Dashboards)
 
 **Title Filtering & Cost Optimization:**
 - **Purpose:** Filter jobs by title BEFORE expensive description fetching and LLM classification
-- **Configuration:** 20 regex patterns in `config/greenhouse_title_patterns.yaml`
+- **Configuration:** 20 regex patterns in `config/greenhouse/title_patterns.yaml`
 - **Target roles:** Data Analyst, Data Engineer, Data Scientist, ML Engineer, AI Engineer, Product Manager, etc.
 - **Filter rate:** 60-70% of jobs filtered out (Sales, Marketing, HR, Legal, etc.)
 - **Cost savings:** $0.00388/job × filtered jobs (e.g., 70 jobs filtered = $0.27 saved)
@@ -253,7 +253,7 @@ streamlit_app.py (User-Facing Dashboards)
 
 **Location Filtering & Additional Cost Optimization:**
 - **Purpose:** Filter jobs by location AFTER title filter, BEFORE expensive description fetching
-- **Configuration:** Target city patterns in `config/greenhouse_location_patterns.yaml`
+- **Configuration:** Target city patterns in `config/greenhouse/location_patterns.yaml`
 - **Target locations:** London, New York City, Denver (with variations and aliases)
 - **Filter rate:** 89% of title-filtered jobs filtered out (jobs outside target cities)
 - **Combined savings:** Title (60-70%) + Location (89% of remaining) = 96% total reduction
@@ -276,7 +276,7 @@ streamlit_app.py (User-Facing Dashboards)
 **Phase 1: ATS Validation** [DONE]
 - Test 91 companies in config to confirm which still use Greenhouse
 - Some companies may have migrated (e.g., Brex) - update mapping
-- Output: Updated `config/company_ats_mapping.json` with company slugs
+- Output: Updated `config/greenhouse/company_ats_mapping.json` with company slugs
 
 **Phase 2: Create Unified Job Ingester** [DONE]
 - [DONE] File: `unified_job_ingester.py` implemented
@@ -1175,7 +1175,7 @@ Future enhancements planned after core platform (Epics 1-7) completion:
 
 **Implemented in:**
 1. ✅ `greenhouse_scraper.py` (browser automation with Playwright)
-   - Accepts company list from `config/company_ats_mapping.json`
+   - Accepts company list from `config/greenhouse/company_ats_mapping.json`
    - Handles page navigation, infinite scroll, dynamic content
    - Extracts full job descriptions (9,000-15,000+ chars)
    - Handles timeouts, rate limiting, headless browser errors

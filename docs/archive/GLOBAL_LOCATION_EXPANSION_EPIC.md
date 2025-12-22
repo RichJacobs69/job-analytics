@@ -88,8 +88,8 @@ working_arrangement VARCHAR  -- enum: onsite | hybrid | remote | flexible | unkn
 
 | File | Purpose | Current Patterns |
 |------|---------|------------------|
-| `config/greenhouse_location_patterns.yaml` | Greenhouse pre-filter | ~60 patterns (London, NYC, Denver, Remote variants) |
-| `config/lever_location_patterns.yaml` | Lever pre-filter | Copy of greenhouse patterns |
+| `config/greenhouse/location_patterns.yaml` | Greenhouse pre-filter | ~60 patterns (London, NYC, Denver, Remote variants) |
+| `config/lever/location_patterns.yaml` | Lever pre-filter | Copy of greenhouse patterns |
 
 ### Location Filtering Code
 
@@ -601,8 +601,8 @@ adzuna_endpoints:
 
 | File | Changes |
 |------|---------|
-| `config/greenhouse_location_patterns.yaml` | **DEPRECATE** - Replaced by `location_mapping.yaml` |
-| `config/lever_location_patterns.yaml` | **DEPRECATE** - Replaced by `location_mapping.yaml` |
+| `config/greenhouse/location_patterns.yaml` | **DEPRECATE** - Replaced by `location_mapping.yaml` |
+| `config/lever/location_patterns.yaml` | **DEPRECATE** - Replaced by `location_mapping.yaml` |
 | `docs/schema_taxonomy.yaml` | Update `location_city` enum documentation |
 
 ### API Routes (portfolio-site)

@@ -61,9 +61,9 @@ def load_title_patterns(config_path: Optional[Path] = None) -> List[str]:
         List of regex patterns for matching relevant job titles
     """
     if config_path is None:
-        # Default: config/greenhouse_title_patterns.yaml relative to project root
+        # Default: config/greenhouse/title_patterns.yaml relative to project root
         project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / 'config' / 'greenhouse_title_patterns.yaml'
+        config_path = project_root / 'config' / 'greenhouse' / 'title_patterns.yaml'
 
     try:
         with open(config_path, 'r') as f:
@@ -90,9 +90,9 @@ def load_location_patterns(config_path: Optional[Path] = None) -> List[str]:
         List of location strings to match (case-insensitive substring matching)
     """
     if config_path is None:
-        # Default: config/greenhouse_location_patterns.yaml relative to project root
+        # Default: config/greenhouse/location_patterns.yaml relative to project root
         project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / 'config' / 'greenhouse_location_patterns.yaml'
+        config_path = project_root / 'config' / 'greenhouse' / 'location_patterns.yaml'
 
     try:
         with open(config_path, 'r') as f:
@@ -325,8 +325,8 @@ class GreenhouseScraper:
             max_concurrent_pages: Max number of concurrent pages to prevent browser crashes
             filter_titles: Enable title-based filtering to reduce classification costs (default: True)
             filter_locations: Enable location-based filtering to reduce classification costs (default: True)
-            pattern_config_path: Path to YAML config with title patterns (default: config/greenhouse_title_patterns.yaml)
-            location_config_path: Path to YAML config with location patterns (default: config/greenhouse_location_patterns.yaml)
+            pattern_config_path: Path to YAML config with title patterns (default: config/greenhouse/title_patterns.yaml)
+            location_config_path: Path to YAML config with location patterns (default: config/greenhouse/location_patterns.yaml)
             company_timeout_seconds: Maximum time (in seconds) to spend scraping a single company (default: 300 = 5 min)
         """
         self.headless = headless

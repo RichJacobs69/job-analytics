@@ -87,12 +87,16 @@ scrapers/
 
 ```
 config/
+├── greenhouse/                        # Greenhouse-specific configs
+│   ├── company_ats_mapping.json       # Company → ATS slug mapping (302 companies)
+│   ├── checked_companies.json         # Validated Greenhouse companies
+│   ├── title_patterns.yaml            # Title patterns for Greenhouse filtering
+│   └── location_patterns.yaml         # Location patterns for Greenhouse filtering
+├── lever/                             # Lever-specific configs
+│   ├── company_mapping.json           # Lever company configurations
+│   ├── title_patterns.yaml            # Title patterns for Lever filtering
+│   └── location_patterns.yaml         # Location patterns for Lever filtering
 ├── agency_blacklist.yaml              # Agency names for hard filtering
-├── company_ats_mapping.json           # Company → ATS slug mapping (302 companies)
-├── greenhouse_checked_companies.json  # Validated Greenhouse companies
-├── greenhouse_title_patterns.yaml     # Title patterns for Greenhouse filtering
-├── lever_company_mapping.json         # Lever company configurations
-├── lever_title_patterns.yaml          # Title patterns for Lever filtering
 ├── location_mapping.yaml              # Master location config (cities, countries, regions)
 ├── job_family_mapping.yaml            # job_subfamily → job_family mapping (strict)
 ├── skill_family_mapping.yaml          # skill → skill_family mapping (849 skills)
@@ -252,9 +256,9 @@ main()
 | Utilities | 12 | Python scripts |
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
 | Migrations | 8 | SQL scripts |
-| Config files | 10 | YAML/JSON files |
+| Config files | 12 | YAML/JSON files (6 shared + 3 greenhouse + 3 lever) |
 | Test files | 10 | Python scripts |
-| **Total active** | **63** | **Scripts + configs** |
+| **Total active** | **65** | **Scripts + configs** |
 
 ## Current Status
 
@@ -284,5 +288,5 @@ main()
 ---
 
 **Last Updated:** 2025-12-22
-**Changes:** Updated after Global Location Expansion Epic completion - added location_extractor.py, location_mapping.yaml, migrate_locations.py, test_location_extractor.py, migration 008, and architecture docs. Removed deprecated greenhouse_location_patterns.yaml and lever_location_patterns.yaml. Ruthlessly cleaned 36 debug files from repository.
+**Changes:** Reorganized config into source-specific subdirectories (config/greenhouse/, config/lever/) for better organization. Each source now has its own company_mapping, title_patterns, and location_patterns files. Shared configs (agency_blacklist, location_mapping, job/skill family mappings) remain in config root.
 **Status:** Clean structure, 100% compliant with documented organization

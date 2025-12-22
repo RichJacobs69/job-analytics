@@ -409,7 +409,7 @@ jobs:
           from datetime import datetime
 
           # Load companies
-          with open('config/company_ats_mapping.json') as f:
+          with open('config/greenhouse/company_ats_mapping.json') as f:
               data = json.load(f)
 
           greenhouse = data.get('greenhouse', {})

@@ -176,7 +176,7 @@ async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
                 # Load default companies from mapping
                 import json
                 # Look for mapping file at project root config directory
-                mapping_file = Path(__file__).parent.parent / 'config' / 'company_ats_mapping.json'
+                mapping_file = Path(__file__).parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
 
                 if mapping_file.exists():
                     with open(mapping_file) as f:
@@ -611,7 +611,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 original_count = len(companies)
             else:
                 # Load default companies from mapping
-                mapping_file = Path(__file__).parent.parent / 'config' / 'company_ats_mapping.json'
+                mapping_file = Path(__file__).parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
 
                 if mapping_file.exists():
                     with open(mapping_file) as f:

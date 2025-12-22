@@ -137,16 +137,16 @@ Result: Deep analysis of premium companies (Greenhouse + Lever)
 
 ### Pipeline B: Greenhouse - COMPLETE ✓
 - **File:** `scrapers/greenhouse/greenhouse_scraper.py`
-- **Config:** `config/company_ats_mapping.json` (302 companies)
-- **Filtering:** `config/greenhouse_title_patterns.yaml`, `config/greenhouse_location_patterns.yaml`
+- **Config:** `config/greenhouse/company_ats_mapping.json` (302 companies)
+- **Filtering:** `config/greenhouse/title_patterns.yaml`, `config/greenhouse/location_patterns.yaml`
 - **Status:** Production-ready, 94.7% filter rate achieved
 
 ### Pipeline C: Lever - COMPLETE ✓
 - **File:** `scrapers/lever/lever_fetcher.py`
 - **Discovery:** `scrapers/lever/discover_lever_companies.py`
 - **Validation:** `scrapers/lever/validate_lever_sites.py`
-- **Config:** `config/lever_company_mapping.json` (50+ companies)
-- **Filtering:** `config/lever_title_patterns.yaml`, `config/lever_location_patterns.yaml`
+- **Config:** `config/lever/company_mapping.json` (50+ companies)
+- **Filtering:** `config/lever/title_patterns.yaml`, `config/lever/location_patterns.yaml`
 - **Status:** Production-ready
 
 ### Unified Ingester - COMPLETE ✓
@@ -225,17 +225,17 @@ def build_full_description(job_data: Dict) -> str:
 ### Lever-Specific
 | File | Purpose |
 |------|---------|
-| `config/lever_company_mapping.json` | Company slug → API instance mapping |
-| `config/lever_title_patterns.yaml` | Title patterns for filtering |
-| `config/lever_location_patterns.yaml` | Location patterns for filtering |
+| `config/lever/company_mapping.json` | Company slug → API instance mapping |
+| `config/lever/title_patterns.yaml` | Title patterns for filtering |
+| `config/lever/location_patterns.yaml` | Location patterns for filtering |
 
 ### Greenhouse-Specific
 | File | Purpose |
 |------|---------|
-| `config/company_ats_mapping.json` | Company → Greenhouse slug mapping |
-| `config/greenhouse_title_patterns.yaml` | Title patterns for filtering |
-| `config/greenhouse_location_patterns.yaml` | Location patterns for filtering |
-| `config/greenhouse_checked_companies.json` | Validated company slugs |
+| `config/greenhouse/company_ats_mapping.json` | Company → Greenhouse slug mapping |
+| `config/greenhouse/title_patterns.yaml` | Title patterns for filtering |
+| `config/greenhouse/location_patterns.yaml` | Location patterns for filtering |
+| `config/greenhouse/checked_companies.json` | Validated company slugs |
 
 ### Shared
 | File | Purpose |

@@ -12,7 +12,7 @@ USAGE:
     python validate_lever_sites.py [--input FILE] [--output FILE]
 
 OUTPUT:
-    Generates config/lever_company_mapping.json with validated companies.
+    Generates config/lever/company_mapping.json with validated companies.
 """
 
 import sys
@@ -268,7 +268,7 @@ def save_company_mapping(mapping: Dict, output_path: Optional[Path] = None) -> P
         Path to saved file
     """
     if output_path is None:
-        output_path = Path(__file__).parent.parent.parent / 'config' / 'lever_company_mapping.json'
+        output_path = Path(__file__).parent.parent.parent / 'config' / 'lever' / 'company_mapping.json'
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -352,7 +352,7 @@ Examples:
     parser.add_argument(
         '--output', '-o',
         type=Path,
-        help='Output file for company mapping (default: config/lever_company_mapping.json)'
+        help='Output file for company mapping (default: config/lever/company_mapping.json)'
     )
 
     parser.add_argument(
