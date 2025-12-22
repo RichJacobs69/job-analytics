@@ -1082,7 +1082,8 @@
         },
         "Comply Advantage": {
             "slug": "complyadvantage"
-        },
+        }
+    },
     "ashby": {
         "Notion": "notion",
         "Vercel": "vercel",

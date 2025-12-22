@@ -60,3 +60,25 @@ target_locations:
   - boulder
   - boulder, co
   - boulder, colorado
+
+  # San Francisco variations (added 2025-12-22)
+  - san francisco
+  - sf
+  - sfo  # City code
+  - san francisco, ca
+  - san francisco, california
+  - bay area
+  - silicon valley
+  - palo alto
+  - mountain view
+  - sunnyvale
+  - menlo park
+  - redwood city
+  - san jose
+  - oakland
+  - berkeley
+
+  # Singapore variations (added 2025-12-22)
+  - singapore
+  - sgp  # City code
+  - sg  # Country code
