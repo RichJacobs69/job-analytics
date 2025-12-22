@@ -161,6 +161,7 @@ GitHub Actions workflows in `.github/workflows/`:
 |-----|---------|
 | `docs/README.md` | Documentation index |
 | `docs/REPOSITORY_STRUCTURE.md` | Directory organization |
+| `docs/architecture/MULTI_SOURCE_PIPELINE.md` | Full pipeline architecture (Adzuna + Greenhouse + Lever) |
 | `docs/schema_taxonomy.yaml` | Classification rules |
 | `docs/architecture/ADDING_NEW_LOCATIONS.md` | Location system guide |
 | `docs/epic7_automation_planning.md` | Current automation work |
