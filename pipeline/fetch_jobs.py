@@ -165,8 +165,7 @@ async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
     try:
         from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
 
-        # Disable location filtering - locations are now extracted deterministically from job data
-        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600, filter_locations=False)
+        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600)
         await scraper.init()
 
         try:
@@ -602,8 +601,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
 
     # Initialize scraper
     try:
-        # Disable location filtering - locations are now extracted deterministically from job data
-        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600, filter_locations=False)
+        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600)
         await scraper.init()
 
         try:
