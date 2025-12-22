@@ -9,12 +9,12 @@ on:
   workflow_dispatch:
     inputs:
       batch_override:
-        description: 'Force specific batch (1-4), or leave empty for auto based on day'
+        description: 'Force specific batch (1-4), or auto based on day'
         required: false
-        default: ''
+        default: 'auto'
         type: choice
         options:
-          - ''
+          - 'auto'
           - '1'
           - '2'
           - '3'
@@ -64,8 +64,8 @@ jobs:
           batch_size = total_companies // 4 + 1
 
           # Determine batch number (allow manual override)
-          override = os.environ.get('BATCH_OVERRIDE', '').strip()
-          if override:
+          override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
+          if override and override != 'auto':
               batch_num = int(override) - 1  # Convert 1-4 to 0-3
               print(f"Using manual override: Batch {override}")
           else:
@@ -116,8 +116,8 @@ jobs:
           companies = sorted(greenhouse.keys())
           batch_size = len(companies) // 4 + 1
 
-          override = os.environ.get('BATCH_OVERRIDE', '').strip()
-          if override:
+          override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
+          if override and override != 'auto':
               batch_num = int(override) - 1
           else:
               batch_num = datetime.now().weekday() % 4
