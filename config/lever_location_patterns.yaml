@@ -48,15 +48,10 @@ target_locations:
   - singapore
 
   # Remote patterns (include remote jobs)
+  # NOTE: Be specific! "global" alone matches "global company" false positives
   - remote
   - work from home
   - wfh
-  - anywhere
-  - worldwide
-  - global
-
-  # US/UK general (catches "Remote - US", "UK based", etc.)
-  - united states
-  - united kingdom
-  - " us"
-  - " uk"
+  - fully remote
+  - remote-first
+  - work remotely
