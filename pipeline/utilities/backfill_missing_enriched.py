@@ -231,9 +231,22 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
 
         source_location = (
             metadata.get('adzuna_location') or
+            metadata.get('adzuna_city') or  # Common field name for Adzuna jobs
             metadata.get('lever_location') or
             metadata.get('greenhouse_location')
         )
+
+        # Convert short city codes to full names for location extractor
+        city_code_to_name = {
+            'lon': 'London',
+            'nyc': 'New York',
+            'den': 'Denver',
+            'sfo': 'San Francisco',
+            'sgp': 'Singapore',
+        }
+        if source_location and source_location.lower() in city_code_to_name:
+            source_location = city_code_to_name[source_location.lower()]
+
         extracted_locations = extract_locations(source_location) if source_location else [{"type": "unknown"}]
 
         # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
