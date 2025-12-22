@@ -152,13 +152,11 @@ tests/
 ├── test_db_upsert.py                   # Database upsert logic
 ├── test_e2e_greenhouse_filtered.py     # E2E pipeline tests
 ├── test_end_to_end.py                  # Full pipeline integration
-├── test_figma_location_filter.py       # Location filtering validation
 ├── test_greenhouse_scraper_filtered.py # Scraper integration tests
 ├── test_greenhouse_scraper_simple.py   # Basic scraper tests
 ├── test_greenhouse_title_filter_unit.py # Title filter unit tests
 ├── test_incremental_pipeline.py        # Incremental upsert tests
 ├── test_location_extractor.py          # Location extraction tests (50+ cases)
-├── test_monzo_filtering.py             # Live company validation
 ├── test_resume_capability.py           # Resume capability tests
 └── test_two_companies.py               # Multi-company scraping
 ```
@@ -255,8 +253,8 @@ main()
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
 | Migrations | 8 | SQL scripts |
 | Config files | 10 | YAML/JSON files |
-| Test files | 12 | Python scripts |
-| **Total active** | **65** | **Scripts + configs** |
+| Test files | 10 | Python scripts |
+| **Total active** | **63** | **Scripts + configs** |
 
 ## Current Status
 
