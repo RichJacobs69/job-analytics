@@ -251,7 +251,6 @@ class GreenhouseScraper:
             '[class*="metadata"]',  # Metadata container
             '[class*="jobmeta"]',  # Job metadata section
             'div > span:last-of-type',  # Last span in container (sometimes location is trailing text)
-            'div[class*="capitalize"][class*="rounded-full"]',  # Wayve: Tailwind badge pill (location badge)
         ],
         # Pagination selectors - Greenhouse uses different pagination styles
         'pagination': {
