@@ -20,6 +20,8 @@ relevant_title_patterns:
 
   # Data Analyst family
   - 'data analyst'
+  - 'product analyst'
+  - 'growth analyst'
   - 'analytics (engineer|lead|manager)'
   - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
   - 'bi engineer|bi analyst'
