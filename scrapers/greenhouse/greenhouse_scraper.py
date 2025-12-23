@@ -275,7 +275,7 @@ class GreenhouseScraper:
                 'button[class*="pagination"]',
                 'nav[class*="pagination"] a',
                 'nav[aria-label*="Pagination"] a',
-                'nav[role="navigation"] a',
+                # Removed: 'nav[role="navigation"] a' - too broad, matches category nav links
                 'ul[class*="pagination"] a',
                 'ul[aria-label*="Pagination"] a',
                 'ol[class*="pagination"] a',
@@ -865,7 +865,18 @@ class GreenhouseScraper:
                                 is_enabled = await link.is_enabled()
 
                                 if is_visible and is_enabled:
-                                    link_text = await link.text_content()
+                                    link_text = (await link.text_content() or '').strip()
+
+                                    # Validate that this looks like a page number, not a category link
+                                    # Accept: numeric ("2", "3"), or pagination keywords ("Next", "Previous", ">", ">>")
+                                    is_numeric = link_text.isdigit()
+                                    pagination_keywords = ['next', 'prev', 'previous', '>', '<', '>>', '<<', 'more']
+                                    has_pagination_keyword = any(kw in link_text.lower() for kw in pagination_keywords)
+
+                                    if not (is_numeric or has_pagination_keyword):
+                                        # Skip non-pagination links (e.g., "Fraud Detection", "ComplyLaunch")
+                                        continue
+
                                     visited_page_urls.add(link_href)  # Mark as visited before clicking
                                     await link.click()
                                     await self._wait_for_listings(page, company_slug)
@@ -1149,6 +1160,11 @@ class GreenhouseScraper:
             # or relative paths. If relative, join with a default base URL
             if not job_url.startswith('http'):
                 job_url = urljoin(self.BASE_URLS[0], job_url)
+
+            # Fix Block-specific URL issue: Block's board has hrefs like /careers/jobs/ID
+            # but the actual working URLs are /block/jobs/ID. Replace /careers/ with /{slug}/
+            if '/careers/jobs/' in job_url and company_slug:
+                job_url = job_url.replace('/careers/jobs/', f'/{company_slug}/jobs/')
 
             logger.debug(f"[{company_slug}] Extracted job: {title} -> {job_url}")
 

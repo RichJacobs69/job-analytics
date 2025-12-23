@@ -30,9 +30,6 @@
         "Thirty Madison": {
             "slug": "thirtymadison"
         },
-        "Ambient AI": {
-            "slug": "ambient"
-        },
         "Fora Travel": {
             "slug": "foratravel"
         },
@@ -56,9 +53,6 @@
         },
         "Hightouch": {
             "slug": "hightouch"
-        },
-        "Airbyte": {
-            "slug": "airbyte"
         },
         "LaunchDarkly": {
             "slug": "launchdarkly"
@@ -507,9 +501,6 @@
         "YipitData": {
             "slug": "yipitdata"
         },
-        "Cara Medical": {
-            "slug": "caramedicalltd"
-        },
         "Clear": {
             "slug": "clear"
         },
@@ -821,9 +812,6 @@
         },
         "Asana": {
             "slug": "asana"
-        },
-        "Block": {
-            "slug": "block"
         },
         "Cleo": {
             "slug": "cleo"
