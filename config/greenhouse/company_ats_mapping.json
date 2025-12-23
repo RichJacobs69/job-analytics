@@ -678,9 +678,6 @@
         "Riskified": {
             "slug": "riskified"
         },
-        "Healthie": {
-            "slug": "healthie"
-        },
         "Mindbody": {
             "slug": "mindbody"
         },
@@ -719,9 +716,6 @@
         },
         "Everlaw": {
             "slug": "everlaw"
-        },
-        "Intern": {
-            "slug": "intern"
         },
         "Linqia": {
             "slug": "linqia"
@@ -890,9 +884,6 @@
         },
         "Palmetto": {
             "slug": "palmetto"
-        },
-        "EnergySage": {
-            "slug": "energysage"
         },
         "Redwood Materials": {
             "slug": "redwoodmaterials"
