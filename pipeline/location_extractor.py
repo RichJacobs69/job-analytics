@@ -121,6 +121,21 @@ def match_remote_pattern(text: str, config: Dict) -> Optional[Dict]:
     Returns:
         Location object if match found, None otherwise
     """
+    result, _ = _match_remote_pattern_with_info(text, config)
+    return result
+
+
+def _match_remote_pattern_with_info(text: str, config: Dict) -> Tuple[Optional[Dict], Optional[str]]:
+    """
+    Match text against remote patterns, returning both the match and the matched pattern.
+
+    Args:
+        text: Normalized (lowercase) location text
+        config: Location config dict
+
+    Returns:
+        Tuple of (Location object, matched pattern string) or (None, None) if no match
+    """
     remote_patterns = config.get("remote_patterns", {})
 
     # Check specific remote patterns first (us_only, uk_only, emea, etc.)
@@ -141,7 +156,7 @@ def match_remote_pattern(text: str, config: Dict) -> Optional[Dict]:
                     location["country_code"] = pattern_data["country_code"]
                 if "region" in pattern_data:
                     location["region"] = pattern_data["region"]
-                return location
+                return location, pattern.lower()
 
     # Check global remote patterns last
     global_patterns = remote_patterns.get("global", {}).get("patterns", [])
@@ -150,9 +165,9 @@ def match_remote_pattern(text: str, config: Dict) -> Optional[Dict]:
             return {
                 "type": "remote",
                 "scope": "global"
-            }
+            }, pattern.lower()
 
-    return None
+    return None, None
 
 
 def match_region_pattern(text: str, config: Dict) -> Optional[Dict]:
@@ -366,11 +381,15 @@ def extract_locations(
     # Early check: try matching the FULL string against country-specific remote patterns
     # BEFORE splitting. This catches "Remote - US" which would otherwise be split into
     # ["Remote", "US"] and incorrectly classified as global remote + country.
+    # Only return early if the remote pattern covers most of the string (>50% of length),
+    # to avoid matching substrings in multi-location strings like "NYC; Remote, US".
     full_text_lower = raw_location.lower().strip()
-    remote_match = match_remote_pattern(full_text_lower, config)
-    if remote_match and remote_match.get("scope") != "global":
-        # Found a country/region-specific remote match - return it directly
-        return [remote_match]
+    remote_match, matched_pattern = _match_remote_pattern_with_info(full_text_lower, config)
+    if remote_match and remote_match.get("scope") != "global" and matched_pattern:
+        # Only return early if pattern covers >50% of the string
+        coverage = len(matched_pattern) / len(full_text_lower)
+        if coverage > 0.5:
+            return [remote_match]
 
     # Split into parts if multi-location
     parts = split_multi_location(raw_location)
