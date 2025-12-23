@@ -35,11 +35,25 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           playwright install chromium
           playwright install-deps
+
+      - name: Restore URL cache
+        uses: actions/cache@v4
+        with:
+          path: output/greenhouse_scraper_cache.json
+          key: greenhouse-url-cache-${{ github.run_id }}
+          restore-keys: |
+            greenhouse-url-cache-
 
       - name: Compute batch and run scraper
         env:
