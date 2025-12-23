@@ -59,6 +59,8 @@ cities:
       - union city
       - bayonne
       - harrison, nj
+      # Hudson County catch-all (covers Jersey City neighborhoods)
+      - hudson county
       # Long Island
       - long island
       - long island city
@@ -149,6 +151,12 @@ cities:
       - arvada
       - thornton, co
       - golden, co
+      - federal heights
+      - commerce city
+      # County catch-alls for Adzuna format "City, County"
+      - arapahoe county
+      - adams county
+      - douglas county
 
   # -------------------------
   # United Kingdom
@@ -175,6 +183,24 @@ cities:
     patterns:
       - singapore
       - sg
+      # Singapore districts/regions
+      - jurong
+      - jurong town
+      - jurong east
+      - jurong west
+      - tuas
+      - clementi
+      - buona vista
+      - one-north
+      - changi
+      - tampines
+      - woodlands
+      - ang mo kio
+      - bishan
+      - orchard
+      - marina bay
+      - raffles place
+      - tanjong pagar
 
 # =============================================================================
 # COUNTRIES
