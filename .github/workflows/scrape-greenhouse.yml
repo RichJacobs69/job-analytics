@@ -23,7 +23,7 @@ on:
 jobs:
   greenhouse-batch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120  # ~91 companies at ~47 sec each + API retry buffer
 
     steps:
       - name: Checkout repository
