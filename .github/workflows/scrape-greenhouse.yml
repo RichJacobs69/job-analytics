@@ -113,6 +113,14 @@ jobs:
           exit(result.returncode)
           EOF
 
+      - name: Upload URL cache as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: greenhouse-url-cache
+          path: output/greenhouse_scraper_cache.json
+          if-no-files-found: ignore
+
       - name: Summary
         if: always()
         env:

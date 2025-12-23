@@ -70,6 +70,7 @@ DEFAULT_SEARCH_QUERIES = [
     "Data Analyst",
     "AI Engineer",
     "Data Architect",
+    "Product Analyst",
 
     # Product roles
     "Product Manager",
