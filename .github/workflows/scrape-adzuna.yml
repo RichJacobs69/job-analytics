@@ -25,7 +25,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        city: ${{ github.event.inputs.city == 'all' && fromJson('["lon", "nyc", "den", "sfo", "sgp"]') || fromJson(format('["{0}"]', github.event.inputs.city)) }}
+        # For scheduled runs: github.event.inputs is null, so we default to all cities
+        # For manual runs with 'all': run all cities
+        # For manual runs with specific city: run just that city
+        city: ${{ (github.event_name == 'schedule' || github.event.inputs.city == 'all' || github.event.inputs.city == '') && fromJson('["lon", "nyc", "den", "sfo", "sgp"]') || fromJson(format('["{0}"]', github.event.inputs.city)) }}
 
     steps:
       - name: Checkout repository
