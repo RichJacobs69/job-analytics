@@ -48,6 +48,13 @@ relevant_title_patterns:
   # Data Architect family
   - 'data architect'
 
+  # Data/Analytics Leadership (Director+)
+  - 'director.*(data|analytics|data science|ml|machine learning|ai)'
+  - '(data|analytics|data science|ml|machine learning|ai).*director'
+  - '(vp|vice president).*(data|analytics|data science|ml|machine learning|ai)'
+  - 'head of (data|analytics|data science|ml|machine learning|ai)'
+  - 'chief (data|analytics|ai) officer|cdo|cao|caio'
+
   # ===== PRODUCT ROLES =====
 
   # Product Manager family
@@ -87,26 +94,31 @@ pattern_notes: |
   - Combined titles: "AI Product Manager", "Data Product Manager", "ML PM"
 
   Known Good Matches (from validation):
-  - "Analytics Lead" ✓
-  - "Principal Data Scientist" ✓
-  - "Staff Data PM" ✓
-  - "Senior ML Engineer" ✓
-  - "Applied Research Scientist" ✓
-  - "Data Platform Engineer" ✓
-  - "Senior Data Science Manager" ✓ (added 2025-12-22)
-  - "Data Engineering Manager" ✓ (added 2025-12-22)
-  - "ML Manager" ✓ (added 2025-12-22)
+  - "Analytics Lead" [OK]
+  - "Principal Data Scientist" [OK]
+  - "Staff Data PM" [OK]
+  - "Senior ML Engineer" [OK]
+  - "Applied Research Scientist" [OK]
+  - "Data Platform Engineer" [OK]
+  - "Senior Data Science Manager" [OK] (added 2025-12-22)
+  - "Data Engineering Manager" [OK] (added 2025-12-22)
+  - "ML Manager" [OK] (added 2025-12-22)
+  - "Associate Director, Analytics" [OK] (added 2025-12-23)
+  - "Analytics Director" [OK] (added 2025-12-23)
+  - "VP of Data" [OK] (added 2025-12-23)
+  - "Head of Data Science" [OK] (added 2025-12-23)
+  - "Chief Data Officer" [OK] (added 2025-12-23)
 
   Known Filtered Roles (expected to NOT match):
-  - "Account Executive" ✗
-  - "Sales Development Representative" ✗
-  - "Marketing Manager" ✗
-  - "Product Marketing Manager" ✗ (not product management)
-  - "Software Engineer" ✗ (unless combined with Data/ML)
-  - "DevOps Engineer" ✗
-  - "HR Business Partner" ✗
-  - "Legal Counsel" ✗
-  - "Finance Analyst" ✗ (not data analyst)
+  - "Account Executive" [NOT OK]
+  - "Sales Development Representative" [NOT OK]
+  - "Marketing Manager" [NOT OK]
+  - "Product Marketing Manager" [NOT OK] (not product management)
+  - "Software Engineer" [NOT OK] (unless combined with Data/ML)
+  - "DevOps Engineer" [NOT OK]
+  - "HR Business Partner" [NOT OK]
+  - "Legal Counsel" [NOT OK]
+  - "Finance Analyst" [NOT OK] (not data analyst)
 
   Ambiguous Cases (intentionally excluded):
   - "Software Engineer" - Too broad, would catch backend/frontend/infra roles
@@ -116,8 +128,8 @@ pattern_notes: |
   - "Growth Engineer" - Engineering role, not product/data focus
 
 # Version tracking
-version: "1.1"
-last_updated: "2025-12-22"
+version: "1.2"
+last_updated: "2025-12-23"
 validated_on:
   - company: "Stripe"
     jobs_scraped: 100
