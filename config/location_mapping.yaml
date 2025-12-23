@@ -115,10 +115,14 @@ cities:
       - milpitas
       # East Bay (Alameda County)
       - oakland
+      - oakland, ca
       - berkeley
+      - berkeley, ca
       - fremont
+      - fremont, ca
       - hayward
       - alameda
+      - alameda, ca
       - emeryville
       # North Bay (Marin County)
       - marin
