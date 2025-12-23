@@ -134,6 +134,21 @@ cities:
       - boulder, co
       - colorado springs
       - denver metro
+      # Denver Metro suburbs
+      - centennial
+      - aurora, co
+      - aurora, colorado
+      - englewood, co
+      - littleton
+      - lakewood, co
+      - greenwood village
+      - lone tree
+      - highlands ranch
+      - broomfield
+      - westminster, co
+      - arvada
+      - thornton, co
+      - golden, co
 
   # -------------------------
   # United Kingdom
