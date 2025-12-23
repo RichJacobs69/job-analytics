@@ -363,6 +363,15 @@ def extract_locations(
     config = load_location_config()
     locations: List[Dict] = []
 
+    # Early check: try matching the FULL string against country-specific remote patterns
+    # BEFORE splitting. This catches "Remote - US" which would otherwise be split into
+    # ["Remote", "US"] and incorrectly classified as global remote + country.
+    full_text_lower = raw_location.lower().strip()
+    remote_match = match_remote_pattern(full_text_lower, config)
+    if remote_match and remote_match.get("scope") != "global":
+        # Found a country/region-specific remote match - return it directly
+        return [remote_match]
+
     # Split into parts if multi-location
     parts = split_multi_location(raw_location)
 
