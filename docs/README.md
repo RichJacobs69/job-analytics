@@ -4,6 +4,16 @@ This directory contains all specifications, guides, and architectural documentat
 
 > **For development setup, architecture implementation, and troubleshooting, see [`../CLAUDE.md`](../CLAUDE.md)** - It provides development commands, code walkthroughs, key implementation details, and solutions to common issues.
 
+## Pipeline Status
+
+| Pipeline | Schedule | Status |
+|----------|----------|--------|
+| Greenhouse | Daily Mon-Thu | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
+| Lever | Every 48h | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
+| Adzuna | Every 48h | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
+
+**Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
+
 ## License
 
 This project is provided for **portfolio viewing only**.
