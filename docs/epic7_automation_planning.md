@@ -13,27 +13,33 @@ Automate the job analytics pipeline using GitHub Actions to maintain fresh dashb
 
 **Approach:**
 - Lever + Adzuna: Every 48 hours (fast HTTP APIs)
-- Greenhouse: Daily batches Mon-Thu (360 companies split into 4 batches of ~91)
+- Greenhouse: Daily batches Mon-Thu (291 companies split into 4 batches of ~73)
 
 **Budget:** ~400 min/month of 2,000 min available (80% buffer for retries/debugging).
 
-### Current Status (2025-12-22)
+### Current Status (2025-12-23)
 
-**Phase 1 IN PROGRESS:**
-- [DONE] All 3 workflows created
+**Phase 1-2 COMPLETE - All pipelines operational!**
+
+- [DONE] All 3 workflows created and tested
 - [DONE] Secrets configured (ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY, ADZUNA_APP_ID, ADZUNA_API_KEY)
 - [DONE] Import path fixes for GitHub Actions compatibility
 - [DONE] Location filter config files created (were missing!)
 - [DONE] False positive patterns fixed ("global" removed from location filters)
 - [DONE] Lever workflow tested in GitHub Actions
-- [TODO] Adzuna workflow tested in GitHub Actions
-- [TODO] Greenhouse workflow tested in GitHub Actions
+- [DONE] Adzuna workflow tested in GitHub Actions
+- [DONE] Greenhouse workflow tested in GitHub Actions (4 batches running Mon-Thu)
 
 **Issues Discovered & Fixed:**
 1. `lever_location_patterns.yaml` and `greenhouse_location_patterns.yaml` didn't exist - location filtering was silently disabled
 2. "global" pattern matched "global company" in descriptions - caused false positives (India, Brazil jobs slipping through)
 3. Import paths needed `pipeline.` prefix for GitHub Actions environment
 4. Bay Area cities (Foster City, San Mateo) and NYC Metro (Jersey City, Hoboken) missing from location mapping
+5. Token limit errors - added 50K char description truncation in classifier.py
+6. Defunct companies causing DNS failures - removed 10+ companies from mapping
+7. Figma custom careers page - removed (0% success rate due to React DOM structure)
+8. Title patterns missing - added AI/ML, analytics director patterns
+9. East Bay location patterns - added explicit ", CA" variants
 
 ---
 
@@ -69,8 +75,8 @@ Automate the job analytics pipeline using GitHub Actions to maintain fresh dashb
 
 ### Constraints
 - GitHub Actions free tier: 2,000 minutes/month (Linux runners)
-- Greenhouse full scrape: 4+ hours (240+ minutes)
-- 302 Greenhouse companies configured
+- Greenhouse full scrape: 4+ hours (240+ minutes) - mitigated by batching
+- 291 Greenhouse companies configured (after removing defunct/custom pages)
 - Browser automation requires Playwright setup in CI
 - Secrets needed: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY, ADZUNA_APP_ID, ADZUNA_API_KEY
 
@@ -122,11 +128,11 @@ python wrappers/run_all_cities.py --max-jobs 100 --sources adzuna
 | Metric | Value |
 |--------|-------|
 | **Type** | Browser automation (Playwright) |
-| **Companies** | 360 configured (`company_ats_mapping.json`) |
-| **Typical Runtime** | 4-5 hours full scrape (240-300 min) |
-| **Per-Company Average** | ~40-50 seconds |
-| **Monthly Minutes (Full Daily)** | 270 min × 30 = 8,100 min (EXCEEDS LIMIT) |
-| **Bottleneck** | Browser startup, page loads, dynamic content |
+| **Companies** | 291 configured (`company_ats_mapping.json`) |
+| **Typical Runtime** | 60-90 min per batch (~73 companies) |
+| **Per-Company Average** | ~30-60 seconds (scrape + classify) |
+| **Monthly Minutes (Batched)** | ~80 min × 16 runs = ~1,280 min/month |
+| **Bottleneck** | Browser startup, page loads, classification API |
 
 **Commands:**
 ```bash
@@ -203,7 +209,7 @@ Companies are dynamically assigned to batches via alphabetical sorting:
 
 ```python
 companies = sorted(greenhouse_companies.keys())  # Deterministic order
-batch_size = len(companies) // 4 + 1             # 91 companies per batch
+batch_size = len(companies) // 4 + 1             # ~73 companies per batch
 batch_num = datetime.now().weekday() % 4         # Mon=0, Tue=1, Wed=2, Thu=3
 
 start = batch_num * batch_size
@@ -213,10 +219,10 @@ batch = companies[start:end]
 
 | Batch | Day | Companies | Example Range |
 |-------|-----|-----------|---------------|
-| 1 | Monday | 91 | Able → Dwelly |
-| 2 | Tuesday | 91 | Easyship → Marqeta |
-| 3 | Wednesday | 91 | MasterClass → Scopely |
-| 4 | Thursday | 87 | Scythe Robotics → project44 |
+| 1 | Monday | ~73 | Able → Dice FM |
+| 2 | Tuesday | ~73 | Discord → Linqia |
+| 3 | Wednesday | ~73 | Litify → Prove |
+| 4 | Thursday | ~72 | Quantifind → project44 |
 
 **Benefits:**
 - No resume logic complexity
@@ -241,12 +247,14 @@ Jobs typically stay open 30+ days, so this schedule catches everything with mass
 
 | Workflow | Frequency | Duration | Monthly |
 |----------|-----------|----------|---------|
-| Lever | Every 48h | 10 min | 150 min |
-| Adzuna (5 cities) | Every 48h | 10 min | 150 min |
-| Greenhouse (91 companies/batch) | Daily Mon-Thu | 6 min | ~100 min |
-| **TOTAL** | | | **~400 min** |
+| Lever | Every 48h | 10-15 min | ~200 min |
+| Adzuna (5 cities) | Every 48h | 10-15 min | ~200 min |
+| Greenhouse (~73 companies/batch) | Daily Mon-Thu | 60-90 min | ~1,280 min |
+| **TOTAL** | | | **~1,680 min** |
 
-**Only 20% of 2,000 min budget - 1,600 min buffer for retries/debugging.**
+**Using ~84% of 2,000 min budget - 320 min buffer for retries/debugging.**
+
+**Note:** Actual Greenhouse runtime observed at 60-90 min per batch (includes classification). This is higher than initial estimates but still within budget.
 
 **Why this works:**
 - Jobs open 30+ days = plenty of time to catch them
@@ -481,11 +489,16 @@ jobs:
 - [DONE] Batch logic: Mon=Batch1, Tue=Batch2, Wed=Batch3, Thu=Batch4
 - [DONE] Manual override option for batch selection
 - [DONE] Location filtering enabled and working
+- [DONE] Log review and pattern fixes (title patterns, location patterns)
+- [DONE] Remove defunct companies (DNS failures)
+- [DONE] Remove custom career page companies (Figma)
+- [DONE] Add token limit protection (50K char truncation)
 
 **Deliverables:**
 - [DONE] Working Greenhouse workflow (daily Mon-Thu batches)
 - [DONE] Deterministic batch assignment via alphabetical sort
-- [DONE] ~91 companies per batch, ~6 min runtime each
+- [DONE] ~73 companies per batch, 60-90 min runtime each
+- [DONE] PIPELINE_LOG_REVIEW.md guide for debugging
 
 ### Phase 3: Monitoring & Alerting (Session 3) - TODO
 **Goal:** Operational visibility and failure handling
@@ -599,12 +612,14 @@ ADZUNA_API_KEY=...
 
 | Scenario | Monthly Minutes | Status |
 |----------|-----------------|--------|
-| Lever (10 min × 15 runs, every 48h) | 150 | [OK] |
-| Adzuna (10 min × 15 runs, every 48h) | 150 | [OK] |
-| Greenhouse (6 min × 16 runs, Mon-Thu) | ~100 | [OK] |
-| **TOTAL** | **~400 min** | [OK] 80% buffer remaining |
+| Lever (15 min × 15 runs, every 48h) | ~200 | [OK] |
+| Adzuna (15 min × 15 runs, every 48h) | ~200 | [OK] |
+| Greenhouse (80 min × 16 runs, Mon-Thu) | ~1,280 | [OK] |
+| **TOTAL** | **~1,680 min** | [OK] 16% buffer remaining |
 
-**Massive headroom:** Only using 20% of 2,000 min budget.
+**Within budget:** Using ~84% of 2,000 min budget. Buffer for retries/debugging.
+
+**Note:** Greenhouse runtime higher than initial estimates due to classification time. Monitor actual usage.
 
 ### Mitigation if Over Budget
 
@@ -702,12 +717,12 @@ ADZUNA_API_KEY=...
 Epic 7 is complete when:
 
 - [DONE] All 3 scrapers running automatically without manual intervention
-- [IN PROGRESS] Pipeline runs successfully >=95% of the time (monitoring)
+- [IN PROGRESS] Pipeline runs successfully >=95% of the time (monitoring needed)
 - [DONE] Lever/Adzuna data refreshed every 48 hours
 - [DONE] Greenhouse data refreshed weekly (all companies covered Mon-Thu)
-- [DONE] Staying within 2,000 minutes/month budget (~400 min expected)
-- [TODO] Failure notifications working
-- [IN PROGRESS] Documentation complete for operations handoff
+- [DONE] Staying within 2,000 minutes/month budget (~1,680 min actual)
+- [TODO] Failure notifications working (Phase 3)
+- [DONE] Documentation complete (PIPELINE_LOG_REVIEW.md, epic doc updated)
 
 ---
 
@@ -720,7 +735,7 @@ Epic 7 is complete when:
 
 ---
 
-**Last Updated:** 2025-12-22 22:30 UTC
+**Last Updated:** 2025-12-23
 **Author:** Claude Code
-**Status:** Phase 1-2 Complete, Phase 3-4 Pending
+**Status:** Phase 1-2 Complete (Core automation working), Phase 3-4 Pending (Monitoring & Polish)
 
