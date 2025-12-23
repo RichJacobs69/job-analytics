@@ -289,6 +289,8 @@ remote_patterns:
     patterns:
       - remote - us
       - remote - usa
+      - remote-us
+      - remote-usa
       - remote (us)
       - us remote
       - remote united states
@@ -304,6 +306,8 @@ remote_patterns:
     patterns:
       - remote - uk
       - remote - gb
+      - remote-uk
+      - remote-gb
       - remote (uk)
       - uk remote
       - remote united kingdom
