@@ -42,6 +42,7 @@ relevant_title_patterns:
   # ML/AI Engineer family
   - 'ml engineer|machine learning engineer'
   - 'ai engineer'
+  - 'ai/ml'
   - 'mlops'
   - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
 

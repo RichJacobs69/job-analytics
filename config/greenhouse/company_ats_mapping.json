@@ -90,9 +90,6 @@
         "Guild Education": {
             "slug": "guild"
         },
-        "Scythe Robotics": {
-            "slug": "scytherobotics"
-        },
         "OneTrust": {
             "slug": "onetrust"
         },
@@ -930,9 +927,6 @@
         "Figment": {
             "slug": "figment"
         },
-        "Messari": {
-            "slug": "messari"
-        },
         "Nansen": {
             "slug": "nansen"
         },
@@ -956,9 +950,6 @@
         },
         "Lattice": {
             "slug": "lattice"
-        },
-        "Papaya Global": {
-            "slug": "papaya"
         },
         "Root Insurance": {
             "slug": "root"
