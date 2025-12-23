@@ -93,26 +93,37 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 
     skills_ontology_text = "\n".join(skills_sections)
 
+    # Truncate very long descriptions to avoid token limit errors
+    # Claude 3.5 Haiku has 200K token limit; ~4 chars per token = 50K chars safe limit for description
+    MAX_DESCRIPTION_CHARS = 50000
+
+    def truncate_text(text: str, max_chars: int) -> str:
+        if not text or len(text) <= max_chars:
+            return text
+        return text[:max_chars] + "\n\n[DESCRIPTION TRUNCATED - exceeded maximum length]"
+
     # Build the job input section based on whether we have structured input
     if structured_input:
         job_input_section = "# JOB TO CLASSIFY\n\n"
         job_input_section += f"**Job Title:** {structured_input.get('title', 'Unknown')}\n"
         job_input_section += f"**Company:** {structured_input.get('company', 'Unknown')}\n"
-        
+
         if structured_input.get('category'):
             job_input_section += f"**Category:** {structured_input.get('category')}\n"
-        
+
         if structured_input.get('location'):
             job_input_section += f"**Location:** {structured_input.get('location')}\n"
-        
+
         if structured_input.get('salary_min') or structured_input.get('salary_max'):
             salary_min = structured_input.get('salary_min', 'N/A')
             salary_max = structured_input.get('salary_max', 'N/A')
             job_input_section += f"**Salary Range:** {salary_min} - {salary_max}\n"
-        
-        job_input_section += f"\n**Job Description:**\n{structured_input.get('description', job_text)}"
+
+        description = truncate_text(structured_input.get('description', job_text), MAX_DESCRIPTION_CHARS)
+        job_input_section += f"\n**Job Description:**\n{description}"
     else:
-        job_input_section = f"# JOB POSTING TO CLASSIFY\n\n{job_text}"
+        truncated_text = truncate_text(job_text, MAX_DESCRIPTION_CHARS)
+        job_input_section = f"# JOB POSTING TO CLASSIFY\n\n{truncated_text}"
     
     prompt = f"""You are a precise job posting classifier. Analyze the job posting below and return structured JSON.
 
