@@ -1152,6 +1152,40 @@ class GreenhouseScraper:
             # Remove any remaining newlines within title and normalize whitespace
             title = ' '.join(title.split())
 
+            # Try 4: If title is generic button text, look at parent element for actual title
+            # (Handles Skydio-style boards where <a> link text is "View & Apply" but title is in parent)
+            generic_button_texts = ['view & apply', 'view and apply', 'apply', 'apply now', 'view', 'view job', 'learn more']
+            if title.lower() in generic_button_texts:
+                try:
+                    parent = await asyncio.wait_for(
+                        job_element.evaluate_handle('el => el.parentElement'),
+                        timeout=1
+                    )
+                    # Try common title selectors in parent
+                    parent_title_selectors = ['h2', 'h3', 'h4', '.job-title', '[class*="title"]', 'a[class*="title"]', 'span[class*="title"]']
+                    for selector in parent_title_selectors:
+                        try:
+                            title_elem = await asyncio.wait_for(
+                                parent.query_selector(selector),
+                                timeout=1
+                            )
+                            if title_elem:
+                                parent_title = await asyncio.wait_for(
+                                    title_elem.text_content(),
+                                    timeout=1
+                                )
+                                if parent_title and parent_title.strip() and parent_title.strip().lower() not in generic_button_texts:
+                                    title = parent_title.strip()
+                                    title = ' '.join(title.split())  # Normalize whitespace
+                                    logger.debug(f"[{company_slug}] Found title in parent: {title}")
+                                    break
+                        except:
+                            continue
+                except asyncio.TimeoutError:
+                    logger.debug(f"[{company_slug}] Timeout accessing parent for title")
+                except:
+                    pass
+
             if not job_url:
                 logger.debug(f"[{company_slug}] No job URL found for job element")
                 return None
