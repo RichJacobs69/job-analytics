@@ -1,5 +1,6 @@
 # Strict mapping: job_subfamily -> job_family
 # This ensures data consistency regardless of LLM classification output
+# Updated v1.5.0: Added delivery family
 
 data:
   - data_analyst
@@ -17,5 +18,11 @@ product:
   - product_manager
   - growth_pm
   - platform_pm
-  - technical_pm
+  - technical_pm  # Technical Product Manager (strategy-focused)
   - ai_ml_pm
+
+delivery:
+  - delivery_manager
+  - project_manager  # Includes Technical Project Manager (execution-focused)
+  - programme_manager
+  - scrum_master

@@ -1,6 +1,6 @@
 # Lever Job Title Filter Patterns
 # =======================================
-# Purpose: Identify relevant Data and Product roles before LLM classification
+# Purpose: Identify relevant Data, Product, and Delivery roles before LLM classification
 # Source: Copied from greenhouse_title_patterns.yaml - same patterns work for Lever
 # Impact: Reduces classification costs by 60-70% by filtering out Sales, Marketing, HR, etc.
 #
@@ -60,12 +60,56 @@ relevant_title_patterns:
   - '(ai|ml|data).*(product manager|pm)'
   - 'product manager.*(ai|ml|data)'
 
+  # ===== DELIVERY ROLES =====
+
+  # Delivery Manager family
+  - 'delivery manager'
+  - 'delivery lead'
+  - 'agile delivery manager'
+  - 'agile delivery lead'
+
+  # Project Manager family (CRITICAL: must NOT match "product manager")
+  - '(?<!product )project manager'
+  - 'technical project manager'
+  - 'it project manager'
+  - 'senior project manager'
+
+  # Programme Manager family
+  - 'program(me)? manager'
+  - 'senior program(me)? manager'
+
+  # Scrum Master family
+  - 'scrum master'
+  - 'senior scrum master'
+
+  # Agile Coach / Release Manager (routes to scrum_master or delivery_manager)
+  - 'agile coach'
+  - 'release manager'
+  - 'iteration manager'
+
+  # Technical Program Manager (distinct from Technical Product Manager)
+  - 'technical program(me)? manager'
+
+  # PMO roles
+  - 'pmo (manager|lead|analyst|director)'
+
+  # Delivery Leadership (Director+)
+  - 'director.*(delivery|project|program|pmo)'
+  - '(delivery|project|program).*director'
+  - '(vp|vice president).*(delivery|project|program)'
+  - 'head of (delivery|projects|programmes?|pmo)'
+
 # ===== CONFIGURATION =====
 
 # Enable/disable filtering (can be overridden in code)
 filtering_enabled: true
 
 # Version tracking
-version: "1.0"
-last_updated: "2025-12-16"
-source: "Copied from greenhouse_title_patterns.yaml"
+version: "1.1"
+last_updated: "2025-12-27"
+source: "Synchronized from greenhouse_title_patterns.yaml v1.3"
+
+changes:
+  - version: "1.1"
+    date: "2025-12-27"
+    notes: "Added Delivery family patterns (Delivery Manager, Project Manager, Programme Manager, Scrum Master)"

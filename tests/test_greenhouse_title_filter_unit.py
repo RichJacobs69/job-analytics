@@ -309,6 +309,76 @@ class TestIsRelevantRole:
         assert is_relevant_role('Sr. Data Engineer', patterns) == True
 
 
+class TestDeliveryRolePatterns:
+    """Test Delivery role pattern matching (added v1.3)"""
+
+    def test_is_relevant_role_delivery_manager(self):
+        """Test Delivery Manager family matching"""
+        patterns = [
+            'delivery manager',
+            'delivery lead',
+            'agile delivery manager',
+            'agile delivery lead'
+        ]
+
+        # Should match
+        assert is_relevant_role('Delivery Manager', patterns) == True
+        assert is_relevant_role('Senior Delivery Manager', patterns) == True
+        assert is_relevant_role('Delivery Lead', patterns) == True
+        assert is_relevant_role('Agile Delivery Manager', patterns) == True
+
+        # Should NOT match
+        assert is_relevant_role('Product Manager', patterns) == False
+        assert is_relevant_role('Data Scientist', patterns) == False
+
+    def test_is_relevant_role_project_manager(self):
+        """Test Project Manager matching (must NOT match Product Manager)"""
+        patterns = [
+            '(?<!product )project manager',
+            'technical project manager',
+            'it project manager',
+            'senior project manager'
+        ]
+
+        # Should match
+        assert is_relevant_role('Project Manager', patterns) == True
+        assert is_relevant_role('Senior Project Manager', patterns) == True
+        assert is_relevant_role('Technical Project Manager', patterns) == True
+        assert is_relevant_role('IT Project Manager', patterns) == True
+
+        # CRITICAL: Should NOT match Product Manager
+        assert is_relevant_role('Product Manager', patterns) == False
+        assert is_relevant_role('Senior Product Manager', patterns) == False
+
+    def test_is_relevant_role_programme_manager(self):
+        """Test Programme/Program Manager matching"""
+        patterns = [
+            'program(me)? manager',
+            'senior program(me)? manager'
+        ]
+
+        # Should match both spellings
+        assert is_relevant_role('Programme Manager', patterns) == True
+        assert is_relevant_role('Program Manager', patterns) == True
+        assert is_relevant_role('Senior Programme Manager', patterns) == True
+        assert is_relevant_role('Senior Program Manager', patterns) == True
+
+    def test_is_relevant_role_scrum_master(self):
+        """Test Scrum Master matching"""
+        patterns = [
+            'scrum master',
+            'senior scrum master'
+        ]
+
+        # Should match
+        assert is_relevant_role('Scrum Master', patterns) == True
+        assert is_relevant_role('Senior Scrum Master', patterns) == True
+        assert is_relevant_role('Lead Scrum Master', patterns) == True
+
+        # Should NOT match
+        assert is_relevant_role('Agile Coach', patterns) == False
+
+
 class TestIntegrationWithRealPatterns:
     """Test with actual patterns from config file"""
 
@@ -339,6 +409,46 @@ class TestIntegrationWithRealPatterns:
         assert is_relevant_role('Product Manager - AI/ML', patterns) == True
         assert is_relevant_role('Technical Product Manager', patterns) == True
         assert is_relevant_role('Growth Product Manager', patterns) == True
+
+    def test_real_patterns_delivery_roles(self):
+        """Test Delivery roles with real patterns (added v1.3)"""
+        patterns = load_title_patterns()
+
+        if not patterns:
+            pytest.skip("Config file not found, skipping real pattern tests")
+
+        # Delivery Manager variations
+        assert is_relevant_role('Delivery Manager', patterns) == True
+        assert is_relevant_role('Senior Delivery Manager', patterns) == True
+        assert is_relevant_role('Agile Delivery Lead', patterns) == True
+
+        # Project Manager (must match)
+        assert is_relevant_role('Project Manager', patterns) == True
+        assert is_relevant_role('Technical Project Manager', patterns) == True
+        assert is_relevant_role('Senior Project Manager', patterns) == True
+
+        # Programme Manager
+        assert is_relevant_role('Programme Manager', patterns) == True
+        assert is_relevant_role('Program Manager', patterns) == True
+
+        # Scrum Master
+        assert is_relevant_role('Scrum Master', patterns) == True
+        assert is_relevant_role('Senior Scrum Master', patterns) == True
+
+    def test_real_patterns_project_vs_product_manager(self):
+        """CRITICAL: Ensure Project Manager matches but Product Manager has its own pattern"""
+        patterns = load_title_patterns()
+
+        if not patterns:
+            pytest.skip("Config file not found, skipping real pattern tests")
+
+        # Both should match (via different patterns)
+        assert is_relevant_role('Project Manager', patterns) == True
+        assert is_relevant_role('Product Manager', patterns) == True
+
+        # Technical versions should both match
+        assert is_relevant_role('Technical Project Manager', patterns) == True
+        assert is_relevant_role('Technical Product Manager', patterns) == True
 
     def test_real_patterns_negative_cases(self):
         """Test that known filtered roles are rejected with real patterns"""

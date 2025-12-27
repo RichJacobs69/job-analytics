@@ -1,14 +1,20 @@
 # Job Market Intelligence Platform - Taxonomy Schema
-# Version: 1.3.1
-# Last Updated: 2025-11-14
-# Purpose: Define classification taxonomy for job postings in Product and Data roles
-# Changes from v1.3: Added descriptions to all enums for better LLM classification
+# Version: 1.5.0
+# Last Updated: 2025-12-27
+# Purpose: Define classification taxonomy for job postings in Product, Data, and Delivery roles
+# Changes from v1.4.0: Added Delivery job family with 4 subfamilies, delivery skills ontology
 
 metadata:
-  version: 1.3.1
-  last_updated: "2025-11-14"
-  scope: ["Product", "Data"]
-  markets: ["London", "New York", "Denver"]
+  version: 1.5.0
+  last_updated: "2025-12-27"
+  scope: ["Product", "Data", "Delivery"]
+  markets: ["London", "New York", "Denver", "San Francisco", "Singapore"]
+
+  # Data sources (priority order for deduplication)
+  data_sources:
+    - {name: "Greenhouse", type: "scraper", companies: 302, description_quality: "full"}
+    - {name: "Lever", type: "scraper", companies: 61, description_quality: "full"}
+    - {name: "Adzuna", type: "api", description_quality: "truncated"}
   extraction_complexity:
     simple: [employer.name, role.title_display, location.city_code, posting.posted_date]
     moderate: [job_subfamily, skills.items.name, working_arrangement, position_type, seniority]
@@ -66,17 +72,17 @@ fields:
       nullable: true
       extraction_note: "Normalized/standardized version using title_mappings (optional for LLM)"
     
-    job_family: 
+    job_family:
       type: enum
       enum: job_family
       required: true
-      extraction_note: "MUST classify as 'product', 'data', or 'out_of_scope' - never null. Use 'out_of_scope' for Software Engineering (including AI Engineers building apps), Marketing, Sales, Finance, etc."
-    
-    job_subfamily: 
+      extraction_note: "MUST classify as 'product', 'data', 'delivery', or 'out_of_scope' - never null. Use 'out_of_scope' for Software Engineering (including AI Engineers building apps), Marketing, Sales, Finance, etc."
+
+    job_subfamily:
       type: enum
-      enum: [product_subfamily, data_subfamily]
+      enum: [product_subfamily, data_subfamily, delivery_subfamily]
       nullable: true
-      extraction_note: "MUST choose specific subfamily from valid options. Set to null only if job_family is 'out_of_scope'. NOTE: ai_engineer has been removed - classify AI Engineering roles building LLM apps as out_of_scope, ML Engineers working on models as ml_engineer."
+      extraction_note: "MUST choose specific subfamily from valid options. Set to null only if job_family is 'out_of_scope'. NOTE: Technical Project Manager routes to delivery family (project_manager), not Product."
     
     seniority:
       type: enum
@@ -102,11 +108,11 @@ fields:
       extraction_note: "Only if explicitly stated (e.g., '3-5 years', '5+ years') - do NOT infer"
 
   location:
-    city_code: 
+    city_code:
       type: enum
       enum: location_city
       required: true
-      extraction_note: "Map location to one of: lon, nyc, den, remote, unk. Use 'remote' for WFH/remote-first jobs. Use 'unk' only if location truly cannot be determined."
+      extraction_note: "Map location to one of: lon, nyc, den, sfo, sgp, remote, unk. Use 'remote' for WFH/remote-first jobs. Use 'unk' only if location truly cannot be determined."
     
     working_arrangement: 
       type: enum
@@ -165,7 +171,7 @@ fields:
     source: 
       type: string
       required: true
-      extraction_note: "Source identifier (e.g., 'linkedin_rss', 'adzuna_api', 'indeed_rss')"
+      extraction_note: "Source identifier: 'greenhouse', 'lever', or 'adzuna'"
     
     req_id: 
       type: string
@@ -197,7 +203,8 @@ enums:
   job_family:
     - {code: product, label: "Product", description: "Product management roles focused on strategy, roadmap, and user experience"}
     - {code: data, label: "Data", description: "Data and analytics roles including engineering, science, and analysis"}
-    - {code: out_of_scope, label: "Out of Scope", description: "Job is not Product or Data (e.g., Software Engineering, Marketing, Sales, Finance, Operations)"}
+    - {code: delivery, label: "Delivery", description: "Project delivery and agile roles focused on execution, timelines, and team facilitation"}
+    - {code: out_of_scope, label: "Out of Scope", description: "Job is not Product, Data, or Delivery (e.g., Software Engineering, Marketing, Sales, Finance, Operations)"}
 
   location_city:
     - code: lon
@@ -226,6 +233,24 @@ enums:
       country_code: "US"
       default_currency: "USD"
       aliases: ["Denver, CO", "DEN", "Denver Metro", "Boulder, CO", "Colorado"]
+
+    - code: sfo
+      label: "San Francisco"
+      description: "San Francisco Bay Area, California, United States"
+      region: "California"
+      country: "USA"
+      country_code: "US"
+      default_currency: "USD"
+      aliases: ["San Francisco, CA", "SFO", "SF", "Bay Area", "Silicon Valley", "Palo Alto", "Mountain View", "San Jose"]
+
+    - code: sgp
+      label: "Singapore"
+      description: "Singapore city-state"
+      region: "Singapore"
+      country: "Singapore"
+      country_code: "SG"
+      default_currency: "SGD"
+      aliases: ["Singapore", "SG", "SGP"]
 
     - code: remote
       label: "Remote"
@@ -288,6 +313,13 @@ enums:
     - {code: research_scientist_ml, label: "Research Scientist (ML/AI)", description: "Novel ML research, publications, cutting-edge techniques, pushing state-of-the-art"}
     - {code: data_architect, label: "Data Architect", description: "Data strategy, enterprise architecture design, data governance, platform design"}
 
+  # Delivery subfamilies (added in v1.5.0)
+  delivery_subfamily:
+    - {code: delivery_manager, label: "Delivery Manager", description: "End-to-end delivery ownership, agile/waterfall delivery leadership, program execution"}
+    - {code: project_manager, label: "Project Manager", description: "Traditional project management, timelines, budgets, stakeholder coordination, PRINCE2/PMP"}
+    - {code: programme_manager, label: "Programme Manager", description: "Multi-project coordination, strategic initiatives, portfolio management, workstream oversight"}
+    - {code: scrum_master, label: "Scrum Master", description: "Agile facilitation, sprint ceremonies, impediment removal, team coaching"}
+
   # Company size
   company_size:
     - {code: startup, label: "Startup (1-50)", description: "Small startup, 1-50 employees, early-stage"}
@@ -298,6 +330,7 @@ enums:
   skill_parent:
     - {code: product, label: "Product", description: "Product management skills"}
     - {code: data_ml, label: "Data/ML", description: "Data science and machine learning skills"}
+    - {code: delivery, label: "Delivery", description: "Project delivery and agile skills"}
     - {code: platform_infra, label: "Platform/Infra", description: "Platform and infrastructure skills"}
 
   # Currency codes
@@ -305,6 +338,7 @@ enums:
     - {code: gbp, label: "GBP", description: "British Pound Sterling"}
     - {code: usd, label: "USD", description: "United States Dollar"}
     - {code: eur, label: "EUR", description: "Euro"}
+    - {code: sgd, label: "SGD", description: "Singapore Dollar"}
 
   # Confidence levels
   confidence_level:
@@ -401,6 +435,19 @@ skills_ontology:
 
     - family: {code: apis_integration, label: "APIs & Integration"}
       names: ["REST", "REST API", "GraphQL", "API", "APIs", "Webhooks", "FastAPI", "API Design", "Microservices", "gRPC", "OpenAPI"]
+
+  delivery:
+    - family: {code: methodologies, label: "Methodologies & Frameworks"}
+      names: ["Agile", "Scrum", "Kanban", "SAFe", "Waterfall", "PRINCE2", "Lean", "Six Sigma", "Hybrid", "Agile methodology", "Scrum framework"]
+
+    - family: {code: certifications, label: "Certifications"}
+      names: ["PMP", "PRINCE2", "CSM", "PSM", "PMI-ACP", "SAFe Agilist", "CAPM", "Scrum@Scale", "PgMP", "PMI-RMP"]
+
+    - family: {code: delivery_tools, label: "Delivery Tools"}
+      names: ["JIRA", "Confluence", "Asana", "Monday.com", "Trello", "MS Project", "Microsoft Project", "Smartsheet", "Azure DevOps", "Rally", "Planview"]
+
+    - family: {code: governance, label: "Governance & Risk"}
+      names: ["Risk management", "RAID log", "Change management", "Stakeholder management", "Budget management", "Resource planning", "Dependency management", "Issue management", "Capacity planning"]
 
 # =========================
 # CLASSIFICATION GUIDANCE
@@ -517,6 +564,30 @@ classification_guidance:
       - "If says 'remote within [region]' → remote (not flexible)"
       - "CRITICAL: Look for phrases at END of job description - working arrangement often specified in final paragraphs"
 
+  delivery_subfamily:
+    critical_rules:
+      - "ALWAYS classify 'Project Manager' as delivery family - NEVER product (unless title is 'Product Manager')"
+      - "ALWAYS classify 'Technical Project Manager' as delivery family, project_manager subfamily - NOT technical_pm in Product"
+      - "ALWAYS classify 'Programme Manager' or 'Program Manager' as delivery family"
+
+    key_distinctions:
+      - "Delivery Manager vs Project Manager: Delivery Manager = ongoing delivery ownership, continuous delivery; Project Manager = discrete project timelines, defined start/end"
+      - "Programme Manager vs Project Manager: Programme Manager = multiple projects/workstreams, strategic portfolio; Project Manager = single project focus"
+      - "Technical Project Manager vs Technical Product Manager: TPjM = technical execution/delivery, coordinates engineering; TPM = technical product strategy, roadmap ownership"
+      - "Project Manager vs Product Manager: Project Manager = execution/delivery, timelines, budgets; Product Manager = strategy, roadmap, user experience"
+      - "Scrum Master vs Delivery Manager: Scrum Master = team-level agile facilitation, ceremonies; Delivery Manager = broader delivery ownership, may span multiple teams"
+
+    routing_rules:
+      - "Title 'Project Manager' → delivery family, project_manager"
+      - "Title 'Technical Project Manager' → delivery family, project_manager"
+      - "Title 'Programme Manager' or 'Program Manager' → delivery family, programme_manager"
+      - "Title 'Delivery Manager' or 'Delivery Lead' → delivery family, delivery_manager"
+      - "Title 'Scrum Master' → delivery family, scrum_master"
+      - "Title 'Agile Coach' or 'Iteration Manager' → delivery family, scrum_master (agile facilitation)"
+      - "Title 'Release Manager' → delivery family, delivery_manager"
+      - "Title 'PMO Manager/Lead/Director' → delivery family, programme_manager"
+      - "Title 'Agile Delivery Manager' → delivery family, delivery_manager"
+
 # =========================
 # NORMALIZATION HELPERS
 # =========================
@@ -552,6 +623,18 @@ normalization:
     "BI Analyst": "Data Analyst"
     "Business Intelligence Analyst": "Data Analyst"
     "Business Intelligence Engineer": "Business Intelligence Engineer"  # Classify based on job description (see classification_guidance)
+
+    # Delivery mappings
+    "PM": "Project Manager"  # Ambiguous - context determines if Product or Project
+    "PgM": "Programme Manager"
+    "Program Manager": "Programme Manager"
+    "Technical PM": "Technical Project Manager"  # Routes to delivery, not product
+    "TPjM": "Technical Project Manager"
+    "SM": "Scrum Master"
+    "Scrum Master": "Scrum Master"
+    "Delivery Lead": "Delivery Manager"
+    "PMO Lead": "PMO Manager"
+    "PMO Director": "PMO Manager"
 
   seniority_markers:
     junior: 
@@ -638,17 +721,25 @@ validation:
   - rule: "job_family_subfamily_match_data"
     check: "if role.job_family == 'data' then role.job_subfamily in data_subfamily"
     severity: error
-  
+
+  - rule: "job_family_subfamily_match_delivery"
+    check: "if role.job_family == 'delivery' then role.job_subfamily in delivery_subfamily"
+    severity: error
+
   - rule: "out_of_scope_has_null_subfamily"
     check: "if role.job_family == 'out_of_scope' then role.job_subfamily is null"
     severity: error
 
-  - rule: "location_currency_match"
+  - rule: "location_currency_match_uk"
     check: "if location.city_code == 'lon' then compensation.currency in ['gbp', null]"
     severity: warning
-  
+
   - rule: "location_currency_match_us"
-    check: "if location.city_code in ['nyc', 'den'] then compensation.currency in ['usd', null]"
+    check: "if location.city_code in ['nyc', 'den', 'sfo'] then compensation.currency in ['usd', null]"
+    severity: warning
+
+  - rule: "location_currency_match_sg"
+    check: "if location.city_code == 'sgp' then compensation.currency in ['sgd', null]"
     severity: warning
   
   - rule: "ai_engineer_removed"

@@ -60,15 +60,21 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
         f"  - {item['code']}: {item['label']} - {item['description']}"
         for item in taxonomy['enums']['product_subfamily']
     ])
-    
+
     data_subfamilies = "\n".join([
         f"  - {item['code']}: {item['label']} - {item['description']}"
         for item in taxonomy['enums']['data_subfamily']
     ])
-    
+
+    delivery_subfamilies = "\n".join([
+        f"  - {item['code']}: {item['label']} - {item['description']}"
+        for item in taxonomy['enums']['delivery_subfamily']
+    ])
+
     # Get classification guidance
     seniority_guidance = taxonomy['classification_guidance']['seniority']
     subfamily_guidance = taxonomy['classification_guidance']['job_subfamily']
+    delivery_guidance = taxonomy['classification_guidance'].get('delivery_subfamily', {})
 
     # Build skills ontology for the prompt
     skills_sections = []
@@ -139,21 +145,30 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 **How to classify job_family - USE THE JOB TITLE FIRST:**
 
 → **product** - Classify as 'product' if the job title contains:
-  - "Product Manager", "PM", "Product Owner", "PO"
+  - "Product Manager", "PM" (but NOT "Project Manager"), "Product Owner", "PO"
   - "Product Lead", "Head of Product", "VP Product", "CPO"
   - "Product Director", "Group Product Manager", "GPM"
-  - "Technical Product Manager"
+  - "Technical Product Manager" (strategy-focused, NOT Technical Project Manager)
   - "Growth PM", "Platform PM", "AI PM", "ML PM"
-  
+
 → **data** - Classify as 'data' if the job title contains:
   - "Data Scientist", "Data Engineer", "Data Analyst"
   - "Machine Learning Engineer", "ML Engineer", "MLE"
   - "Analytics Engineer", "Data Architect"
   - "Research Scientist", "AI Researcher"
   - "Product Analyst" (when focused on data/analytics)
-  
+
+→ **delivery** - Classify as 'delivery' if the job title contains:
+  - "Delivery Manager", "Delivery Lead", "Agile Delivery Manager"
+  - "Project Manager" (execution-focused, NOT "Product Manager")
+  - "Technical Project Manager" (execution-focused, NOT "Technical Product Manager")
+  - "Programme Manager", "Program Manager", "Technical Program Manager"
+  - "Scrum Master", "Agile Coach", "Iteration Manager"
+  - "Release Manager"
+  - "PMO Manager", "PMO Director", "Head of PMO"
+
 → **out_of_scope** - Classify as 'out_of_scope' ONLY if:
-  - Title is clearly NOT product or data (e.g., "Software Engineer", "Marketing Manager", "Sales Rep")
+  - Title is clearly NOT product, data, or delivery (e.g., "Software Engineer", "Marketing Manager", "Sales Rep")
   - Title contains: "Product Marketing", "Product Designer", "Product Support" (these are NOT PM roles)
 
 # SENIORITY CLASSIFICATION RULES
@@ -181,10 +196,16 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 **Data Subfamilies:**
 {data_subfamilies}
 
+**Delivery Subfamilies:**
+{delivery_subfamilies}
+
 **Classification Rules:**
 - Data Analyst / Research Scientist / Applied Scientist titles → ALWAYS data family
 - Applied Scientist = research_scientist_ml (ML research, not software eng)
 - BI Engineer → analytics_engineer (data modeling focused)
+- Project Manager / Programme Manager / Scrum Master → ALWAYS delivery family
+- Technical Project Manager → delivery family (project_manager subfamily)
+- Technical Product Manager → product family (technical_pm subfamily)
 {chr(10).join('- ' + rule for rule in subfamily_guidance['key_distinctions'])}
 
 # REQUIRED OUTPUT SCHEMA
@@ -193,7 +214,7 @@ Return JSON with this EXACT structure:
 
 {{
   "employer": {{
-    "department": "product|data|null (only if explicitly stated)",
+    "department": "product|data|delivery|null (only if explicitly stated)",
     "company_size_estimate": "startup|scaleup|enterprise|null (infer from context if clear)"
   }},
   "role": {{

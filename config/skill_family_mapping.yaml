@@ -1055,3 +1055,128 @@ geospatial:
   - geospatial
   - geospatial data
   - remote sensing
+
+# =============================================================================
+# DELIVERY METHODOLOGIES & FRAMEWORKS
+# =============================================================================
+methodologies:
+  - agile methodology
+  - scrum methodology
+  - scrum framework
+  - kanban methodology
+  - safe
+  - safe agile
+  - scaled agile
+  - scaled agile framework
+  - waterfall
+  - waterfall methodology
+  - prince2
+  - prince2 methodology
+  - lean
+  - lean methodology
+  - six sigma
+  - lean six sigma
+  - hybrid methodology
+  - hybrid agile
+  - disciplined agile
+  - spotify model
+  - less
+  - large scale scrum
+  - nexus
+  - scrum of scrums
+  - agile at scale
+
+# =============================================================================
+# DELIVERY CERTIFICATIONS
+# =============================================================================
+certifications:
+  - pmp
+  - pmp certified
+  - pmp certification
+  - project management professional
+  - prince2 certified
+  - prince2 practitioner
+  - prince2 foundation
+  - csm
+  - certified scrum master
+  - psm
+  - professional scrum master
+  - psm i
+  - psm ii
+  - pmi-acp
+  - safe agilist
+  - safe certified
+  - capm
+  - certified associate in project management
+  - scrum@scale
+  - scrum at scale
+  - pgmp
+  - program management professional
+  - pmi-rmp
+  - risk management professional
+  - pmi-pba
+  - business analysis professional
+  - itil
+  - itil certified
+  - itil foundation
+  - itil v4
+
+# =============================================================================
+# DELIVERY & PROJECT TOOLS
+# =============================================================================
+delivery_tools:
+  - ms project
+  - microsoft project
+  - smartsheet
+  - rally
+  - planview
+  - clarity
+  - ca clarity
+  - project online
+  - monday.com
+  - wrike
+  - basecamp
+  - teamwork
+  - azure boards
+  - jira software
+  - jira align
+  - portfolio for jira
+  - advanced roadmaps
+  - structure for jira
+
+# =============================================================================
+# GOVERNANCE & RISK MANAGEMENT
+# =============================================================================
+governance:
+  - risk management
+  - risk assessment
+  - risk mitigation
+  - raid log
+  - raid management
+  - change management
+  - change control
+  - stakeholder management
+  - stakeholder engagement
+  - budget management
+  - budget tracking
+  - cost management
+  - resource planning
+  - resource management
+  - capacity planning
+  - capacity management
+  - dependency management
+  - issue management
+  - scope management
+  - quality management
+  - project governance
+  - programme governance
+  - portfolio management
+  - pmo
+  - project management office
+  - gate reviews
+  - tollgates
+  - milestone tracking
+  - status reporting
+  - project reporting
+  - earned value management
+  - evm

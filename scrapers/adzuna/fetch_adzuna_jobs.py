@@ -19,11 +19,51 @@ See: https://developer.adzuna.com/docs/terms_of_service
 import os
 import time
 import requests
+import yaml
+from pathlib import Path
 from dotenv import load_dotenv
 from typing import List, Dict, Optional
 
 # Load environment variables
 load_dotenv()
+
+
+def load_search_queries(config_path: Optional[Path] = None) -> List[str]:
+    """
+    Load search queries from YAML config file.
+
+    Args:
+        config_path: Optional path to config file. Defaults to config/adzuna/search_queries.yaml
+
+    Returns:
+        List of search query strings
+    """
+    if config_path is None:
+        # Find project root (where config/ folder is)
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent.parent  # scrapers/adzuna/ -> scrapers/ -> project root
+        config_path = project_root / 'config' / 'adzuna' / 'search_queries.yaml'
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+            queries = config.get('search_queries', [])
+            if queries:
+                return queries
+    except FileNotFoundError:
+        print(f"Warning: Config file not found at {config_path}, using fallback queries")
+    except yaml.YAMLError as e:
+        print(f"Warning: Error parsing config file: {e}, using fallback queries")
+
+    # Fallback to hardcoded list if config fails
+    return _FALLBACK_QUERIES
+
+
+# Fallback queries if config file is missing
+_FALLBACK_QUERIES = [
+    "Data Scientist", "Data Engineer", "Machine Learning Engineer",
+    "Analytics Engineer", "Data Analyst", "Product Manager"
+]
 
 # ============================================
 # CONFIGURATION
@@ -60,25 +100,9 @@ RATE_LIMIT_DELAY = 2.5  # seconds between API calls
 MAX_RESULTS_PER_PAGE = 50  # Adzuna hard limit
 
 # All role types to fetch from Adzuna
+# Loaded from config/adzuna/search_queries.yaml
 # Import this in fetch_jobs.py to maintain single source of truth
-DEFAULT_SEARCH_QUERIES = [
-    # Data roles
-    "Data Scientist",
-    "Data Engineer",
-    "Machine Learning Engineer",
-    "Analytics Engineer",
-    "Data Analyst",
-    "AI Engineer",
-    "Data Architect",
-    "Product Analyst",
-
-    # Product roles
-    "Product Manager",
-    "Technical Product Manager",
-    "Growth Product Manager",
-    "AI Product Manager",
-    "Product Owner"
-]
+DEFAULT_SEARCH_QUERIES = load_search_queries()
 
 # ============================================
 # API CLIENT FUNCTIONS
