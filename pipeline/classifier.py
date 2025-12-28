@@ -41,7 +41,7 @@ elif LLM_PROVIDER == "gemini":
         raise ValueError("Missing GOOGLE_API_KEY in .env file")
     genai.configure(api_key=GOOGLE_API_KEY)
     gemini_model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
+        model_name="gemini-2.5-flash-lite",
         generation_config={
             "temperature": 0.1,
             "max_output_tokens": 4000,
