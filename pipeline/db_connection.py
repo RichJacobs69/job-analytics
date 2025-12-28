@@ -348,6 +348,15 @@ def insert_enriched_job(
         "merged_from_source": merged_from_source
     }
 
+    # Validate/normalize constrained fields before insert
+    VALID_CURRENCIES = {'usd', 'gbp', 'cad', 'eur', 'sgd'}  # US, UK, Canada, EU, Singapore
+    if data.get('currency'):
+        currency_lower = data['currency'].lower()
+        if currency_lower in VALID_CURRENCIES:
+            data['currency'] = currency_lower  # Normalize to lowercase
+        else:
+            data['currency'] = None  # Unsupported currency, will be removed below
+
     # Remove None values - Postgres CHECK constraints don't allow explicit NULL
     # Let Postgres use column defaults instead
     data = {k: v for k, v in data.items() if v is not None}
