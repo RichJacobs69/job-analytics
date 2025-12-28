@@ -1,0 +1,44 @@
+name: Test Gemini API Key
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  test-key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-generativeai python-dotenv
+
+      - name: Test Gemini API Key
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          python << 'EOF'
+          import os
+          import google.generativeai as genai
+
+          api_key = os.environ.get('GOOGLE_API_KEY')
+          if not api_key:
+              print('[ERROR] GOOGLE_API_KEY secret not set!')
+              exit(1)
+
+          print(f'Key found: {api_key[:10]}...{api_key[-4:]}')
+
+          genai.configure(api_key=api_key)
+          model = genai.GenerativeModel('gemini-2.0-flash')
+
+          response = model.generate_content('Respond with JSON: {"status": "ok"}')
+          print(f'Response: {response.text}')
+          print('[OK] Gemini API key is working!')
+          EOF

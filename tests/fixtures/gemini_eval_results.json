@@ -1,0 +1,339 @@
+{
+  "total": 50,
+  "json_success": 50,
+  "errors": [],
+  "costs": [
+    0.0007393,
+    0.0007379999999999999,
+    0.0007382,
+    0.0006283,
+    0.0006259000000000001,
+    0.0007766,
+    0.0008479,
+    0.0008225000000000001,
+    0.0009306,
+    0.0009107000000000001,
+    0.0008277,
+    0.0008014000000000001,
+    0.000673,
+    0.0006276000000000001,
+    0.0005992,
+    0.000756,
+    0.0005458,
+    0.0005499000000000001,
+    0.0005312,
+    0.0007669,
+    0.0005654,
+    0.0006077000000000001,
+    0.0006041,
+    0.0005848,
+    0.0005896,
+    0.0005552,
+    0.0005231,
+    0.0005938,
+    0.0005848,
+    0.0006042,
+    0.0005344,
+    0.0005784,
+    0.0005439,
+    0.0005213,
+    0.0005250000000000001,
+    0.0005514,
+    0.0005085,
+    0.0005135000000000001,
+    0.0005172000000000001,
+    0.0005312,
+    0.0005316,
+    0.000547,
+    0.0005238,
+    0.0005357000000000001,
+    0.0005874000000000001,
+    0.0005715000000000001,
+    0.0005661000000000002,
+    0.0005119,
+    0.0005405,
+    0.0005147
+  ],
+  "latencies": [
+    1476.7451286315918,
+    1316.2610530853271,
+    1515.3765678405762,
+    1549.7479438781738,
+    1717.9131507873535,
+    1626.2156963348389,
+    1490.4041290283203,
+    1625.584602355957,
+    1795.135498046875,
+    1705.5270671844482,
+    2161.78297996521,
+    1696.7780590057373,
+    1627.0647048950195,
+    1497.4303245544434,
+    1486.2589836120605,
+    2248.4183311462402,
+    1955.9545516967773,
+    1788.3272171020508,
+    1673.182725906372,
+    3710.486888885498,
+    1756.2625408172607,
+    2186.3248348236084,
+    2180.9473037719727,
+    2106.6806316375732,
+    1966.587781906128,
+    1352.8578281402588,
+    1342.3914909362793,
+    1893.8145637512207,
+    1503.3071041107178,
+    1738.590955734253,
+    1895.8020210266113,
+    1812.6182556152344,
+    1725.2349853515625,
+    1372.4868297576904,
+    1551.337718963623,
+    1676.7783164978027,
+    1278.367042541504,
+    1760.4210376739502,
+    1293.3464050292969,
+    1588.7677669525146,
+    1653.2573699951172,
+    1937.6213550567627,
+    1540.5464172363281,
+    1991.2245273590088,
+    2129.4286251068115,
+    2090.698003768921,
+    2032.2036743164062,
+    1372.6413249969482,
+    1642.3377990722656,
+    1438.9457702636719
+  ],
+  "field_matches": {
+    "job_family": {
+      "match": 50,
+      "mismatch": 0,
+      "details": []
+    },
+    "job_subfamily": {
+      "match": 32,
+      "mismatch": 18,
+      "details": [
+        {
+          "title": "Director of Space Reconnaissance Product Line",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Product Manager - P&T",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Data Product Manager, GTM",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Staff Product Manager - Phone System",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Staff Product Manager - Ecommerce",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Data Scientist - Viewer Experience",
+          "ground_truth": "data_scientist",
+          "gemini": "ml_engineer"
+        },
+        {
+          "title": "Sr. Finance Analytics Manager",
+          "ground_truth": "product_analytics",
+          "gemini": "data_analyst"
+        },
+        {
+          "title": "Web3 Security Data Analyst",
+          "ground_truth": "data_analyst",
+          "gemini": "data_scientist"
+        },
+        {
+          "title": "Senior Web3 Product Manager",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Product Manager, Quant Trading Systems",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Product Manager, Options (Backend Facing)",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior P2P Product Manager",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Fiat Product Manager",
+          "ground_truth": "platform_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Senior Data Scientist / Analyst (AI/LLM)",
+          "ground_truth": "ml_engineer",
+          "gemini": "data_scientist"
+        },
+        {
+          "title": "Senior Data Analyst - Recommendation, Feeds, Growt",
+          "ground_truth": "product_analytics",
+          "gemini": "data_scientist"
+        },
+        {
+          "title": "Senior Data Analyst - Chatbot/ Customer Service (A",
+          "ground_truth": "product_analytics",
+          "gemini": "data_scientist"
+        },
+        {
+          "title": "Risk Product Manager, Futures",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        },
+        {
+          "title": "Product Manager, Web3 Wallet",
+          "ground_truth": "technical_pm",
+          "gemini": "core_pm"
+        }
+      ]
+    },
+    "seniority": {
+      "match": 32,
+      "mismatch": 18,
+      "details": [
+        {
+          "title": "Technical Product Manager - RobotaxiSunnyvale, Cal",
+          "ground_truth": "senior",
+          "gemini": null
+        },
+        {
+          "title": "Data Analyst, Performance & Strategic Analytics",
+          "ground_truth": "mid",
+          "gemini": null
+        },
+        {
+          "title": "Data Analyst, Merchant Health",
+          "ground_truth": null,
+          "gemini": "mid"
+        },
+        {
+          "title": "Machine Learning Engineer",
+          "ground_truth": "senior",
+          "gemini": null
+        },
+        {
+          "title": "Marketplace Data Analyst",
+          "ground_truth": "junior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Staff Data Scientist - Viewer Experience",
+          "ground_truth": "staff_principal",
+          "gemini": "senior"
+        },
+        {
+          "title": "Group Product Manager, Subscription renewals & rev",
+          "ground_truth": "director_plus",
+          "gemini": "senior"
+        },
+        {
+          "title": "Director - Product Security",
+          "ground_truth": "director_plus",
+          "gemini": "senior"
+        },
+        {
+          "title": "Sr. Finance Analytics Manager",
+          "ground_truth": "staff_principal",
+          "gemini": "senior"
+        },
+        {
+          "title": "Senior Web3 Product Manager",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Product Manager, Web",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Product Manager, Quant Trading Systems",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Product Manager, Options (Backend Facing)",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Product Manager, Margin Trading",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Data Analyst (Artificial Intelligence)",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Senior Data Analyst - Recommendation, Feeds, Growt",
+          "ground_truth": "senior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Research Data Scientist, NLP & Financial Signals",
+          "ground_truth": "junior",
+          "gemini": "mid"
+        },
+        {
+          "title": "Product Manager, Web3 Wallet",
+          "ground_truth": "senior",
+          "gemini": null
+        }
+      ]
+    },
+    "working_arrangement": {
+      "match": 45,
+      "mismatch": 5,
+      "details": [
+        {
+          "title": "Senior Machine Learning Engineer, Domains Search",
+          "ground_truth": "onsite",
+          "gemini": "unknown"
+        },
+        {
+          "title": "Data Analyst, Performance & Strategic Analytics",
+          "ground_truth": "onsite",
+          "gemini": "unknown"
+        },
+        {
+          "title": "Data Analyst, Merchant Health",
+          "ground_truth": "onsite",
+          "gemini": "hybrid"
+        },
+        {
+          "title": "Senior Product Manager, Growth & Developer Experie",
+          "ground_truth": "hybrid",
+          "gemini": "flexible"
+        },
+        {
+          "title": "Marketplace Data Analyst",
+          "ground_truth": "hybrid",
+          "gemini": "flexible"
+        }
+      ]
+    }
+  }
+}

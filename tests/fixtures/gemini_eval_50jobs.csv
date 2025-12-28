@@ -1,0 +1,51 @@
+id,title,company,source,gt_job_family,gt_job_subfamily,gt_seniority,gt_working_arrangement,gemini_job_family,gemini_job_subfamily,gemini_seniority,gemini_track,gemini_working_arrangement,gemini_company_size,family_match,subfamily_match,seniority_match
+23270,"Technical Product Manager - RobotaxiSunnyvale, California USA",wayve,greenhouse,product,technical_pm,senior,hybrid,product,technical_pm,,,hybrid,startup,Y,Y,N
+23194,"Senior Machine Learning Engineer, Domains Search",squarespace,greenhouse,data,ml_engineer,senior,onsite,data,ml_engineer,senior,ic,unknown,,Y,Y,Y
+23190,"Data Analyst, Performance & Strategic Analytics",squarespace,greenhouse,data,data_analyst,mid,onsite,data,data_analyst,,ic,unknown,,Y,Y,N
+23189,Director of Space Reconnaissance Product Line,spire,greenhouse,product,platform_pm,director_plus,hybrid,product,core_pm,director_plus,management,hybrid,scaleup,Y,N,Y
+22120,"Data Analyst, Merchant Health",riskified,greenhouse,data,data_analyst,,onsite,data,data_analyst,mid,ic,hybrid,scaleup,Y,Y,N
+22087,"Principal Research Scientist, Database Systems",mongodb,greenhouse,data,research_scientist_ml,staff_principal,flexible,data,research_scientist_ml,staff_principal,ic,flexible,enterprise,Y,Y,Y
+22085,"Senior Product Manager, Growth & Developer Experience",mongodb,greenhouse,product,growth_pm,senior,hybrid,product,growth_pm,senior,ic,flexible,enterprise,Y,Y,Y
+22082,"Product Manager 3, Internal AI",mongodb,greenhouse,product,ai_ml_pm,mid,hybrid,product,ai_ml_pm,mid,ic,hybrid,enterprise,Y,Y,Y
+22080,Senior Product Manager - P&T,mongodb,greenhouse,product,platform_pm,senior,flexible,data,product_analytics,senior,ic,flexible,enterprise,N,N,Y
+22079,"Senior Data Product Manager, GTM",mongodb,greenhouse,product,platform_pm,senior,hybrid,data,product_analytics,senior,ic,hybrid,enterprise,N,N,Y
+22078,"2026 - Analytics Engineering Intern, NYC",mongodb,greenhouse,data,analytics_engineer,junior,hybrid,data,analytics_engineer,junior,ic,hybrid,enterprise,Y,Y,Y
+22077,"Staff Data Analyst, Growth",mongodb,greenhouse,data,product_analytics,staff_principal,hybrid,data,product_analytics,staff_principal,ic,hybrid,enterprise,Y,Y,Y
+22631,"Staff Product Manager - Social Planner, Ad manager, blogs",Gohighlevel,lever,product,core_pm,staff_principal,remote,product,core_pm,staff_principal,ic,remote,scaleup,Y,Y,Y
+22630,Staff Product Manager - Phone System,Gohighlevel,lever,product,technical_pm,staff_principal,remote,product,platform_pm,staff_principal,ic,remote,scaleup,Y,N,Y
+22629,Staff Product Manager - Ecommerce,Gohighlevel,lever,product,platform_pm,staff_principal,remote,product,core_pm,staff_principal,ic,remote,scaleup,Y,N,Y
+22628,Machine Learning Engineer,Bloomon,lever,data,ml_engineer,senior,flexible,data,ml_engineer,,ic,flexible,scaleup,Y,Y,N
+20580,AI/ML Engineer,Welocalize,lever,data,ml_engineer,mid,unknown,data,ml_engineer,mid,ic,unknown,,Y,Y,Y
+20579,Marketplace Data Analyst,Trendyol,lever,data,data_analyst,junior,hybrid,data,data_analyst,mid,ic,flexible,scaleup,Y,Y,N
+20576,"Applied AI, Forward Deployed Machine Learning Engineer - Morocco",Mistral,lever,data,ml_engineer,mid,unknown,data,ml_engineer,mid,ic,unknown,,Y,Y,Y
+20575,Staff Software Development Engineer - Data Platforms,Jiostar,lever,data,data_engineer,staff_principal,unknown,data,data_engineer,staff_principal,ic,unknown,enterprise,Y,Y,Y
+20574,Staff Data Scientist - Viewer Experience,Jiostar,lever,data,data_scientist,staff_principal,unknown,data,data_scientist,senior,ic,unknown,enterprise,Y,Y,N
+20573,Staff Data Scientist,Jiostar,lever,data,data_scientist,staff_principal,unknown,data,data_scientist,senior,ic,unknown,enterprise,Y,Y,N
+20572,Senior Machine Learning Engineer - Viewer Experience,Jiostar,lever,data,ml_engineer,senior,unknown,data,ml_engineer,senior,ic,unknown,enterprise,Y,Y,Y
+20571,Senior Data Scientist - Viewer Experience,Jiostar,lever,data,data_scientist,senior,unknown,data,ml_engineer,senior,ic,unknown,enterprise,Y,N,Y
+20570,Senior Data Scientist,Jiostar,lever,data,data_scientist,senior,unknown,data,ml_engineer,senior,ic,unknown,enterprise,Y,N,Y
+20569,"Group Product Manager, Subscription renewals & revenue",Jiostar,lever,product,core_pm,director_plus,unknown,product,core_pm,senior,management,unknown,enterprise,Y,Y,N
+20568,Director - Product Security,Jiostar,lever,out_of_scope,out_of_scope,director_plus,unknown,out_of_scope,out_of_scope,senior,management,unknown,enterprise,Y,Y,N
+20567,Data Scientist II - Adtech,Jiostar,lever,data,data_scientist,mid,unknown,data,data_scientist,mid,ic,unknown,enterprise,Y,Y,Y
+20566,"Senior Director, Sales Development (SDRs)",Instructure,lever,out_of_scope,out_of_scope,director_plus,flexible,out_of_scope,out_of_scope,director_plus,management,flexible,enterprise,Y,Y,Y
+20565,Sr. Finance Analytics Manager,Gohighlevel,lever,data,product_analytics,staff_principal,remote,data,data_analyst,senior,ic,remote,scaleup,Y,N,N
+20564,Web3 Security Data Analyst,Binance,lever,data,data_analyst,senior,flexible,data,data_scientist,mid,ic,flexible,enterprise,Y,N,N
+20563,Technical Support Engineer (Blockchain & Backend Development),Binance,lever,out_of_scope,out_of_scope,senior,flexible,,,senior,ic,flexible,enterprise,N,N,Y
+20562,Senior Web3 Product Manager (User experience),Binance,lever,product,core_pm,senior,flexible,product,core_pm,senior,ic,flexible,enterprise,Y,Y,Y
+20561,Senior Web3 Product Manager,Binance,lever,product,technical_pm,senior,flexible,product,core_pm,mid,,flexible,enterprise,Y,N,N
+20560,"Senior Product Manager, Web",Binance,lever,product,core_pm,senior,flexible,product,core_pm,mid,,flexible,enterprise,Y,Y,N
+20559,"Senior Product Manager, Quant Trading Systems",Binance,lever,product,technical_pm,senior,flexible,product,technical_pm,mid,,flexible,enterprise,Y,Y,N
+20558,"Senior Product Manager, Options (Backend Facing)",Binance,lever,product,technical_pm,senior,flexible,product,technical_pm,mid,,flexible,enterprise,Y,Y,N
+20557,"Senior Product Manager, Margin Trading",Binance,lever,product,core_pm,senior,flexible,product,core_pm,mid,,flexible,enterprise,Y,Y,N
+20556,"Senior Product Manager, KYC",Binance,lever,product,core_pm,senior,flexible,product,core_pm,senior,ic,flexible,enterprise,Y,Y,Y
+20555,"Senior Product Manager, KYB",Binance,lever,product,core_pm,senior,flexible,product,ai_ml_pm,senior,,flexible,enterprise,Y,N,Y
+20554,"Senior Product Manager, Compliance",Binance,lever,product,core_pm,senior,flexible,product,core_pm,senior,ic,flexible,enterprise,Y,Y,Y
+20553,Senior P2P Product Manager,Binance,lever,product,platform_pm,senior,flexible,product,core_pm,senior,ic,flexible,enterprise,Y,N,Y
+20552,Senior Fiat Product Manager,Binance,lever,product,platform_pm,senior,flexible,product,core_pm,senior,ic,flexible,enterprise,Y,N,Y
+20551,Senior Data Scientist / Analyst (AI/LLM),Binance,lever,data,ml_engineer,senior,unknown,data,data_scientist,mid,ic,unknown,enterprise,Y,N,N
+20550,Senior Data Analyst (Artificial Intelligence),Binance,lever,data,data_analyst,senior,flexible,data,data_analyst,mid,ic,flexible,enterprise,Y,Y,N
+20549,"Senior Data Analyst - Recommendation, Feeds, Growth (AI/LLM)",Binance,lever,data,product_analytics,senior,flexible,data,data_scientist,senior,ic,flexible,enterprise,Y,N,Y
+20548,Senior Data Analyst - Chatbot/ Customer Service (AI/LLM),Binance,lever,data,product_analytics,senior,flexible,data,data_scientist,senior,ic,flexible,enterprise,Y,N,Y
+20547,"Risk Product Manager, Futures",Binance,lever,product,technical_pm,senior,flexible,product,core_pm,senior,,flexible,enterprise,Y,N,Y
+20546,"Research Data Scientist, NLP & Financial Signals",Binance,lever,data,data_scientist,junior,flexible,data,data_scientist,mid,ic,flexible,enterprise,Y,Y,N
+20545,"Product Manager, Web3 Wallet",Binance,lever,product,technical_pm,senior,flexible,product,core_pm,,,flexible,enterprise,Y,N,N
