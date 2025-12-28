@@ -61,7 +61,7 @@ elif LLM_PROVIDER == "gemini":
         model_name="gemini-2.5-flash-lite",
         generation_config={
             "temperature": 0.1,
-            "max_output_tokens": 4000,
+            "max_output_tokens": 6000,  # Increased buffer for skill-heavy jobs
             "response_mime_type": "application/json"
         }
     )
@@ -297,12 +297,14 @@ Return JSON with this EXACT structure:
 # SKILLS ONTOLOGY - Use these family_codes when extracting skills
 {skills_ontology_text}
 
-# SKILLS EXTRACTION RULES
-- ONLY extract skills explicitly named in the posting
+# SKILLS EXTRACTION RULES - CRITICAL
+- Extract ONLY skills that are EXPLICITLY NAMED in the job posting text
+- DO NOT list skills from the ontology that aren't mentioned in the posting
+- MAXIMUM 20 skills - if more are mentioned, pick the most important ones
 - Match to family_code from the ontology above whenever possible
-- Common examples: "Python" → programming, "AWS" → cloud, "Snowflake" → warehouses_lakes, "dbt" → data_modeling
+- Common examples: "Python" → programming, "AWS" → cloud, "Snowflake" → warehouses_lakes
 - If skill doesn't match any family in ontology, use family_code: null
-- DO NOT infer skills from job requirements (e.g., don't add "Python" just because it's a data job)
+- DO NOT infer skills (e.g., don't add "Python" just because it's a data job)
 
 {job_input_section}
 
