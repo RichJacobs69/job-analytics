@@ -441,7 +441,7 @@ skills_ontology:
       names: ["Agile", "Scrum", "Kanban", "SAFe", "Waterfall", "PRINCE2", "Lean", "Six Sigma", "Hybrid", "Agile methodology", "Scrum framework"]
 
     - family: {code: certifications, label: "Certifications"}
-      names: ["PMP", "PRINCE2", "CSM", "PSM", "PMI-ACP", "SAFe Agilist", "CAPM", "Scrum@Scale", "PgMP", "PMI-RMP"]
+      names: ["PMP", "PRINCE2", "MSP", "CSM", "PSM", "PMI-ACP", "SAFe Agilist", "CAPM", "Scrum@Scale", "PgMP", "PMI-RMP"]
 
     - family: {code: delivery_tools, label: "Delivery Tools"}
       names: ["JIRA", "Confluence", "Asana", "Monday.com", "Trello", "MS Project", "Microsoft Project", "Smartsheet", "Azure DevOps", "Rally", "Planview"]
