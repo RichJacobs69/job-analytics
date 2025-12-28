@@ -349,13 +349,22 @@ def insert_enriched_job(
     }
 
     # Validate/normalize constrained fields before insert
-    VALID_CURRENCIES = {'usd', 'gbp', 'cad', 'eur', 'sgd'}  # US, UK, Canada, EU, Singapore
+    VALID_CURRENCIES = {'usd', 'gbp', 'cad', 'eur', 'sgd'}
+    VALID_EMPLOYER_SIZES = {'startup', 'scaleup', 'enterprise'}
+
     if data.get('currency'):
         currency_lower = data['currency'].lower()
         if currency_lower in VALID_CURRENCIES:
-            data['currency'] = currency_lower  # Normalize to lowercase
+            data['currency'] = currency_lower
         else:
-            data['currency'] = None  # Unsupported currency, will be removed below
+            data['currency'] = None
+
+    if data.get('employer_size'):
+        size_lower = data['employer_size'].lower()
+        if size_lower in VALID_EMPLOYER_SIZES:
+            data['employer_size'] = size_lower
+        else:
+            data['employer_size'] = None  # LLM returned invalid value (e.g., prompt text)
 
     # Remove None values - Postgres CHECK constraints don't allow explicit NULL
     # Let Postgres use column defaults instead
