@@ -39,7 +39,7 @@
 
 ## Analytics Layer & Marketplace Questions (Original Planning)
 
-**Core Purpose:** The entire pipeline exists to answer 35 marketplace questions for job seekers and employers (see `docs/marketplace_questions.yaml`).
+**Core Purpose:** The entire pipeline exists to answer 35 marketplace questions for job seekers and employers (see `docs/marketplace_questions.md`).
 
 ### Analytics Architecture (Original Streamlit Plan)
 

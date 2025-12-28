@@ -48,7 +48,7 @@ Existing job boards show listings but don't aggregate intelligence. This project
 
 **Technical Work:**
 - `docs/schema_taxonomy.yaml` - Centralized classification rules
-- `docs/marketplace_questions.yaml` - Business requirements as data questions
+- `docs/marketplace_questions.md` - Business requirements as data questions
 - `config/agency_blacklist.yaml` - Cost optimization via pre-filtering
 
 ---

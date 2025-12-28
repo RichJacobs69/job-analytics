@@ -29,19 +29,19 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 2. Then return to this README to dive deep into specifications
 
 ### Understanding the Project
-1. **marketplace_questions.yaml** - The "why": 35 key questions we're answering for job seekers and employers
-2. **product_brief.yaml** - The "what": Product scope, KPIs, success metrics, and target markets
+1. **marketplace_questions.md** - The "why": 35 key questions we're answering for job seekers and employers
+2. **product_brief.md** - The "what": Product scope, KPIs, success metrics, and target markets
 3. **schema_taxonomy.yaml** - The "how to classify": Job classification rules, extraction taxonomy, and data standards
 4. **system_architecture.yaml** - The "how it works": System design, module interactions, and responsibilities
 
 ## Core Specifications
 
 ### Business & Product
-- **marketplace_questions.yaml** - User research findings & marketplace question list
+- **marketplace_questions.md** - User research findings & marketplace question list
   - 35 questions across 7 categories (market demand, skills, compensation, location, etc.)
   - Guides all development priorities
 
-- **product_brief.yaml** - Product specification & requirements
+- **product_brief.md** - Product specification & requirements
   - Scope: 3 cities (London, NYC, Denver)
   - 12 job titles across Data & Product families
   - Success metrics: coverage, freshness, reliability, latency
@@ -135,8 +135,8 @@ This is valuable context for understanding how the system evolved, why certain d
 
 **Getting Started (Everyone):**
 1. **[../CLAUDE.md](../CLAUDE.md)** ← Start here for setup & architecture overview
-2. marketplace_questions.yaml - The "why": business context
-3. product_brief.yaml - The "what": product scope & KPIs
+2. marketplace_questions.md - The "why": business context
+3. product_brief.md - The "what": product scope & KPIs
 
 **Understanding Architecture (Developers):**
 4. schema_taxonomy.yaml - How we classify jobs

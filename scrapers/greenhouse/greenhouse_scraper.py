@@ -742,7 +742,7 @@ class GreenhouseScraper:
                     # 2. max_jobs is set (so we're limiting results anyway)
                     # Skip description fetching during pagination if no filters and no limit (allows full pagination)
                     if self.filter_titles or self.filter_locations or max_jobs:
-                        job.description = await self._get_job_description(job.url)
+                        job.description = await self._get_job_description(job.url, company_slug, job.job_id)
 
                     jobs.append(job)
 
@@ -1202,18 +1202,22 @@ class GreenhouseScraper:
 
             logger.debug(f"[{company_slug}] Extracted job: {title} -> {job_url}")
 
-            # Extract job ID from URL
-            # Patterns: /jobs/listing/{slug}/7306915 (Stripe) or /jobs/7306915 (standard Greenhouse)
-            # Try to find a trailing numeric ID at the end of the URL path
+            # Extract job ID from URL - try multiple patterns
+            # Patterns: gh_jid=XXX (custom pages), /jobs/XXX (standard), /listing/slug/XXX (Stripe)
             job_id = None
-            # First try: numeric ID at end of URL path (handles /listing/slug/7306915)
-            job_id_match = re.search(r'/(\d{6,})(?:\?|$)', job_url)  # 6+ digit ID at end
+            # Pattern 1: gh_jid query parameter (custom career pages)
+            job_id_match = re.search(r'[?&]gh_jid=(\d+)', job_url)
             if job_id_match:
                 job_id = job_id_match.group(1)
             else:
-                # Fallback: standard /jobs/ID pattern
-                job_id_match = re.search(r'/jobs/(\d+)', job_url)
-                job_id = job_id_match.group(1) if job_id_match else None
+                # Pattern 2: numeric ID at end of URL path (e.g., /listing/slug/7306915)
+                job_id_match = re.search(r'/(\d{6,})(?:\?|$)', job_url)
+                if job_id_match:
+                    job_id = job_id_match.group(1)
+                else:
+                    # Pattern 3: standard /jobs/ID pattern
+                    job_id_match = re.search(r'/jobs/(\d+)', job_url)
+                    job_id = job_id_match.group(1) if job_id_match else None
 
             # Try to get location from within the element using proper selectors
             location = "Unspecified"
@@ -1323,7 +1327,7 @@ class GreenhouseScraper:
             # Uses page pooling to prevent browser crashes
             description = ""
             if fetch_description:
-                description = await self._get_job_description(job_url)
+                description = await self._get_job_description(job_url, company_slug, job_id)
 
                 # CRITICAL: Detect and skip bot challenge pages (Cloudflare, etc.)
                 # Bot detection pages are typically short (<500 chars) with challenge keywords
@@ -1416,12 +1420,51 @@ class GreenhouseScraper:
             logger.debug(f"[{company_slug}] Error extracting location from description: {str(e)[:50]}")
             return "Unspecified"
 
-    async def _get_job_description(self, job_url: str) -> str:
+    def _is_valid_job_content(self, text: str) -> bool:
+        """
+        Validate that extracted text is actual job content, not garbage.
+
+        Returns False for:
+        - Empty or too short content
+        - CSS code
+        - Navigation/footer text without job content
+        - Bot detection pages
+        """
+        if not text or len(text.strip()) < 200:
+            return False
+
+        text_lower = text.lower()
+
+        # Check for garbage patterns (CSS, nav, bot detection)
+        garbage_patterns = [
+            '--grid-', '--sqs-', 'var(--', 'grid-template', '@media',
+            '.fe-', '.sqs-block', 'minmax(',  # CSS
+            'privacy policy', 'terms of service', 'cookie notice',  # Footer
+            'challenge-error', 'verify you are human', 'enable javascript',  # Bot
+        ]
+        has_garbage = any(pattern in text_lower for pattern in garbage_patterns)
+
+        # Check for job content indicators
+        job_patterns = [
+            'responsib', 'requirement', 'qualif', 'experience',
+            'you will', 'the role', 'about us', 'the team',
+            'skills', 'benefits', 'salary', 'compensation',
+        ]
+        has_job_content = sum(1 for p in job_patterns if p in text_lower) >= 2
+
+        # Valid if has job content and minimal garbage
+        # Or if has job content even with some garbage (can be cleaned later)
+        return has_job_content
+
+    async def _get_job_description(self, job_url: str, company_slug: str = None, job_id: str = None) -> str:
         """Navigate to job detail page and extract full description.
 
         Captures all job-related content sections (main description, work arrangements,
         benefits, etc.) to get the complete job posting.
         Uses concurrent page limiting to prevent browser crashes.
+
+        If the page redirects away from greenhouse.io or returns invalid content,
+        automatically tries the embed URL pattern as fallback.
         """
         detail_page = None
         try:
@@ -1440,6 +1483,10 @@ class GreenhouseScraper:
 
             # Wait for JavaScript rendering (increased from 0.5s to 2s for better reliability)
             await asyncio.sleep(2)
+
+            # Check if we were redirected away from greenhouse.io
+            final_url = detail_page.url
+            redirected_away = 'greenhouse.io' not in final_url.lower()
 
             # First, try to get text from the main article/content section
             # (handles most Stripe job postings with .ArticleMarkdown)
@@ -1537,8 +1584,34 @@ class GreenhouseScraper:
                 description = ' '.join(description.split())  # Normalize whitespace
 
                 if len(description) > 200:
-                    logger.debug(f"Found complete description: {len(description)} chars (main + {len(description_parts)-1} sections)")
-                    return description
+                    # Validate content quality
+                    if self._is_valid_job_content(description):
+                        logger.debug(f"Found complete description: {len(description)} chars (main + {len(description_parts)-1} sections)")
+                        return description
+                    else:
+                        logger.warning(f"Content validation failed for {job_url} - content has garbage or missing job keywords")
+
+            # EMBED URL FALLBACK: Try if redirected away or content invalid
+            if (redirected_away or not description_parts or not self._is_valid_job_content('\n'.join(description_parts))) and company_slug and job_id:
+                logger.info(f"Trying embed URL fallback for {company_slug} job {job_id}")
+                try:
+                    embed_url = f"https://boards.greenhouse.io/embed/job_app?for={company_slug}&token={job_id}"
+                    await detail_page.goto(embed_url, wait_until='domcontentloaded', timeout=self.timeout_ms)
+                    await asyncio.sleep(2)
+
+                    # Check we stayed on greenhouse
+                    if 'greenhouse.io' in detail_page.url:
+                        body = await detail_page.query_selector('body')
+                        if body:
+                            embed_text = await body.text_content()
+                            if embed_text and self._is_valid_job_content(embed_text):
+                                embed_text = ' '.join(embed_text.split())
+                                logger.info(f"Embed URL fallback succeeded: {len(embed_text)} chars")
+                                return embed_text
+                            else:
+                                logger.debug(f"Embed URL returned invalid content")
+                except Exception as e:
+                    logger.debug(f"Embed URL fallback failed: {str(e)[:50]}")
 
             logger.warning(f"No substantial description found for {job_url} after all attempts")
             return ""

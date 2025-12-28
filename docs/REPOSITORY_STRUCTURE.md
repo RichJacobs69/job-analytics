@@ -56,7 +56,7 @@ pipeline/utilities/
 ├── analyze_db_results.py           # Database analysis
 ├── backfill_missing_enriched.py    # Job recovery
 ├── backfill_agency_flags.py        # Agency flag updates
-├── backfill_out_of_scope.py        # Out of scope flag backfill
+├── backfill_reclassify.py          # Re-classify jobs (supports all families)
 ├── backfill_skill_families.py      # Skill family backfill
 ├── backfill_skill_family_rename.py # Skill family rename backfill
 ├── backfill_source_job_id.py       # Source job ID backfill
@@ -142,8 +142,8 @@ docs/
 ├── CASE_STUDY_MVP_REPORT.md           # Project case study
 ├── employer_size_canonicalization_epic.md # Future epic planning
 ├── epic5_analytics_layer_planning.md  # Dashboard delivery plan
-├── marketplace_questions.yaml         # Business questions spec
-├── product_brief.yaml                 # Product requirements
+├── marketplace_questions.md           # Business questions spec
+├── product_brief.md                   # Product requirements
 ├── schema_taxonomy.yaml               # Classification taxonomy
 └── system_architecture.yaml           # System design spec
 ```

@@ -14,7 +14,10 @@
       "Bash(gh run view:*)",
       "Bash(git commit:*)",
       "WebFetch(domain:job-boards.greenhouse.io)",
-      "WebFetch(domain:www.figma.com)"
+      "WebFetch(domain:www.figma.com)",
+      "Bash(tail:*)",
+      "Bash(pip install:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

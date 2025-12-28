@@ -981,9 +981,6 @@
         "Figure AI": {
             "slug": "figure"
         },
-        "Zipline": {
-            "slug": "flyzipline"
-        },
         "Skydio": {
             "slug": "skydio"
         },
