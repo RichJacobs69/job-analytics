@@ -348,12 +348,9 @@ def insert_enriched_job(
         "merged_from_source": merged_from_source
     }
 
-    # Remove None values for fields with CHECK constraints
-    # These constraints don't allow explicit NULL - let Postgres use defaults
-    constrained_fields = ['employer_size', 'currency', 'employer_department']
-    for field in constrained_fields:
-        if data.get(field) is None:
-            del data[field]
+    # Remove None values - Postgres CHECK constraints don't allow explicit NULL
+    # Let Postgres use column defaults instead
+    data = {k: v for k, v in data.items() if v is not None}
 
     # Use upsert to handle duplicates (same job_hash)
     result = supabase.table("enriched_jobs").upsert(
