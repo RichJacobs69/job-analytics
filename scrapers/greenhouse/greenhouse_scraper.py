@@ -1435,7 +1435,7 @@ class GreenhouseScraper:
 
         text_lower = text.lower()
 
-        # Check for garbage patterns (CSS, nav, bot detection)
+        # Check for garbage patterns (CSS, nav, bot detection, application forms)
         garbage_patterns = [
             '--grid-', '--sqs-', 'var(--', 'grid-template', '@media',
             '.fe-', '.sqs-block', 'minmax(',  # CSS
@@ -1444,16 +1444,33 @@ class GreenhouseScraper:
         ]
         has_garbage = any(pattern in text_lower for pattern in garbage_patterns)
 
+        # Check for application form patterns (indicates we captured the form, not job description)
+        form_patterns = [
+            'apply for this job', 'first name*', 'last name*', 'email*',
+            'resume/cv', 'cover letter', 'attach', 'dropbox', 'google drive',
+            'accepted file types', 'submit application',
+            # Country code lists (dead giveaway of form content)
+            'afghanistan+93', 'united states+1', 'united kingdom+44',
+        ]
+        form_match_count = sum(1 for p in form_patterns if p in text_lower)
+        is_application_form = form_match_count >= 3  # Multiple form patterns = definitely a form
+
         # Check for job content indicators
         job_patterns = [
             'responsib', 'requirement', 'qualif', 'experience',
             'you will', 'the role', 'about us', 'the team',
             'skills', 'benefits', 'salary', 'compensation',
         ]
-        has_job_content = sum(1 for p in job_patterns if p in text_lower) >= 2
+        job_match_count = sum(1 for p in job_patterns if p in text_lower)
+        has_strong_job_content = job_match_count >= 4  # Strong job content
+        has_job_content = job_match_count >= 2  # Minimal job content
 
-        # Valid if has job content and minimal garbage
-        # Or if has job content even with some garbage (can be cleaned later)
+        # Reject application forms UNLESS they also have strong job content
+        # (embed pages often have both form and job description)
+        if is_application_form and not has_strong_job_content:
+            return False
+
+        # Valid if has job content
         return has_job_content
 
     async def _get_job_description(self, job_url: str, company_slug: str = None, job_id: str = None) -> str:

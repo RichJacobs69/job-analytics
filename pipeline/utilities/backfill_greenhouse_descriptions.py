@@ -28,7 +28,7 @@ AFFECTED_COMPANIES = [
     'block', 'nuro', 'quantifind', 'agilityrobotics', 'foratravel',
     'netskope', 'skydio', 'stabilityai', 'tifin', 'lattice',
     'watchmakergenomics', 'hextechnologies', 'motive', 'duolingo',
-    'capellaspace', 'pleo'
+    'capellaspace', 'pleo', 'feverup'
 ]
 
 

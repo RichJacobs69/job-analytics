@@ -1,5 +1,11 @@
 {
     "greenhouse": {
+        "Send": {
+            "slug": "send"
+        },
+        "Feverup": {
+            "slug": "feverup"
+        },
         "Brex": {
             "slug": "brex"
         },
