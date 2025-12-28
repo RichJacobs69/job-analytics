@@ -1,15 +1,32 @@
 """
-Job classification using LLM (Gemini 2.0 Flash or Claude 3.5 Haiku)
-UPDATED: Added Gemini 2.0 Flash support with 88% cost reduction
+Job classification using LLM (Gemini 2.5 Flash-Lite or Claude 3.5 Haiku)
+UPDATED: Added Gemini support with 88% cost reduction
 UPDATED: Removed agency detection from LLM prompt (handled by Python pattern matching)
 UPDATED: LLM no longer classifies job_family - it's auto-derived from job_subfamily via strict mapping
+UPDATED: Sanitize string "null" values to Python None for database compatibility
 """
 import os
 import json
 import yaml
 import time
-from typing import Dict, Literal
+from typing import Dict, Literal, Any
 from dotenv import load_dotenv
+
+
+def sanitize_null_strings(obj: Any) -> Any:
+    """
+    Recursively convert string "null" values to Python None.
+
+    LLMs sometimes return "null" as a string instead of JSON null,
+    which causes database constraint violations.
+    """
+    if isinstance(obj, dict):
+        return {k: sanitize_null_strings(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_null_strings(item) for item in obj]
+    elif isinstance(obj, str) and obj.lower() == "null":
+        return None
+    return obj
 
 load_dotenv()
 
@@ -441,6 +458,9 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
 
         result = json.loads(response_text)
 
+        # Sanitize string "null" values to Python None
+        result = sanitize_null_strings(result)
+
         # Handle list responses (Gemini sometimes returns array for malformed input)
         if isinstance(result, list):
             if len(result) > 0 and isinstance(result[0], dict):
@@ -594,6 +614,9 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
         response_text = response_text.strip()
 
         result = json.loads(response_text)
+
+        # Sanitize string "null" values to Python None
+        result = sanitize_null_strings(result)
 
         # Ensure employer dict exists and add placeholder agency fields
         # (These will be overwritten by pattern matching in fetch script)
