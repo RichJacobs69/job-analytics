@@ -193,23 +193,14 @@ def insert_raw_job_upsert(
         
         # No existing job found or no source_job_id - insert new
         result = supabase.table("raw_jobs").insert(data).execute()
-
-        # Determine if this was insert or update
-        # Supabase doesn't return this info directly, so we infer it
         raw_job_id = result.data[0]["id"]
 
-        # Check if this was a duplicate by comparing scraped_at timestamps
-        # If scraped_at was just now, it's new; if older, it was updated
-        from datetime import datetime, timedelta
-        job_record = result.data[0]
-        scraped_at = datetime.fromisoformat(job_record['scraped_at'].replace('Z', '+00:00'))
-        now = datetime.now(scraped_at.tzinfo)
-        was_just_created = (now - scraped_at) < timedelta(seconds=2)
-
+        # If we got here, the job is NEW (we checked for existing above)
+        # No need for timestamp comparison which can fail due to clock skew
         return {
             'id': raw_job_id,
-            'action': 'inserted' if was_just_created else 'updated',
-            'was_duplicate': not was_just_created
+            'action': 'inserted',
+            'was_duplicate': False
         }
 
     except Exception as e:
@@ -356,7 +347,14 @@ def insert_enriched_job(
         "original_url_secondary": original_url_secondary,
         "merged_from_source": merged_from_source
     }
-    
+
+    # Remove None values for fields with CHECK constraints
+    # These constraints don't allow explicit NULL - let Postgres use defaults
+    constrained_fields = ['employer_size', 'currency', 'employer_department']
+    for field in constrained_fields:
+        if data.get(field) is None:
+            del data[field]
+
     # Use upsert to handle duplicates (same job_hash)
     result = supabase.table("enriched_jobs").upsert(
         data,
