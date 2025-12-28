@@ -1,0 +1,48 @@
+# Adzuna Search Queries Configuration
+# ====================================
+# Purpose: Define job search queries for Adzuna API
+# Unlike Greenhouse/Lever (which use regex patterns for filtering),
+# Adzuna uses these as direct API search terms.
+#
+# Note: Adzuna API searches are keyword-based, not regex.
+# Each query is sent as-is to the Adzuna search endpoint.
+
+search_queries:
+  # ===== DATA ROLES =====
+  - "Data Scientist"
+  - "Data Engineer"
+  - "Machine Learning Engineer"
+  - "Analytics Engineer"
+  - "Data Analyst"
+  - "AI Engineer"
+  - "Data Architect"
+  - "Product Analyst"
+
+  # ===== PRODUCT ROLES =====
+  - "Product Manager"
+  - "Technical Product Manager"
+  - "Growth Product Manager"
+  - "AI Product Manager"
+  - "Product Owner"
+
+  # ===== DELIVERY ROLES =====
+  - "Delivery Manager"
+  - "Project Manager"
+  - "Programme Manager"
+  - "Scrum Master"
+  - "Technical Project Manager"
+  - "Technical Program Manager"
+  - "Agile Coach"
+  - "Release Manager"
+
+# ===== CONFIGURATION =====
+enabled: true
+
+# Version tracking
+version: "1.0"
+last_updated: "2025-12-27"
+
+changes:
+  - version: "1.0"
+    date: "2025-12-27"
+    notes: "Initial config file - migrated from hardcoded DEFAULT_SEARCH_QUERIES. Added Delivery roles."
