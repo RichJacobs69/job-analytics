@@ -49,11 +49,13 @@ scripts:
       - ".env"
     key_functions:
       - "build_classification_prompt() - Prompt construction"
-      - "classify_job_with_claude() - Main classification function"
+      - "classify_job() - Main router (uses LLM_PROVIDER env var)"
+      - "classify_job_with_gemini() - Gemini 2.0 Flash (default, 88% cheaper)"
+      - "classify_job_with_claude() - Claude Haiku fallback"
     reads:
       - "schema_taxonomy.yaml for classification rules"
     api_calls:
-      - "Claude 3.5 Haiku API (Anthropic)"
+      - "Gemini 2.0 Flash API (default) or Claude Haiku API"
     test_mode: "python classifier.py (runs standalone test)"
     
   db_connection:
@@ -248,13 +250,13 @@ data_flow:
     database_table: "raw_jobs"
     
   step_5:
-    stage: "Classify with Claude"
+    stage: "Classify with LLM"
     script: "classifier.py"
-    function: "classify_job_with_claude()"
+    function: "classify_job()"
     input: "Job text"
     process:
       - "Build prompt with taxonomy"
-      - "Call Claude API"
+      - "Route to Gemini (default) or Claude based on LLM_PROVIDER"
       - "Parse JSON response"
     output: "Structured classification (Python dict)"
     
@@ -305,7 +307,7 @@ dependencies:
   fetch_adzuna_jobs_py:
     imports:
       - module: "classifier"
-        function: "classify_job_with_claude()"
+        function: "classify_job()"
       - module: "db_connection"
         functions:
           - "insert_raw_job()"

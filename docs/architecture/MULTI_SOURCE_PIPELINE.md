@@ -319,7 +319,7 @@ python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
 
 ### What the Classifier Receives
 
-All sources call `classify_job_with_claude(job_text, structured_input)` but provide different data quality:
+All sources call `classify_job(job_text, structured_input)` which routes to Gemini 2.0 Flash (default, 88% cheaper) or Claude Haiku based on `LLM_PROVIDER` env var. Data quality varies by source:
 
 #### Adzuna Jobs (83% of dataset)
 

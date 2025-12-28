@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, date
 from typing import List, Dict
 sys.path.insert(0, '.')
 from pipeline.db_connection import supabase, insert_enriched_job
-from pipeline.classifier import classify_job_with_claude
+from pipeline.classifier import classify_job
 from pipeline.agency_detection import is_agency_job, validate_agency_classification
 from pipeline.location_extractor import extract_locations
 
@@ -175,7 +175,7 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             'salary_min': None,
             'salary_max': None,
         }
-        classification = classify_job_with_claude(
+        classification = classify_job(
             job_text=raw_text,
             structured_input=structured_input
         )

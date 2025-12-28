@@ -209,7 +209,7 @@ python wrappers/backfill_agency_flags.py --dry-run
 
 **From pipeline modules:** (used within the pipeline)
 ```python
-from pipeline.classifier import classify_job_with_claude
+from pipeline.classifier import classify_job  # Routes to Gemini (default) or Claude
 from pipeline.db_connection import supabase, insert_enriched_job, insert_raw_job_upsert
 from pipeline.unified_job_ingester import UnifiedJob, UnifiedJobIngester
 from pipeline.job_family_mapper import derive_job_family

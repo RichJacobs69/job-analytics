@@ -48,7 +48,7 @@ from datetime import datetime
 sys.path.insert(0, '.')
 from dotenv import load_dotenv
 from supabase import create_client
-from pipeline.classifier import classify_job_with_claude
+from pipeline.classifier import classify_job
 from pipeline.location_extractor import extract_locations
 
 # ============================================
@@ -226,7 +226,7 @@ def reclassify_job(job: dict):
         'category': 'IT Jobs',
     }
 
-    return classify_job_with_claude(
+    return classify_job(
         job_text=job['raw_text'],
         structured_input=structured_input,
         verbose=False

@@ -342,7 +342,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     """
     from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
     from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
-    from pipeline.classifier import classify_job_with_claude
+    from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
     from datetime import date
@@ -472,7 +472,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                         'salary_min': None,
                         'salary_max': None,
                     }
-                    classification = classify_job_with_claude(
+                    classification = classify_job(
                         job_text=job.description,
                         structured_input=structured_input
                     )
@@ -743,7 +743,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
         Stats dictionary with processing metrics
     """
     from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
-    from pipeline.classifier import classify_job_with_claude
+    from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
     from datetime import date
@@ -843,7 +843,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                     'salary_max': job.adzuna_salary_max if hasattr(job, 'adzuna_salary_max') else None,
                 }
                 
-                classification = classify_job_with_claude(
+                classification = classify_job(
                     job_text=description,  # Fallback
                     structured_input=structured_input
                 )
@@ -975,7 +975,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
     """
     from scrapers.lever.lever_fetcher import fetch_lever_jobs, load_company_mapping
     from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
-    from pipeline.classifier import classify_job_with_claude
+    from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import DataSource
     from datetime import date
@@ -1139,7 +1139,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                         'salary_min': None,
                         'salary_max': None,
                     }
-                    classification = classify_job_with_claude(
+                    classification = classify_job(
                         job_text=job.description,
                         structured_input=structured_input
                     )
@@ -1323,7 +1323,7 @@ async def classify_jobs(jobs: List) -> List:
     """Classify jobs using Claude 3.5 Haiku"""
 
     try:
-        from pipeline.classifier import classify_job_with_claude
+        from pipeline.classifier import classify_job
         from pipeline.agency_detection import is_agency_job
 
         logger.info(f"Classifying {len(jobs)} jobs")
@@ -1349,7 +1349,7 @@ async def classify_jobs(jobs: List) -> List:
                     logger.warning(f"Skipping job with insufficient description (<50 chars): {job.title}")
                     continue
 
-                # classify_job_with_claude is synchronous, not async
+                # classify_job is synchronous, not async
                 structured_input = {
                     'title': job.title,
                     'company': job.company,
@@ -1359,7 +1359,7 @@ async def classify_jobs(jobs: List) -> List:
                     'salary_min': None,
                     'salary_max': None,
                 }
-                classification = classify_job_with_claude(
+                classification = classify_job(
                     job_text=description,
                     structured_input=structured_input
                 )

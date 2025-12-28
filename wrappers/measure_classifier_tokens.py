@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pipeline.db_connection import supabase
-from pipeline.classifier import classify_job_with_claude
+from pipeline.classifier import classify_job
 
 
 def measure_token_usage(sample_size: int = 20, verbose: bool = False):
@@ -63,7 +63,7 @@ def measure_token_usage(sample_size: int = 20, verbose: bool = False):
 
         try:
             # Re-classify to measure tokens (not saving, just measuring)
-            result = classify_job_with_claude(job['raw_text'], verbose=False)
+            result = classify_job(job['raw_text'], verbose=False)
 
             cost_data = result.get('_cost_data', {})
             input_tokens = cost_data.get('input_tokens', 0)
