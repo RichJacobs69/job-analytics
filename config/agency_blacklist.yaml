@@ -4,9 +4,9 @@
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.3
-  last_updated: "2025-12-14"
-  total_agencies: 130
+  version: 1.4
+  last_updated: "2025-12-30"
+  total_agencies: 155
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -185,6 +185,36 @@ hard_filter:
   - trg.recruitment
   - dvf recruitment
 
+  # Added 2025-12-30 from December report analysis
+  - computappoint
+  - sr2
+  - sr2 socially responsible recruitment
+  - jss transform
+  - cpr
+  - ob collective
+  - gattaca
+  - gattaca pbs
+  - experis
+  - experis uk
+  - fyre global
+  - fyre global limited
+  - ampstek
+  - ascendion
+  - intelance
+  - n consulting
+  - n consulting ltd
+  - gedu global
+  - broster buchanan
+  - focus on sap
+  - avanti recruitment
+  - avanti staffing
+  - datatech analytics
+  - data idols
+  - the idols group
+  - anson mccade
+  - jack & jill
+  - jack & jill/external ats
+
 # =========================
 # PATTERN DETECTION
 # =========================
@@ -254,6 +284,8 @@ legitimate_companies:
   - thoughtworks  # Has "consulting" but direct employer
   - palantir
   - openai
+  - graphcore  # AI chip company, not an agency
+  - avanti schools trust  # Education provider
 
 # =========================
 # DOMAIN FILTERING (for web scraping phase)
