@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings using Claude AI. Ingests from Adzuna API + Greenhouse/Lever scrapers, classifies via Claude 3.5 Haiku, stores in Supabase PostgreSQL.
+LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings. Ingests from Adzuna API + Greenhouse/Lever/Ashby scrapers, classifies via Gemini 2.5 Flash, stores in Supabase PostgreSQL.
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
@@ -30,8 +30,9 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 # Pipeline execution
 python wrappers/fetch_jobs.py --sources greenhouse           # Greenhouse only
 python wrappers/fetch_jobs.py --sources lever                # Lever only
+python wrappers/fetch_jobs.py --sources ashby                # Ashby only (best salary data)
 python wrappers/fetch_jobs.py lon 100 --sources adzuna       # Adzuna only
-python wrappers/fetch_jobs.py --sources adzuna,greenhouse    # Dual pipeline
+python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby  # All sources
 
 # With resume capability
 python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
@@ -71,7 +72,7 @@ SUPABASE_KEY=<key>
 ## Architecture
 
 ```
-Adzuna API ─────┐                    ┌───── Greenhouse/Lever Scrapers
+Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby Scrapers
                 │                    │
                 v                    v
          unified_job_ingester.py (merge & dedupe)
@@ -105,10 +106,11 @@ job-analytics/
 ├── wrappers/          # Entry points (thin wrappers)
 ├── pipeline/          # Core production code
 │   └── utilities/     # Backfill & maintenance
-├── scrapers/          # Adzuna, Greenhouse, Lever
+├── scrapers/          # Adzuna, Greenhouse, Lever, Ashby
 ├── config/            # YAML/JSON configs
 │   ├── greenhouse/    # Greenhouse-specific
-│   └── lever/         # Lever-specific
+│   ├── lever/         # Lever-specific
+│   └── ashby/         # Ashby-specific
 ├── docs/              # Documentation
 └── tests/             # Test suite
 ```
@@ -127,6 +129,7 @@ job-analytics/
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
+| `scrapers/ashby/ashby_fetcher.py` | Ashby API client (structured compensation) |
 
 ## Config Structure
 
@@ -138,6 +141,10 @@ config/
 │   └── location_patterns.yaml      # City filtering
 ├── lever/
 │   ├── company_mapping.json        # 61 companies
+│   ├── title_patterns.yaml
+│   └── location_patterns.yaml
+├── ashby/
+│   ├── company_mapping.json        # 26+ companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── location_mapping.yaml           # Master location config
@@ -180,6 +187,7 @@ Uses JSONB array for flexible multi-location support:
 Located in `.github/workflows/`:
 - `scrape-greenhouse.yml` - Daily batched (Mon-Thu)
 - `scrape-lever.yml` - Weekly
+- `scrape-ashby.yml` - Tue/Thu/Sat at 6 PM UTC
 - `scrape-adzuna.yml` - Daily
 - `refresh-derived-tables.yml` - Daily (Epic 8 derived data)
 

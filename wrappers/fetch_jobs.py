@@ -1,38 +1,46 @@
 #!/usr/bin/env python3
 """
-Wrapper script: Unified Job Fetcher - Adzuna + Greenhouse Dual Pipeline Orchestrator
+Wrapper script: Unified Job Fetcher - Multi-Source Pipeline Orchestrator
 
 Purpose:
 --------
-Main entry point for fetching jobs from multiple sources (Adzuna API + Greenhouse scraper).
-Orchestrates the full pipeline: fetch -> merge -> classify -> store.
+Main entry point for fetching jobs from multiple sources:
+- Adzuna API (aggregated job listings)
+- Greenhouse scraper (direct ATS, Playwright-based)
+- Lever API (direct ATS, HTTP API)
+- Ashby API (direct ATS, HTTP API with structured compensation)
+
+Orchestrates the full pipeline: fetch -> filter -> classify -> store.
 
 Supports:
-- Single or dual source fetching (--sources adzuna,greenhouse)
-- Multiple cities (lon, nyc, den)
+- Single or multi-source fetching (--sources adzuna,greenhouse,lever,ashby)
+- Multiple cities (lon, nyc, den, sf, sin, etc.)
 - Agency filtering (hard + soft detection)
-- Classification via Claude 3.5 Haiku
+- Classification via Gemini 2.5 Flash
 - Storage in Supabase PostgreSQL
 
 Usage:
 ------
-# Dual pipeline (default):
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse
+# All sources:
+python fetch_jobs.py --sources adzuna,greenhouse,lever,ashby
 
-# Specific companies:
+# Specific companies (applies to Greenhouse, Lever, Ashby):
 python pipeline/fetch_jobs.py --sources greenhouse --companies stripe,gitlab
 
 # Adzuna only:
 python fetch_jobs.py lon 100 --sources adzuna
 
-# Greenhouse only (premium companies):
+# Greenhouse only:
 python fetch_jobs.py --sources greenhouse
 
-# NYC with more jobs:
-python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
+# Lever only:
+python fetch_jobs.py --sources lever
 
-# With filtering:
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse --min-description-length 500
+# Ashby only (best structured compensation data):
+python fetch_jobs.py --sources ashby
+
+# NYC with Adzuna + Greenhouse:
+python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
 
 Author: Claude Code
 
