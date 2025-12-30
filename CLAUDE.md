@@ -19,10 +19,10 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
 **Status:**
-- [DONE] Epics 1-6: Full pipeline operational, dashboard live
-- [IN PROGRESS] Epic 7: GitHub Actions automation
+- [DONE] Epics 1-7: Full pipeline operational, dashboard live, GitHub Actions automation
+- [IN PROGRESS] Epic 8: Curated Job Feed (Phase 1 infrastructure complete)
 
-**Dataset:** ~6,000+ enriched jobs across London, NYC, Denver, SF, Singapore
+**Dataset:** ~18,000+ enriched jobs across London, NYC, Denver, SF, Singapore
 
 ## Common Commands
 
@@ -35,6 +35,11 @@ python wrappers/fetch_jobs.py --sources adzuna,greenhouse    # Dual pipeline
 
 # With resume capability
 python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
+
+# Derived data jobs (Epic 8 - Job Feed)
+python pipeline/employer_stats.py              # Compute employer fill stats
+python pipeline/summary_generator.py --limit=50 # Generate role summaries
+python pipeline/url_validator.py --limit=100   # Check for 404 dead links
 
 # Utilities
 python wrappers/check_pipeline_status.py
@@ -66,7 +71,7 @@ SUPABASE_KEY=<key>
 ## Architecture
 
 ```
-Adzuna API ─────┐                    ┌───── Greenhouse Scraper
+Adzuna API ─────┐                    ┌───── Greenhouse/Lever Scrapers
                 │                    │
                 v                    v
          unified_job_ingester.py (merge & dedupe)
@@ -75,13 +80,20 @@ Adzuna API ─────┐                    ┌───── Greenhouse S
               [Agency Blocklist Filter]
                          │
                          v
-              classifier.py (Claude Haiku)
+              classifier.py (Gemini 2.5 Flash)
                          │
                          v
-              db_connection.py (Supabase)
+              db_connection.py (Supabase: enriched_jobs)
+                         │
+         ┌───────────────┼───────────────┐
+         v               v               v
+  employer_stats.py  summary_gen.py  url_validator.py
+         │               │               │
+         v               v               v
+  employer_fill_stats  job_summaries  url_status
                          │
                          v
-              Next.js Dashboard (richjacobs.me)
+              Next.js Dashboard + Job Feed API
 ```
 
 ## Directory Structure
@@ -106,10 +118,13 @@ job-analytics/
 | Module | Purpose |
 |--------|---------|
 | `pipeline/fetch_jobs.py` | Main orchestrator, coordinates sources |
-| `pipeline/classifier.py` | Claude LLM integration, extracts structured data |
+| `pipeline/classifier.py` | Gemini LLM integration, extracts structured data |
 | `pipeline/db_connection.py` | Supabase client, deduplication |
 | `pipeline/location_extractor.py` | Pattern-based location extraction |
 | `pipeline/agency_detection.py` | Agency filtering (hard + soft) |
+| `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
+| `pipeline/summary_generator.py` | AI role summaries via Gemini (Epic 8) |
+| `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
 
@@ -146,14 +161,27 @@ Uses JSONB array for flexible multi-location support:
 - **Cost per job:** $0.00388 (Claude Haiku)
 - **Agency blocklist:** Blocks 10-15% before classification
 
-## Current Work: Epic 7 Automation
+## Current Work: Epic 8 Job Feed
 
-GitHub Actions workflows in `.github/workflows/`:
+**Phase 1 (Infrastructure) - COMPLETE:**
+- Database: `employer_fill_stats`, `job_summaries`, `url_status` column
+- Pipeline: `employer_stats.py`, `summary_generator.py`, `url_validator.py`
+- API: `/api/hiring-market/jobs/feed`, `/api/hiring-market/jobs/[id]/context`
+- GitHub Actions: `refresh-derived-tables.yml`
+
+**Phase 2 (Frontend) - TODO:**
+- Job feed page at `/projects/hiring-market/jobs`
+- Filter components, expandable job cards
+
+**See:** `docs/architecture/Future Ideas/EPIC_JOB_FEED.md`
+
+## GitHub Actions Workflows
+
+Located in `.github/workflows/`:
 - `scrape-greenhouse.yml` - Daily batched (Mon-Thu)
 - `scrape-lever.yml` - Weekly
 - `scrape-adzuna.yml` - Daily
-
-**See:** `docs/epic7_automation_planning.md` for full details
+- `refresh-derived-tables.yml` - Daily (Epic 8 derived data)
 
 ## Key References
 
@@ -161,10 +189,10 @@ GitHub Actions workflows in `.github/workflows/`:
 |-----|---------|
 | `docs/README.md` | Documentation index |
 | `docs/REPOSITORY_STRUCTURE.md` | Directory organization |
-| `docs/architecture/MULTI_SOURCE_PIPELINE.md` | Full pipeline architecture (Adzuna + Greenhouse + Lever) |
+| `docs/architecture/MULTI_SOURCE_PIPELINE.md` | Full pipeline architecture |
 | `docs/schema_taxonomy.yaml` | Classification rules |
 | `docs/architecture/ADDING_NEW_LOCATIONS.md` | Location system guide |
-| `docs/epic7_automation_planning.md` | Current automation work |
+| `docs/architecture/Future Ideas/EPIC_JOB_FEED.md` | Job feed epic (current work) |
 
 ## Troubleshooting
 

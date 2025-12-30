@@ -1,0 +1,105 @@
+name: Refresh Derived Tables (Daily)
+
+# Runs after scraping completes to populate derived tables for job feed
+# Part of: EPIC-008 Curated Job Feed
+
+on:
+  schedule:
+    # Run at 9:00 AM UTC (after Greenhouse batch at 7:00 AM completes)
+    - cron: '0 9 * * 1-4'  # Monday-Thursday (matches Greenhouse schedule)
+  workflow_dispatch:
+    inputs:
+      run_employer_stats:
+        description: 'Run employer_stats.py'
+        required: false
+        default: true
+        type: boolean
+      run_summary_generator:
+        description: 'Run summary_generator.py'
+        required: false
+        default: true
+        type: boolean
+      run_url_validator:
+        description: 'Run url_validator.py'
+        required: false
+        default: true
+        type: boolean
+      summary_limit:
+        description: 'Limit for summary generation (blank = all)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  refresh-derived-tables:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45  # Most time spent on summaries and URL validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run employer_stats.py
+        if: ${{ github.event.inputs.run_employer_stats != 'false' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "=========================================="
+          echo "STEP 1: Employer Fill Stats"
+          echo "=========================================="
+          python pipeline/employer_stats.py
+
+      - name: Run summary_generator.py
+        if: ${{ github.event.inputs.run_summary_generator != 'false' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          echo "=========================================="
+          echo "STEP 2: Summary Generation"
+          echo "=========================================="
+          LIMIT_ARG=""
+          if [ -n "${{ github.event.inputs.summary_limit }}" ]; then
+            LIMIT_ARG="--limit=${{ github.event.inputs.summary_limit }}"
+          fi
+          python pipeline/summary_generator.py $LIMIT_ARG
+
+      - name: Run url_validator.py
+        if: ${{ github.event.inputs.run_url_validator != 'false' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "=========================================="
+          echo "STEP 3: URL Validation"
+          echo "=========================================="
+          python pipeline/url_validator.py
+
+      - name: Summary
+        if: always()
+        run: |
+          python << 'EOF'
+          import os
+          from datetime import datetime
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write("## Derived Tables Refresh Complete\n\n")
+              f.write(f"| Step | Status |\n")
+              f.write(f"|------|--------|\n")
+              f.write(f"| **Employer Stats** | ✅ Complete |\n")
+              f.write(f"| **Summary Generator** | ✅ Complete |\n")
+              f.write(f"| **URL Validator** | ✅ Complete |\n")
+              f.write(f"\n**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+          EOF

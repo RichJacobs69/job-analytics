@@ -1,10 +1,69 @@
 # Epic: Curated Job Feed
 
-**Epic ID:** EPIC-008  
-**Version:** 1.0  
-**Created:** 2025-12-27  
-**Owner:** Rich  
-**Status:** Draft
+**Epic ID:** EPIC-008
+**Version:** 1.1
+**Created:** 2025-12-27
+**Updated:** 2025-12-30
+**Owner:** Rich
+**Status:** In Progress (Phase 1 Infrastructure Complete)
+
+---
+
+## Implementation Status
+
+### Phase 1: Infrastructure [DONE]
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Database Migrations** | [DONE] | 010, 011, 012 executed on Supabase |
+| `employer_fill_stats` table | [DONE] | Stores median fill times per employer |
+| `job_summaries` table | [DONE] | AI-generated role summaries |
+| `url_status` column | [DONE] | 404 detection for dead link filtering |
+| **Pipeline Scripts** | [DONE] | 3 new scripts in `pipeline/` |
+| `employer_stats.py` | [DONE] | Uses 404 as closed signal (not last_seen_date) |
+| `summary_generator.py` | [DONE] | Gemini 2.5 Flash Lite, with retry logic |
+| `url_validator.py` | [DONE] | Parallel HTTP HEAD checks, 10 workers |
+| **GitHub Actions** | [DONE] | `refresh-derived-tables.yml` workflow |
+| **API Endpoints** | [DONE] | 2 new endpoints in portfolio-site |
+| `/api/hiring-market/jobs/feed` | [DONE] | 5 groups, all working |
+| `/api/hiring-market/jobs/[id]/context` | [DONE] | Summary + fit signals |
+
+### Phase 2: Frontend [NOT STARTED]
+
+| Component | Status |
+|-----------|--------|
+| Job feed page (`/projects/hiring-market/jobs`) | [TODO] |
+| Filter bar component | [TODO] |
+| Job card component | [TODO] |
+| Expandable card with context | [TODO] |
+| localStorage persistence | [TODO] |
+| Analytics dashboard CTA | [TODO] |
+
+### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **404 for closed detection** | More reliable than `last_seen_date` heuristic |
+| **Fixed 30-day threshold for "Still Hiring"** | Simpler than employer median comparison; median is display-only |
+| **Gemini for summaries** | Consistent with classifier, 88% cheaper than Claude |
+| **No `key_skills` in job_summaries** | Already exists in `enriched_jobs.skills`, avoid duplication |
+| **REST not GraphQL** | 2 endpoints don't justify new tooling/patterns |
+| **localStorage + URL params** | No auth needed, shareable URLs |
+
+### Test Results (2025-12-30)
+
+```
+Feed endpoint: /api/hiring-market/jobs/feed?job_family=data
+
+Groups populated:
+  scaling_teams:    610 jobs
+  fresh_matches:    381 jobs
+  still_hiring:     152 jobs
+  remote_friendly:  278 jobs
+  top_compensation:  78 jobs
+
+Total matching: 1,162 jobs
+```
 
 ---
 
@@ -49,6 +108,15 @@ A curated feed of high-relevance jobs organised by intent, with transparent cont
 ## User Stories
 
 ### Core User Stories
+
+**US-000: Discover Jobs from Analytics**  
+As a user exploring market trends, I want to easily view jobs matching my current filter selection so that I can move from research to action without re-entering my preferences.
+
+**Acceptance Criteria:**
+- CTA appears on analytics dashboard when subfamily and city are selected
+- CTA shows count of matching jobs (e.g., "View 47 matching jobs →")
+- Clicking CTA navigates to job feed with filters pre-applied via URL params
+- Job feed includes "← Back to market trends" link to return
 
 **US-001: Set Preferences**  
 As a job seeker, I want to set my role preferences (subfamily, seniority, city, working arrangement) so that I only see relevant jobs.
@@ -116,11 +184,25 @@ richjacobs.me/projects/hiring-market → Dashboard (charts)
 
 **Proposed:**
 ```
-richjacobs.me/projects/hiring-market → Jobs Feed (primary)
-richjacobs.me/projects/hiring-market/trends → Market Trends (secondary)
+richjacobs.me/projects/hiring-market → Market Trends (landing, primary)
+    │
+    ├── Filter by subfamily + city
+    │       │
+    │       └── [CTA: "View X matching jobs →"]
+    │                    │
+    └────────────────────┴──→ /jobs?subfamily=X&city=Y (Job Feed)
+                                    │
+                                    └── [Link: "← Back to market trends"]
 ```
 
-Jobs become the primary experience; analytics become supporting context.
+**Rationale:**
+- Analytics is genuinely differentiated (no competitor has this view with our taxonomy)
+- Lower friction for new users (can explore without setting preferences)
+- Builds trust before asking for engagement
+- Cross-link CTA validates job feed demand before over-investing
+- Job feed is a feature within the platform, not a replacement landing page
+
+Jobs become a **conversion path from analytics**, not the primary experience.
 
 ### Job Feed Page Structure
 
@@ -497,13 +579,13 @@ interface UserPreferences {
 
 | Story | Estimate | Priority |
 |-------|----------|----------|
+| US-000: Analytics → Jobs CTA cross-link | 0.5 day | P0 |
 | US-001: Filter UI + localStorage | 0.5 day | P0 |
 | US-002: Job cards + grouped feed (5 groups) | 1.5 days | P0 |
 | US-003: Expandable context | 0.5 day | P0 |
 | US-003a: "Why this fits" reasoning | 0.5 day | P0 |
 | US-004: Group selection logic + employer fill stats | 1 day | P0 |
 | Role summary generation (batch) | 1 day | P0 |
-| Navigation restructure | 0.5 day | P0 |
 | API endpoints (grouped response) | 1 day | P0 |
 
 **Total estimate: 6-7 days**
@@ -528,9 +610,10 @@ interface UserPreferences {
 
 | Metric | Target | How to Measure |
 |--------|--------|----------------|
-| Filter engagement | >80% of sessions set filters | localStorage + analytics event |
-| Card expansion rate | >50% of displayed jobs | Click tracking |
-| Apply click-through | >20% of displayed jobs | Click tracking |
+| Analytics → Jobs CTA click rate | >10% of filtered analytics sessions | Click tracking |
+| Filter engagement (on job feed) | >70% of sessions adjust filters | localStorage + analytics event |
+| Card expansion rate | >40% of displayed jobs | Click tracking |
+| Apply click-through | >15% of displayed jobs | Click tracking |
 
 ### Lagging Indicators (Week 3+)
 
@@ -571,9 +654,12 @@ Questions to ask beta users:
 
 ## Definition of Done
 
-- [ ] Filter bar with 4 dropdowns (city, role, seniority, arrangement)
-- [ ] Preferences persist in localStorage
-- [ ] Preferences sync to URL params
+- [ ] Analytics dashboard shows "View X matching jobs →" CTA when filters are set
+- [ ] CTA passes filter state via URL params to job feed
+- [ ] Job feed page at `/jobs` with filter bar (city, role, seniority, arrangement)
+- [ ] Filters pre-populate from URL params if present
+- [ ] Preferences persist in localStorage for return visits
+- [ ] "← Back to market trends" link on job feed
 - [ ] Feed displays 5 groups: Fresh Matches, Still Hiring, Scaling Teams, Top Compensation (US), Remote Friendly
 - [ ] Each group shows max 7 jobs with clear labelling and tagline
 - [ ] Groups with 0 matches are hidden; "Show more" if >7 matches
@@ -586,6 +672,5 @@ Questions to ask beta users:
 - [ ] Employer fill-time comparison shown where data available
 - [ ] "Apply" links directly to Greenhouse/Lever posting (no Adzuna)
 - [ ] "View all" shows full matching list (paginated)
-- [ ] Navigation updated (Jobs primary, Trends secondary)
 - [ ] Mobile-responsive layout
 - [ ] 3+ beta users have tested and provided feedback

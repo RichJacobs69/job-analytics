@@ -44,7 +44,10 @@ pipeline/
 ├── run_all_cities.py          # Parallel orchestration
 ├── location_extractor.py      # Location extraction from job postings (pattern-based)
 ├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
-└── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
+├── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
+├── employer_stats.py          # Compute median fill times per employer (Epic 8)
+├── summary_generator.py       # AI-generated role summaries via Gemini (Epic 8)
+└── url_validator.py           # HTTP 404 detection for dead link filtering (Epic 8)
 ```
 
 #### Utilities Subdirectory
@@ -117,7 +120,11 @@ migrations/
 ├── 005_remove_hash_unique_constraint.sql  # Remove hash uniqueness
 ├── 006_unique_source_job_id.sql           # Unique constraint on source_job_id
 ├── 007_allow_unknown_working_arrangement.sql # Allow 'unknown' working arrangement
-└── 008_add_locations_jsonb.sql            # Add locations JSONB column with GIN index
+├── 008_add_locations_jsonb.sql            # Add locations JSONB column with GIN index
+├── 009_add_sfo_sgp_city_codes.sql         # Add SF and Singapore city codes
+├── 010_create_employer_fill_stats.sql     # Employer fill stats table (Epic 8)
+├── 011_create_job_summaries.sql           # AI-generated job summaries table (Epic 8)
+└── 012_add_url_status_column.sql          # URL health tracking column (Epic 8)
 ```
 
 ### 6. **`docs/` Directory** (Documentation)
@@ -252,13 +259,13 @@ main()
 | Area | Count | Type |
 |------|-------|------|
 | Root wrappers | 8 | Python scripts |
-| Core pipeline | 9 | Python scripts |
+| Core pipeline | 12 | Python scripts (incl. 3 Epic 8 scripts) |
 | Utilities | 12 | Python scripts |
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
-| Migrations | 8 | SQL scripts |
+| Migrations | 12 | SQL scripts (incl. 3 Epic 8 migrations) |
 | Config files | 12 | YAML/JSON files (6 shared + 3 greenhouse + 3 lever) |
 | Test files | 10 | Python scripts |
-| **Total active** | **65** | **Scripts + configs** |
+| **Total active** | **72** | **Scripts + configs** |
 
 ## Current Status
 
@@ -273,12 +280,14 @@ main()
 ### Completed Epics
 - **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
 - **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
+- **Epic 7: Automation & Operational** - GitHub Actions for daily Greenhouse/Lever/Adzuna scraping
 - **Global Location Expansion Epic** - JSONB location system supporting 14 cities, 9 countries, 3 regions (archived: docs/archive/GLOBAL_LOCATION_EXPANSION_EPIC.md)
 
-### Ready to Start
-- **Epic 7: Automation & Operational**
-  - GitHub Actions for daily pipeline execution
-  - Monitoring and alerting for pipeline failures
+### In Progress
+- **Epic 8: Curated Job Feed** (Phase 1 Complete)
+  - [DONE] Infrastructure: migrations, pipeline scripts, API endpoints
+  - [TODO] Frontend: job feed page, filter components, expandable cards
+  - See: `docs/architecture/Future Ideas/EPIC_JOB_FEED.md`
 
 ### Maintaining Cleanliness
 - Archive diagnostic scripts after use in `docs/archive/session_YYYY-MM-DD/`
@@ -287,6 +296,6 @@ main()
 
 ---
 
-**Last Updated:** 2025-12-22
-**Changes:** Reorganized config into source-specific subdirectories (config/greenhouse/, config/lever/) for better organization. Each source now has its own company_mapping, title_patterns, and location_patterns files. Shared configs (agency_blacklist, location_mapping, job/skill family mappings) remain in config root.
-**Status:** Clean structure, 100% compliant with documented organization
+**Last Updated:** 2025-12-30
+**Changes:** Added Epic 8 (Curated Job Feed) infrastructure - 3 new pipeline scripts (employer_stats.py, summary_generator.py, url_validator.py), 3 new migrations (010-012), and GitHub Actions workflow for derived tables. Updated file counts.
+**Status:** Clean structure, Epic 8 Phase 1 infrastructure complete
