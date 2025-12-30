@@ -22,9 +22,6 @@
         "Runway": {
             "slug": "runwayml"
         },
-        "Labelbox": {
-            "slug": "labelbox"
-        },
         "Capitolis": {
             "slug": "capitolis",
             "url_type": "embed"
@@ -157,9 +154,6 @@
         },
         "Reddit": {
             "slug": "reddit"
-        },
-        "Airtable": {
-            "slug": "airtable"
         },
         "Coursera": {
             "slug": "coursera"
@@ -462,9 +456,6 @@
         },
         "Webflow": {
             "slug": "webflow"
-        },
-        "Anthropic": {
-            "slug": "anthropic"
         },
         "TurboTenant": {
             "slug": "turbotenant"
@@ -886,21 +877,11 @@
         "Postman": {
             "slug": "postman"
         },
-        "Retool": {
-            "slug": "retool"
-        },
-        "Stability AI": {
-            "slug": "stabilityai",
-            "url_type": "embed"
-        },
         "Taboola": {
             "slug": "taboola"
         },
         "Together AI": {
             "slug": "togetherai"
-        },
-        "Vercel": {
-            "slug": "vercel"
         },
         "Wiz": {
             "slug": "wizinc",
@@ -1112,110 +1093,33 @@
         },
         "Comply Advantage": {
             "slug": "complyadvantage"
+        },
+        "Immunefi": {
+            "slug": "immunefi"
+        },
+        "Thunes": {
+            "slug": "thunes"
+        },
+        "At-Bay": {
+            "slug": "atbay"
+        },
+        "Moveworks": {
+            "slug": "moveworks"
+        },
+        "Profound": {
+            "slug": "profound"
+        },
+        "Hebbia": {
+            "slug": "hebbia"
+        },
+        "Momentic": {
+            "slug": "momentic"
+        },
+        "Keeper Security": {
+            "slug": "keepersecurity"
+        },
+        "dbt Labs": {
+            "slug": "dbtlabsinc"
         }
-    },
-    "ashby": {
-        "Notion": "notion",
-        "Vercel": "vercel",
-        "Retool": "retool",
-        "Rippling": "rippling",
-        "OpenSea": "opensea",
-        "Linear": "linear",
-        "Replit": "replit",
-        "Midjourney": "midjourney",
-        "Perplexity AI": "perplexity",
-        "Vanta": "vanta",
-        "Sourcegraph": "sourcegraph",
-        "Hex (Hex Technologies)": "hex"
-    },
-    "lever": {
-        "Atlassian": "atlassian",
-        "Grammarly": "grammarly",
-        "Quora": "quora",
-        "Patreon": "patreon",
-        "Postman": "postman",
-        "Eventbrite": "eventbrite",
-        "DonorsChoose": "donorschoose",
-        "Opendoor": "opendoor",
-        "Khan Academy": "khanacademy",
-        "Loom": "loom",
-        "Verition": "verition",
-        "Wise": "wise"
-    },
-    "workable": {
-        "Starling Bank": "starling-bank",
-        "Zego": "zego",
-        "Cleo": "meetcleo",
-        "Form3": "form3",
-        "Gousto": "gousto",
-        "Codat": "codat",
-        "Curve": "curve",
-        "Pento": "pento"
-    },
-    "smartrecruiters": {
-        "Spotify": "Spotify",
-        "Ubisoft": "Ubisoft",
-        "King": "King"
-    },
-    "bamboohr": {
-        "Formlabs": "formlabs",
-        "Lucid Software": "lucid"
-    },
-    "recruitee": {
-        "Backbase": "backbase",
-        "Bynder": "bynder",
-        "Otrium": "otrium"
-    },
-    "comeet": {
-        "Riskified": "riskified",
-        "Taboola": "taboola",
-        "Similarweb": "similarweb",
-        "Fiverr": "fiverr",
-        "Via (Via Transportation)": "viatransportation"
-    },
-    "taleo": {
-        "Transport for London (TfL)": "tfl",
-        "Metropolitan Police": "metpolice",
-        "University College London (UCL)": "ucl",
-        "University of the Arts London (UAL)": "ual"
-    },
-    "workday": {
-        "Bloomberg": "bloomberg",
-        "Deliveroo": "deliveroo",
-        "Snowflake": "snowflakecomputing",
-        "Nike": "nike",
-        "Salesforce": "salesforce",
-        "Walmart": "walmart",
-        "Target": "target"
-    },
-    "custom": {
-        "Microsoft": "https://careers.microsoft.com",
-        "Johnson & Johnson": "https://jobs.jnj.com",
-        "ServiceNow": "https://careers.servicenow.com",
-        "DaVita": "https://careers.davita.com",
-        "DISH": "https://careers.dish.com",
-        "JPMorgan Chase": "https://careers.jpmorgan.com/global/en",
-        "BlackRock": "https://careers.blackrock.com",
-        "Citi": "https://careers.citigroup.com",
-        "Shell": "https://jobs.shell.com",
-        "HSBC": "https://mycareer.hsbc.com",
-        "Amazon": "https://www.amazon.jobs",
-        "Google": "https://careers.google.com/jobs/results/",
-        "Apple": "https://jobs.apple.com",
-        "Meta": "https://www.metacareers.com",
-        "Netflix": "https://jobs.netflix.com",
-        "Tesla": "https://www.tesla.com/careers",
-        "Jane Street": "https://www.janestreet.com/join-jane-street/",
-        "Hudson River Trading": "https://www.hudsonrivertrading.com/careers/",
-        "Citadel": "https://www.citadel.com/careers/",
-        "DE Shaw": "https://www.deshaw.com/careers",
-        "Jump Trading": "https://jumptrading.com/careers/",
-        "DRW": "https://drw.com/work-at-drw/",
-        "IMC Trading": "https://www.imc.com/us/careers/",
-        "Optiver": "https://optiver.com/working-at-optiver/",
-        "Uber": "https://www.uber.com/us/en/careers/",
-        "DeepMind": "https://www.deepmind.com/careers",
-        "The Guardian": "https://workforus.theguardian.com/",
-        "BBC": "https://careerssearch.bbc.co.uk/"
     }
 }

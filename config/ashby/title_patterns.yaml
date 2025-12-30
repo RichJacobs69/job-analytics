@@ -1,0 +1,119 @@
+# Ashby Job Title Filter Patterns
+# ================================
+# Shared with Greenhouse/Lever - same role filtering logic
+# Source: config/greenhouse/title_patterns.yaml
+#
+# Purpose: Identify relevant Data, Product, and Delivery roles before LLM classification
+# Impact: Reduces classification costs by 60-70%
+
+# Core title patterns for Data and Product families
+relevant_title_patterns:
+  # ===== DATA ROLES =====
+
+  # Data Analyst family
+  - 'data analyst'
+  - 'product analyst'
+  - 'growth analyst'
+  - 'insight analyst'
+  - 'analytics (engineer|lead|manager)'
+  - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
+  - 'bi engineer|bi analyst'
+
+  # Data Engineer family
+  - 'data engineer'
+  - 'data platform'
+  - 'data engineering (manager|lead)'
+
+  # Data Scientist family
+  - 'data scientist'
+  - 'data science (engineer|manager|lead)'
+  - 'machine learning scientist'
+  - 'research scientist.*(ml|ai|machine learning|data)'
+  - 'applied (scientist|ml)'
+
+  # ML/AI Engineer family
+  - 'ml engineer|machine learning engineer'
+  - 'ai engineer'
+  - 'ai/ml'
+  - 'mlops'
+  - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
+
+  # Data Architect family
+  - 'data architect'
+
+  # Data/Analytics Leadership (Director+)
+  - 'director.*(data|analytics|data science|ml|machine learning|ai)'
+  - '(data|analytics|data science|ml|machine learning|ai).*director'
+  - '(vp|vice president).*(data|analytics|data science|ml|machine learning|ai)'
+  - 'head of (data|analytics|data science|ml|machine learning|ai)'
+  - 'chief (data|analytics|ai) officer|cdo|cao|caio'
+
+  # ===== PRODUCT ROLES =====
+
+  # Product Manager family
+  - 'product manager'
+  - 'product owner'
+  - 'technical product manager'
+
+  # Product Leadership (Director+)
+  - 'director.*(product|pm)'
+  - '(vp|vice president).*(product|pm)'
+  - 'head of product'
+  - 'chief product officer|cpo'
+
+  # Growth PM
+  - 'growth (pm|product manager)'
+
+  # Platform/Infrastructure PM
+  - 'platform (pm|product manager)'
+
+  # AI/ML Product Manager
+  - '(ai|ml|data).*(product manager|pm)'
+  - 'product manager.*(ai|ml|data)'
+
+  # ===== DELIVERY ROLES =====
+
+  # Delivery Manager family
+  - 'delivery manager'
+  - 'delivery lead'
+  - 'agile delivery manager'
+  - 'agile delivery lead'
+
+  # Project Manager family (CRITICAL: must NOT match "product manager")
+  - '(?<!product )project manager'
+  - 'technical project manager'
+  - 'it project manager'
+  - 'senior project manager'
+
+  # Programme Manager family
+  - 'program(me)? manager'
+  - 'senior program(me)? manager'
+
+  # Scrum Master family
+  - 'scrum master'
+  - 'senior scrum master'
+
+  # Agile Coach / Release Manager
+  - 'agile coach'
+  - 'release manager'
+  - 'iteration manager'
+
+  # Technical Program Manager
+  - 'technical program(me)? manager'
+
+  # PMO roles
+  - 'pmo (manager|lead|analyst|director)'
+
+  # Delivery Leadership (Director+)
+  - 'director.*(delivery|project|program|pmo)'
+  - '(delivery|project|program).*director'
+  - '(vp|vice president).*(delivery|project|program)'
+  - 'head of (delivery|projects|programmes?|pmo)'
+
+# Enable/disable filtering
+filtering_enabled: true
+
+# Version tracking
+version: "1.0"
+last_updated: "2025-12-30"
+source: "config/greenhouse/title_patterns.yaml"

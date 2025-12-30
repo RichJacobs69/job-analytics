@@ -40,8 +40,9 @@ except ImportError:
     exit(1)
 
 # =============================================================================
-# SEED LIST: Tech companies in London, NYC, Denver NOT already in mapping
-# Compiled from web research on 2025-12-06
+# SEED LIST: Tech companies in target locations NOT already in mapping
+# Compiled from web research on 2025-12-06, expanded 2025-12-30
+# Locations: London, NYC, Denver, SF Bay Area, Singapore
 # =============================================================================
 
 SEED_COMPANIES = {
@@ -480,6 +481,138 @@ SEED_COMPANIES = {
     "Extropic": ["extropic"],
     "Cognition AI": ["cognition", "cognitionai"],
     "Magic": ["magic", "magicai"],
+
+    # =========================================================================
+    # SINGAPORE - Tech Companies (NEW 2025-12-30)
+    # Source: topstartups.io, seedtable.com, tracxn.com
+    # =========================================================================
+    # Fintech & Crypto
+    "Nansen": ["nansen"],  # Confirmed Greenhouse user
+    "PatSnap": ["patsnap"],  # Confirmed Greenhouse user
+    "Circles.Life": ["circleslife", "circles"],
+    "Immunefi": ["immunefi"],
+    "Matrixport": ["matrixport"],
+    "Hex Trust": ["hextrust"],
+    "Thunes": ["thunes"],
+    "Grab": ["grab"],
+    "Sea Group": ["sea", "seagroup"],
+
+    # AI & Data - Singapore
+    "Uniphore": ["uniphore"],
+    "Atlan": ["atlan"],
+    "ViSenze": ["visenze"],
+    "Trax": ["trax", "traxretail"],
+    "Mercu": ["mercu"],
+    "Near": ["near", "nearintelligence"],
+
+    # Deep Tech - Singapore
+    "Horizon Quantum Computing": ["horizonquantum", "horizon"],
+    "Transcelestial": ["transcelestial"],
+    "MiRXES": ["mirxes"],
+    "Shiok Meats": ["shiokmeats", "shiok"],
+    "Silicon Box": ["siliconbox"],
+    "Polyhedra Network": ["polyhedra"],
+
+    # E-commerce & Consumer - Singapore
+    "Carousell": ["carousell"],
+    "Cococart": ["cococart"],
+    "Funding Societies": ["fundingsocieties"],
+    "Spenmo": ["spenmo"],
+    "Volopay": ["volopay"],
+
+    # =========================================================================
+    # SF BAY AREA - 2024-2025 Funding Rounds (NEW 2025-12-30)
+    # Source: growthlist.co, startupsavant.com, TechCrunch
+    # =========================================================================
+    "Mercury": ["mercury"],
+    "Arrow": ["arrow", "arrowai"],
+    "Mysten Labs": ["mystenlabs", "mysten"],
+    "At-Bay": ["atbay"],
+    "thirdweb": ["thirdweb"],
+    "AtoB": ["atob"],
+    "Glean": ["glean"],
+    "Harvey AI": ["harvey", "harveyai"],
+    "Cerebras": ["cerebras"],
+    "Anysphere": ["anysphere"],  # Cursor AI
+    "Sierra AI": ["sierra", "sierraai"],
+    "Moveworks": ["moveworks"],
+    "Notion": ["notion"],  # Re-test, major company
+    "Vercel": ["vercel"],  # Re-test
+    "Linear": ["linear"],
+    "Replit": ["replit"],
+    "Rippling": ["rippling"],
+    "Ramp": ["ramp"],  # Re-test, major fintech
+    "Brex": ["brex"],  # Re-test
+    "Vanta": ["vanta"],  # Re-test, growing security company
+
+    # =========================================================================
+    # NYC - 2024-2025 Series B/C Rounds (NEW 2025-12-30)
+    # Source: topstartups.io, vanguard-x.com, Tech:NYC
+    # =========================================================================
+    "Kalshi": ["kalshi"],  # Confirmed Greenhouse user
+    "Camber": ["camber"],  # Confirmed Greenhouse user
+    "Traba": ["traba"],  # Confirmed Greenhouse user
+    "Stainless": ["stainless", "stainlessapi"],
+    "Topline Pro": ["toplinepro", "topline"],
+    "Profound": ["profound"],
+    "NetBox Labs": ["netboxlabs", "netbox"],
+    "Aiera": ["aiera"],
+    "Tennr": ["tennr"],
+    "Clay": ["clay", "clayhq"],
+    "Cyera": ["cyera"],
+    "Hebbia": ["hebbia"],
+    "Elicit": ["elicit"],
+    "Codeium": ["codeium"],
+    "EvenUp": ["evenup"],
+    "Anduril": ["anduril"],  # Re-test, major defense tech
+
+    # =========================================================================
+    # DENVER/COLORADO - 2024-2025 Startups (NEW 2025-12-30)
+    # Source: builtincolorado.com, growthmentor.com
+    # =========================================================================
+    "Quantive": ["quantive", "gtmhub"],
+    "Moov Financial": ["moov", "moovfinancial"],
+    "Homebot": ["homebot"],
+    "Identity Digital": ["identitydigital"],
+    "AirDNA": ["airdna"],
+    "Apryse": ["apryse"],
+    "Caliola Engineering": ["caliola"],
+    "True Anomaly": ["trueanomaly", "trueanomalyinc"],  # Re-test with new slug
+
+    # =========================================================================
+    # YC W24/S24 BATCHES - AI-First Companies (NEW 2025-12-30)
+    # Source: ycombinator.com/companies, Crunchbase
+    # =========================================================================
+    "Leya": ["leya"],  # AI for lawyers
+    "Greptile": ["greptile"],  # Code understanding API
+    "YonedaLabs": ["yonedalabs", "yoneda"],  # Chemistry AI
+    "Maihem": ["maihem"],  # AI testing
+    "Basepilot": ["basepilot"],  # Web automation
+    "Topo": ["topo", "topoai"],  # AI sales agents
+    "Terrakotta": ["terrakotta"],  # Voicemail AI
+    "Driver AI": ["driverai", "driver"],  # Codebase understanding
+    "AgentHub": ["agenthub"],
+    "Firebender": ["firebender"],
+    "Sonia": ["sonia", "heysonia"],
+    "Openmart": ["openmart"],
+    "Crux": ["crux", "getcrux"],
+    "Octolane AI": ["octolane", "octolaneai"],
+    "Zaymo": ["zaymo"],
+    "Duckie": ["duckie", "duckieai"],
+    "Arini": ["arini"],  # AI dental receptionist
+    "Pythagora": ["pythagora"],  # GPT Pilot
+    "TensorFuse": ["tensorfuse"],
+    "OpenCopilot": ["opencopilot"],
+    "Blume": ["blume"],
+    "Momentic": ["momentic"],  # AI testing
+    "Artisan AI": ["artisanai", "artisan"],
+    "phospho": ["phospho"],
+    "Infinity AI": ["infinityai", "infinity"],
+    "Lovable": ["lovable"],  # AI app builder
+    "Wordware": ["wordware"],  # AI IDE
+    "Letta": ["letta"],  # MemGPT
+    "Pydantic": ["pydantic", "pydanticai"],  # Logfire
+    "Continue": ["continue", "continuedev"],  # AI coding assistant
 }
 
 # Base URLs to try (EXACTLY same as validate_greenhouse_slugs.py)

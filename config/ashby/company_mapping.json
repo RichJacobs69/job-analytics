@@ -1,0 +1,85 @@
+{
+  "ashby": {
+    "Notion": {
+      "slug": "notion"
+    },
+    "Anthropic": {
+      "slug": "anthropic"
+    },
+    "Ramp": {
+      "slug": "ramp"
+    },
+    "Perplexity": {
+      "slug": "perplexityai"
+    },
+    "Linear": {
+      "slug": "linear"
+    },
+    "OpenAI": {
+      "slug": "openai"
+    },
+    "Stability AI": {
+      "slug": "stability"
+    },
+    "Replit": {
+      "slug": "replit"
+    },
+    "Vercel": {
+      "slug": "vercel"
+    },
+    "Supabase": {
+      "slug": "supabase"
+    },
+    "PostHog": {
+      "slug": "posthog"
+    },
+    "Retool": {
+      "slug": "retool"
+    },
+    "Airtable": {
+      "slug": "airtable"
+    },
+    "Plaid": {
+      "slug": "plaid"
+    },
+    "Harvey AI": {
+      "slug": "harvey"
+    },
+    "Lovable": {
+      "slug": "lovable"
+    },
+    "Cursor (Anysphere)": {
+      "slug": "cursor"
+    },
+    "Glean": {
+      "slug": "glean"
+    },
+    "Cohere": {
+      "slug": "cohere"
+    },
+    "Rippling": {
+      "slug": "rippling"
+    },
+    "Midjourney": {
+      "slug": "midjourney"
+    },
+    "Vanta": {
+      "slug": "vanta"
+    },
+    "Sourcegraph": {
+      "slug": "sourcegraph"
+    },
+    "Hex": {
+      "slug": "hex"
+    },
+    "OpenSea": {
+      "slug": "opensea"
+    }
+  },
+  "_meta": {
+    "validated_at": "2025-12-30",
+    "discovery_sources": ["epic_initial_list", "company_curator_2025-12-30"],
+    "total_companies": 26,
+    "notes": "High-value AI/tech companies using Ashby ATS. Validated: Ramp (87 jobs), Harvey AI (106 jobs), Cohere (79 jobs), OpenAI (100+ jobs)."
+  }
+}

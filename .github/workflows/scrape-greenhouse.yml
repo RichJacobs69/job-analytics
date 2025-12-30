@@ -2,10 +2,11 @@ name: Scrape Greenhouse (Daily Batch)
 
 on:
   schedule:
-    - cron: '0 7 * * 1'  # Monday at 7:00 AM UTC
-    - cron: '0 7 * * 2'  # Tuesday at 7:00 AM UTC
-    - cron: '0 7 * * 3'  # Wednesday at 7:00 AM UTC
-    - cron: '0 7 * * 4'  # Thursday at 7:00 AM UTC
+    # Staggered with Adzuna (Tue/Thu/Sat) to avoid Gemini rate limits
+    - cron: '0 7 * * 0'  # Sunday at 7:00 AM UTC (Batch 4)
+    - cron: '0 7 * * 1'  # Monday at 7:00 AM UTC (Batch 1)
+    - cron: '0 7 * * 3'  # Wednesday at 7:00 AM UTC (Batch 2)
+    - cron: '0 7 * * 5'  # Friday at 7:00 AM UTC (Batch 3)
   workflow_dispatch:
     inputs:
       batch_override:
@@ -83,14 +84,24 @@ jobs:
           batch_size = total_companies // 4 + 1
 
           # Determine batch number (allow manual override)
+          # New schedule: Sun=Batch4, Mon=Batch1, Wed=Batch2, Fri=Batch3
+          day_to_batch = {
+              6: 3,  # Sunday -> Batch 4 (index 3)
+              0: 0,  # Monday -> Batch 1 (index 0)
+              2: 1,  # Wednesday -> Batch 2 (index 1)
+              4: 2,  # Friday -> Batch 3 (index 2)
+          }
+          day_names = {6: 'Sunday', 0: 'Monday', 2: 'Wednesday', 4: 'Friday'}
+
           override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
           if override and override != 'auto':
               batch_num = int(override) - 1  # Convert 1-4 to 0-3
               print(f"Using manual override: Batch {override}")
           else:
-              batch_num = datetime.now().weekday() % 4  # Mon=0, Tue=1, Wed=2, Thu=3
-              days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday']
-              print(f"Auto-detected: {days[batch_num]} -> Batch {batch_num + 1}")
+              weekday = datetime.now().weekday()
+              batch_num = day_to_batch.get(weekday, 0)  # Default to batch 1 if run on off-day
+              day_name = day_names.get(weekday, f"Day {weekday}")
+              print(f"Auto-detected: {day_name} -> Batch {batch_num + 1}")
 
           # Calculate batch slice
           start = batch_num * batch_size
@@ -143,11 +154,14 @@ jobs:
           companies = sorted(greenhouse.keys())
           batch_size = len(companies) // 4 + 1
 
+          # New schedule: Sun=Batch4, Mon=Batch1, Wed=Batch2, Fri=Batch3
+          day_to_batch = {6: 3, 0: 0, 2: 1, 4: 2}
+
           override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
           if override and override != 'auto':
               batch_num = int(override) - 1
           else:
-              batch_num = datetime.now().weekday() % 4
+              batch_num = day_to_batch.get(datetime.now().weekday(), 0)
 
           start = batch_num * batch_size
           end = min(start + batch_size, len(companies))
