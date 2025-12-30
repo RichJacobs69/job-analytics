@@ -243,5 +243,5 @@ class ExperienceRangeNormalizer:
 
 **Document Version:** 1.0
 **Last Updated:** 2025-12-30
-**Extracted From:** employer_size_canonicalization_epic.md (Phase 2)
-**Status:** Planned - lower priority than employer_metadata_epic
+**Extracted From:** EPIC_EMPLOYER_METADATA.md (formerly Phase 2 of employer_size_canonicalization_epic.md)
+**Status:** Planned - lower priority than EPIC_EMPLOYER_METADATA

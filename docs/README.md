@@ -163,4 +163,24 @@ When updating documentation:
 - Update archive README if moving docs to historical reference
 - Keep this index up-to-date
 
+### Epic Naming Convention
+
+Epic documents in `docs/architecture/` follow this naming pattern:
+
+```
+EPIC_<NAME_IN_UPPERCASE>.md
+```
+
+Examples:
+- `EPIC_EMPLOYER_METADATA.md`
+- `EPIC_EXPERIENCE_RANGE_NORMALIZATION.md`
+- `EPIC_JOB_FEED.md`
+- `EPIC_ASHBY_INTEGRATION.md`
+
+Rules:
+- Prefix with `EPIC_`
+- Use UPPERCASE with underscores
+- End with `.md`
+- Place in `docs/architecture/In Progress/` or `docs/architecture/Future Ideas/`
+
 Questions? Check [../CLAUDE.md](../CLAUDE.md) in the project root for development setup and common tasks.
