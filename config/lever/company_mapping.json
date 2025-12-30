@@ -55,11 +55,6 @@
       "instance": "global",
       "job_count": 392
     },
-    "Plaid": {
-      "slug": "plaid",
-      "instance": "global",
-      "job_count": 74
-    },
     "Rackspace": {
       "slug": "rackspace",
       "instance": "global",
@@ -304,14 +299,63 @@
       "slug": "zopa",
       "instance": "global",
       "job_count": 34
+    },
+    "Atlassian": {
+      "slug": "atlassian",
+      "instance": "global"
+    },
+    "Grammarly": {
+      "slug": "grammarly",
+      "instance": "global"
+    },
+    "Quora": {
+      "slug": "quora",
+      "instance": "global"
+    },
+    "Patreon": {
+      "slug": "patreon",
+      "instance": "global"
+    },
+    "Postman": {
+      "slug": "postman",
+      "instance": "global"
+    },
+    "Eventbrite": {
+      "slug": "eventbrite",
+      "instance": "global"
+    },
+    "DonorsChoose": {
+      "slug": "donorschoose",
+      "instance": "global"
+    },
+    "Opendoor": {
+      "slug": "opendoor",
+      "instance": "global"
+    },
+    "Khan Academy": {
+      "slug": "khanacademy",
+      "instance": "global"
+    },
+    "Loom": {
+      "slug": "loom",
+      "instance": "global"
+    },
+    "Verition": {
+      "slug": "verition",
+      "instance": "global"
+    },
+    "Wise": {
+      "slug": "wise",
+      "instance": "global"
     }
   },
   "_meta": {
-    "validated_at": "2025-12-16T16:58:56.517539Z",
+    "validated_at": "2025-12-30",
     "discovery_sources": [
-      "cli"
+      "cli",
+      "migrated_from_company_ats_mapping"
     ],
-    "total_companies": 61,
-    "total_jobs_available": 4137
+    "total_companies": 72,
+    "notes": "Added 12 companies migrated from company_ats_mapping.json. Removed Plaid (moved to Ashby)."
   }
 }

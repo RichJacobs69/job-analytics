@@ -1288,6 +1288,377 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
     return stats
 
 
+async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Dict:
+    """Process Ashby jobs incrementally with per-company database writes
+
+    This function implements the incremental architecture (same as Lever):
+    1. Fetch jobs from Ashby API (with filtering)
+    2. Write to raw_jobs using insert_raw_job_upsert()
+    3. Classify jobs immediately
+    4. Write to enriched_jobs
+    5. Log progress clearly per company
+
+    Ashby Advantages:
+    - Structured compensation data (salary_min/max/currency already parsed)
+    - Explicit isRemote boolean flag
+    - Structured postalAddress for location extraction
+    - Both HTML and plain text descriptions provided
+
+    Args:
+        companies: Optional list of company slugs to process. If None, processes all from mapping.
+
+    Returns:
+        Dict with processing statistics
+    """
+    from scrapers.ashby.ashby_fetcher import fetch_ashby_jobs, load_company_mapping
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.classifier import classify_job
+    from pipeline.agency_detection import is_agency_job, validate_agency_classification
+    from pipeline.unified_job_ingester import DataSource
+    from datetime import date
+    import json
+    import time
+
+    start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("="*80)
+    logger.info("ASHBY INCREMENTAL PROCESSING")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info("="*80)
+
+    # Time tracking
+    pipeline_start_time = time.time()
+
+    # Statistics tracking
+    stats = {
+        'companies_processed': 0,
+        'companies_with_jobs': 0,
+        'total_jobs_fetched': 0,
+        'total_jobs_kept': 0,
+        'total_filtered_by_title': 0,
+        'total_filtered_by_location': 0,
+        'jobs_written_raw': 0,
+        'jobs_duplicate': 0,
+        'jobs_classified': 0,
+        'jobs_agency_filtered': 0,
+        'jobs_written_enriched': 0,
+        'jobs_with_salary': 0,  # Track Ashby's structured compensation
+        'cost_saved_filtering': 0.0,
+        'cost_classification': 0.0,
+        'errors': []
+    }
+
+    # Load company mapping
+    mapping = load_company_mapping()
+    ashby_companies = mapping.get('ashby', {})
+
+    if not ashby_companies:
+        logger.warning("No companies in Ashby mapping")
+        return stats
+
+    # Filter to specified companies if provided
+    if companies:
+        companies_to_process = {
+            name: data for name, data in ashby_companies.items()
+            if data['slug'] in companies
+        }
+    else:
+        companies_to_process = ashby_companies
+
+    logger.info(f"Processing {len(companies_to_process)} Ashby companies...\n")
+
+    # Cost per classification
+    cost_per_classification = 0.00388  # Haiku cost per job
+
+    for company_name, company_data in companies_to_process.items():
+        slug = company_data['slug']
+        company_start_time = time.time()
+
+        logger.info(f"\n{'='*80}")
+        logger.info(f"COMPANY: {company_name.upper()} ({slug})")
+        logger.info(f"{'='*80}")
+
+        # Fetch jobs for this company
+        jobs, fetch_stats = fetch_ashby_jobs(
+            company_slug=slug,
+            filter_titles=True,
+            filter_locations=True
+        )
+
+        # Update stats
+        stats['companies_processed'] += 1
+        stats['total_jobs_fetched'] += fetch_stats['jobs_fetched']
+        stats['total_jobs_kept'] += fetch_stats['jobs_kept']
+        stats['total_filtered_by_title'] += fetch_stats['filtered_by_title']
+        stats['total_filtered_by_location'] += fetch_stats['filtered_by_location']
+
+        # Calculate cost savings from filtering
+        filtered_count = fetch_stats['filtered_by_title'] + fetch_stats['filtered_by_location']
+        stats['cost_saved_filtering'] += filtered_count * cost_per_classification
+
+        logger.info(f"Fetch Summary:")
+        logger.info(f"  - Jobs fetched: {fetch_stats['jobs_fetched']}")
+        logger.info(f"  - Filtered (title): {fetch_stats['filtered_by_title']}")
+        logger.info(f"  - Filtered (location): {fetch_stats['filtered_by_location']}")
+        logger.info(f"  - Jobs to process: {len(jobs)}")
+        logger.info(f"  - Cost saved: ${filtered_count * cost_per_classification:.2f}")
+
+        if fetch_stats['error']:
+            stats['errors'].append(f"{slug}: {fetch_stats['error']}")
+            logger.warning(f"  Error: {fetch_stats['error']}")
+            continue
+
+        if not jobs:
+            logger.info(f"  No jobs to process for {company_name}")
+            continue
+
+        stats['companies_with_jobs'] += 1
+        logger.info(f"{'-'*80}")
+
+        # Process each job
+        company_jobs_written = 0
+        company_jobs_duplicate = 0
+        company_jobs_classified = 0
+        company_jobs_enriched = 0
+        company_agencies_blocked = 0
+        company_with_salary = 0
+
+        for i, job in enumerate(jobs, 1):
+            try:
+                # Step 1: Write to raw_jobs using UPSERT
+                # Build location string from Ashby's structured data
+                ashby_location = job.location  # Already combined in fetcher
+
+                upsert_result = insert_raw_job_upsert(
+                    source='ashby',
+                    posting_url=job.url,
+                    title=job.title,
+                    company=company_name,
+                    raw_text=job.description,
+                    city_code='unk',  # Ashby doesn't use city codes - location is in metadata
+                    source_job_id=job.id,
+                    metadata={
+                        'company_slug': job.company_slug,
+                        'ashby_location': ashby_location,
+                        'ashby_city': job.city,
+                        'ashby_region': job.region,
+                        'ashby_country': job.country,
+                        'ashby_is_remote': job.is_remote,
+                        'ashby_department': job.department,
+                        'ashby_team': job.team,
+                        'ashby_employment_type': job.employment_type,
+                        'ashby_salary_min': job.salary_min,
+                        'ashby_salary_max': job.salary_max,
+                        'ashby_salary_currency': job.salary_currency,
+                        'ashby_published_at': job.published_at
+                    }
+                )
+
+                raw_job_id = upsert_result['id']
+                was_duplicate = upsert_result['was_duplicate']
+
+                if was_duplicate:
+                    stats['jobs_duplicate'] += 1
+                    company_jobs_duplicate += 1
+                    logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {job.title[:50]}... (skipped)")
+                    continue
+
+                stats['jobs_written_raw'] += 1
+                company_jobs_written += 1
+
+                # Track jobs with structured salary data
+                if job.salary_min or job.salary_max:
+                    stats['jobs_with_salary'] += 1
+                    company_with_salary += 1
+
+                logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:50]}... (classifying...)")
+
+                # Step 2: Hard filter - check if agency before classification
+                if is_agency_job(company_name):
+                    stats['jobs_agency_filtered'] += 1
+                    company_agencies_blocked += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
+                    continue
+
+                # Step 3: Classify the job
+                try:
+                    structured_input = {
+                        'title': job.title,
+                        'company': company_name,
+                        'description': job.description,
+                        'location': None,  # Location extracted deterministically via extract_locations()
+                        'category': None,
+                        # Pass Ashby's structured salary to classifier for validation
+                        'salary_min': job.salary_min,
+                        'salary_max': job.salary_max,
+                    }
+                    classification = classify_job(
+                        job_text=job.description,
+                        structured_input=structured_input
+                    )
+                    stats['jobs_classified'] += 1
+                    company_jobs_classified += 1
+
+                    # Track classification cost
+                    if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
+                        cost = classification['_cost_data']['total_cost']
+                        stats['cost_classification'] += cost
+                        logger.info(f"  [{i}/{len(jobs)}] Classified (${cost:.4f})")
+                    else:
+                        logger.info(f"  [{i}/{len(jobs)}] Classified")
+
+                except Exception as e:
+                    logger.warning(f"  [{i}/{len(jobs)}] Classification FAILED: {str(e)[:100]}")
+                    continue
+
+                # Step 4: Soft agency detection
+                is_agency, agency_conf = validate_agency_classification(
+                    employer_name=company_name,
+                    claude_is_agency=None,
+                    claude_confidence=None,
+                    job_description=job.description
+                )
+
+                if is_agency:
+                    stats['jobs_agency_filtered'] += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
+
+                # Inject agency flags
+                if 'employer' not in classification:
+                    classification['employer'] = {}
+                classification['employer']['is_agency'] = is_agency
+                classification['employer']['agency_confidence'] = agency_conf
+
+                # Step 5: Write to enriched_jobs
+                role = classification.get('role', {})
+                location = classification.get('location', {})
+                compensation = classification.get('compensation', {})
+                employer = classification.get('employer', {})
+
+                # Extract locations from Ashby job.location field
+                extracted_locations = extract_locations(ashby_location) if ashby_location else [{"type": "unknown"}]
+
+                # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+                legacy_city_code = 'unk'
+                if extracted_locations and extracted_locations[0].get('type') == 'city':
+                    city_name = extracted_locations[0].get('city', '')
+                    city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+                    legacy_city_code = city_to_code.get(city_name, 'unk')
+                elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+                    legacy_city_code = 'remote'
+                # Override with Ashby's explicit isRemote flag
+                elif job.is_remote:
+                    legacy_city_code = 'remote'
+
+                # Use Ashby's structured salary data if available, fall back to classifier
+                final_salary_min = job.salary_min or compensation.get('base_salary_range', {}).get('min')
+                final_salary_max = job.salary_max or compensation.get('base_salary_range', {}).get('max')
+                final_currency = job.salary_currency or compensation.get('currency')
+
+                # Derive working arrangement from Ashby's isRemote flag
+                working_arrangement = location.get('working_arrangement') or 'unknown'
+                if job.is_remote and working_arrangement == 'unknown':
+                    working_arrangement = 'remote'
+
+                enriched_job_id = insert_enriched_job(
+                    raw_job_id=raw_job_id,
+                    employer_name=company_name,
+                    title_display=job.title,
+                    job_family=role.get('job_family') or 'out_of_scope',
+                    city_code=legacy_city_code,  # DEPRECATED - use locations instead
+                    working_arrangement=working_arrangement,
+                    position_type=role.get('position_type') or 'full_time',
+                    posted_date=date.today(),
+                    last_seen_date=date.today(),
+                    job_subfamily=role.get('job_subfamily'),
+                    seniority=role.get('seniority'),
+                    track=role.get('track'),
+                    experience_range=role.get('experience_range'),
+                    employer_department=employer.get('department'),
+                    employer_size=employer.get('company_size_estimate'),
+                    is_agency=employer.get('is_agency'),
+                    agency_confidence=employer.get('agency_confidence'),
+                    currency=final_currency,
+                    salary_min=final_salary_min,
+                    salary_max=final_salary_max,
+                    equity_eligible=compensation.get('equity_eligible'),
+                    skills=classification.get('skills', []),
+                    data_source='ashby',
+                    description_source='ashby',
+                    locations=extracted_locations,
+                    deduplicated=False
+                )
+
+                stats['jobs_written_enriched'] += 1
+                company_jobs_enriched += 1
+                logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
+
+            except Exception as e:
+                logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
+                continue
+
+        # Company summary
+        company_elapsed = time.time() - company_start_time
+        logger.info(f"{'-'*80}")
+        logger.info(f"Company Summary:")
+        logger.info(f"  - New jobs written: {company_jobs_written}")
+        logger.info(f"  - Duplicates skipped: {company_jobs_duplicate}")
+        logger.info(f"  - Agencies blocked: {company_agencies_blocked}")
+        logger.info(f"  - Jobs classified: {company_jobs_classified}")
+        logger.info(f"  - Jobs enriched: {company_jobs_enriched}")
+        logger.info(f"  - Jobs with salary data: {company_with_salary}")
+        logger.info(f"  - Processing time: {company_elapsed:.1f}s")
+        logger.info(f"{'='*80}")
+
+    # Final summary
+    total_elapsed = time.time() - pipeline_start_time
+    end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("\n" + "="*80)
+    logger.info("ASHBY INCREMENTAL PROCESSING COMPLETE")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info(f"Ended: {end_timestamp}")
+    logger.info(f"Total time: {total_elapsed/60:.1f} min ({total_elapsed:.1f}s)")
+    logger.info("="*80)
+
+    logger.info(f"\nCompany Processing:")
+    logger.info(f"  - Companies processed: {stats['companies_processed']}")
+    logger.info(f"  - Companies with jobs: {stats['companies_with_jobs']}")
+
+    logger.info(f"\nJob Fetching & Filtering:")
+    logger.info(f"  - Jobs fetched: {stats['total_jobs_fetched']}")
+    logger.info(f"  - Filtered (title): {stats['total_filtered_by_title']}")
+    logger.info(f"  - Filtered (location): {stats['total_filtered_by_location']}")
+    logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
+
+    logger.info(f"\nDatabase Writes:")
+    logger.info(f"  - New raw jobs: {stats['jobs_written_raw']}")
+    logger.info(f"  - Duplicates skipped: {stats['jobs_duplicate']}")
+    logger.info(f"  - Jobs classified: {stats['jobs_classified']}")
+    logger.info(f"  - Enriched jobs: {stats['jobs_written_enriched']}")
+    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
+
+    logger.info(f"\nAshby Data Quality:")
+    logger.info(f"  - Jobs with structured salary: {stats['jobs_with_salary']}")
+    if stats['jobs_written_enriched'] > 0:
+        salary_rate = (stats['jobs_with_salary'] / stats['jobs_written_enriched'] * 100)
+        logger.info(f"  - Salary data rate: {salary_rate:.1f}%")
+
+    logger.info(f"\nCost Analysis:")
+    logger.info(f"  - Saved from filtering: ${stats['cost_saved_filtering']:.2f}")
+    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
+    logger.info(f"  - Net cost: ${stats['cost_classification']:.2f}")
+
+    if stats['errors']:
+        logger.info(f"\nErrors:")
+        for error in stats['errors']:
+            logger.info(f"  - {error}")
+
+    logger.info("="*80)
+
+    return stats
+
+
 async def merge_jobs(
     adzuna_jobs: List,
     greenhouse_jobs: List,
@@ -1516,12 +1887,12 @@ async def main():
     """Main orchestration function"""
 
     parser = argparse.ArgumentParser(
-        description='Unified job fetcher: Adzuna + Greenhouse + Lever triple pipeline',
+        description='Unified job fetcher: Adzuna + Greenhouse + Lever + Ashby multi-source pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Triple pipeline (all sources)
-  python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever
+  # All sources
+  python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever,ashby
 
   # Adzuna only
   python fetch_jobs.py lon 100 --sources adzuna
@@ -1532,8 +1903,11 @@ Examples:
   # Lever only (simple HTTP API)
   python fetch_jobs.py --sources lever
 
+  # Ashby only (simple HTTP API, best compensation data)
+  python fetch_jobs.py --sources ashby
+
   # NYC with more jobs
-  python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever
+  python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever,ashby
         """
     )
 
@@ -1555,12 +1929,12 @@ Examples:
     parser.add_argument(
         '--sources',
         required=True,
-        help='Comma-separated sources: adzuna, greenhouse, lever (required). Example: --sources adzuna,greenhouse'
+        help='Comma-separated sources: adzuna, greenhouse, lever, ashby (required). Example: --sources adzuna,greenhouse,ashby'
     )
 
     parser.add_argument(
         '--companies',
-        help='Comma-separated list of company slugs (applies to both Greenhouse and Lever sources)'
+        help='Comma-separated list of company slugs (applies to Greenhouse, Lever, and Ashby sources)'
     )
 
     parser.add_argument(
@@ -1629,7 +2003,8 @@ Examples:
     total_stats = {
         'greenhouse': None,
         'adzuna': None,
-        'lever': None
+        'lever': None,
+        'ashby': None
     }
 
     # GREENHOUSE PIPELINE: Incremental processing (scrape → write raw → classify → write enriched)
@@ -1671,9 +2046,23 @@ Examples:
         lever_stats = await process_lever_incremental(lever_companies)
         total_stats['lever'] = lever_stats
 
+    # ASHBY PIPELINE: Incremental processing (same pattern as Lever)
+    # Simple HTTP API with best structured compensation data
+    if 'ashby' in sources:
+        ashby_companies = None
+        if args.companies:
+            ashby_companies = [c.strip() for c in args.companies.split(',')]
+
+        logger.info("\n" + "="*80)
+        logger.info("STARTING ASHBY INCREMENTAL PIPELINE")
+        logger.info("="*80 + "\n")
+
+        ashby_stats = await process_ashby_incremental(ashby_companies)
+        total_stats['ashby'] = ashby_stats
+
     # FINAL SUMMARY
     logger.info("\n" + "="*80)
-    logger.info("TRIPLE PIPELINE COMPLETE")
+    logger.info("MULTI-SOURCE PIPELINE COMPLETE")
     logger.info("="*80)
 
     if total_stats['greenhouse']:
@@ -1720,6 +2109,22 @@ Examples:
         logger.info(f"  Cost saved from filtering: ${total_stats['lever']['cost_saved_filtering']:.2f}")
         logger.info(f"  Cost of classification: ${total_stats['lever']['cost_classification']:.2f}")
 
+    if total_stats['ashby']:
+        logger.info("\nAshby Pipeline:")
+        logger.info(f"  Companies processed: {total_stats['ashby']['companies_processed']}")
+        logger.info(f"  Companies with jobs: {total_stats['ashby']['companies_with_jobs']}")
+        logger.info(f"  Jobs fetched: {total_stats['ashby']['total_jobs_fetched']}")
+        logger.info(f"  Filtered (title): {total_stats['ashby']['total_filtered_by_title']}")
+        logger.info(f"  Filtered (location): {total_stats['ashby']['total_filtered_by_location']}")
+        logger.info(f"  Jobs kept: {total_stats['ashby']['total_jobs_kept']}")
+        logger.info(f"  New jobs (written to raw): {total_stats['ashby']['jobs_written_raw']}")
+        logger.info(f"  Duplicates skipped: {total_stats['ashby']['jobs_duplicate']}")
+        logger.info(f"  Jobs classified: {total_stats['ashby']['jobs_classified']}")
+        logger.info(f"  Jobs written to enriched_jobs: {total_stats['ashby']['jobs_written_enriched']}")
+        logger.info(f"  Jobs with structured salary: {total_stats['ashby']['jobs_with_salary']}")
+        logger.info(f"  Cost saved from filtering: ${total_stats['ashby']['cost_saved_filtering']:.2f}")
+        logger.info(f"  Cost of classification: ${total_stats['ashby']['cost_classification']:.2f}")
+
     total_jobs = 0
     if total_stats['greenhouse']:
         total_jobs += total_stats['greenhouse']['jobs_written_enriched']
@@ -1727,6 +2132,8 @@ Examples:
         total_jobs += total_stats['adzuna']['jobs_written_enriched']
     if total_stats['lever']:
         total_jobs += total_stats['lever']['jobs_written_enriched']
+    if total_stats['ashby']:
+        total_jobs += total_stats['ashby']['jobs_written_enriched']
 
     logger.info(f"\nTotal jobs processed: {total_jobs}")
     logger.info("="*80)

@@ -1120,6 +1120,16 @@
         },
         "dbt Labs": {
             "slug": "dbtlabsinc"
+        },
+        "Anthropic": {
+            "slug": "anthropic"
+        },
+        "Figma": {
+            "slug": "figma"
+        },
+        "Stability AI": {
+            "slug": "stabilityai",
+            "url_type": "embed"
         }
     }
 }
