@@ -88,26 +88,24 @@ Trigger when user asks to:
 
 ### Step 3: Validate the Slug
 
-**Greenhouse validation:**
+**Unified validation (all ATS platforms):**
 ```bash
-python pipeline/utilities/validate_greenhouse_slugs.py --slug company-slug
+# Validate specific companies
+python pipeline/utilities/validate_ats_slugs.py greenhouse --companies company-slug
+python pipeline/utilities/validate_ats_slugs.py lever --companies company-slug
+python pipeline/utilities/validate_ats_slugs.py ashby --companies company-slug
 ```
 
 Or manually check:
 ```bash
+# Greenhouse
 curl -s "https://boards.greenhouse.io/company-slug" | head -20
-# Should return job listings, not 404
-```
 
-**Lever validation:**
-```bash
-python scrapers/lever/validate_lever_sites.py --slug company-slug
-```
-
-Or manually check:
-```bash
+# Lever
 curl -s "https://api.lever.co/v0/postings/company-slug" | head -20
-# Should return JSON array of jobs
+
+# Ashby
+curl -s "https://api.ashbyhq.com/posting-api/job-board/company-slug" | head -20
 ```
 
 ### Step 4: Add to Config
@@ -170,11 +168,10 @@ python wrappers/fetch_jobs.py --sources lever --companies "New Company" --dry-ru
 ### Validating Existing Companies
 
 ```bash
-# Validate all Greenhouse slugs
-python pipeline/utilities/validate_greenhouse_slugs.py --all
-
-# Validate all Lever slugs
-python scrapers/lever/validate_lever_sites.py --all
+# Validate all slugs for any ATS platform
+python pipeline/utilities/validate_ats_slugs.py greenhouse
+python pipeline/utilities/validate_ats_slugs.py lever
+python pipeline/utilities/validate_ats_slugs.py ashby
 ```
 
 **Validation checks:**
@@ -338,7 +335,8 @@ When curating companies, produce:
 
 - `config/greenhouse/company_ats_mapping.json` - Greenhouse companies
 - `config/lever/company_mapping.json` - Lever companies
-- `pipeline/utilities/validate_greenhouse_slugs.py` - Validation script
-- `pipeline/utilities/discover_greenhouse_slugs.py` - Discovery script
-- `scrapers/lever/validate_lever_sites.py` - Lever validation
-- `scrapers/lever/discover_lever_companies.py` - Lever discovery
+- `config/ashby/company_mapping.json` - Ashby companies
+- `pipeline/utilities/validate_ats_slugs.py` - Unified validation script (all ATS)
+- `pipeline/utilities/discover_ats_companies.py` - Unified discovery script (Google CSE)
+- `pipeline/utilities/discover_greenhouse_slugs.py` - Legacy Greenhouse discovery
+- `scrapers/lever/discover_lever_companies.py` - Legacy Lever discovery

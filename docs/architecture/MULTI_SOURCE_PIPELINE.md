@@ -177,8 +177,8 @@ Companies use different Greenhouse URL patterns depending on their setup. The sc
 ### Pipeline C: Lever - COMPLETE ✓
 - **File:** `scrapers/lever/lever_fetcher.py`
 - **Discovery:** `scrapers/lever/discover_lever_companies.py`
-- **Validation:** `scrapers/lever/validate_lever_sites.py`
-- **Config:** `config/lever/company_mapping.json` (50+ companies)
+- **Validation:** `pipeline/utilities/validate_ats_slugs.py lever`
+- **Config:** `config/lever/company_mapping.json` (120+ companies)
 - **Filtering:** `config/lever/title_patterns.yaml`, `config/lever/location_patterns.yaml`
 - **Status:** Production-ready
 

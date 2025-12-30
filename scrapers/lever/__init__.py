@@ -7,8 +7,9 @@ Lever provides a public Postings API that returns JSON without authentication.
 
 Components:
 - discover_lever_companies.py: Find companies that use Lever ATS
-- validate_lever_sites.py: Validate discovered slugs against Lever API
 - lever_fetcher.py: Fetch and parse job postings from Lever API
+
+Validation: Use pipeline/utilities/validate_ats_slugs.py lever
 
 API Documentation: https://github.com/lever/postings-api
 """

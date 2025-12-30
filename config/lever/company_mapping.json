@@ -347,6 +347,246 @@
     "Wise": {
       "slug": "wise",
       "instance": "global"
+    },
+    "Aircall": {
+      "slug": "aircall"
+    },
+    "Aofl": {
+      "slug": "aofl"
+    },
+    "Articulate": {
+      "slug": "articulate"
+    },
+    "Bitwiseinvestments": {
+      "slug": "bitwiseinvestments"
+    },
+    "Bounteous": {
+      "slug": "bounteous"
+    },
+    "Bpmcpa": {
+      "slug": "bpmcpa"
+    },
+    "Cfgi": {
+      "slug": "cfgi"
+    },
+    "Chownow": {
+      "slug": "chownow"
+    },
+    "Clovirtualfashion": {
+      "slug": "clovirtualfashion"
+    },
+    "Color": {
+      "slug": "color"
+    },
+    "Compasslexecon": {
+      "slug": "compasslexecon"
+    },
+    "Crypto Banter": {
+      "slug": "crypto-banter"
+    },
+    "Cypher Games": {
+      "slug": "cypher-games"
+    },
+    "Elfbeauty": {
+      "slug": "elfbeauty"
+    },
+    "Fampay": {
+      "slug": "fampay"
+    },
+    "Farfetch": {
+      "slug": "farfetch"
+    },
+    "Gauntlet": {
+      "slug": "gauntlet"
+    },
+    "Goodleap": {
+      "slug": "goodleap"
+    },
+    "Hive": {
+      "slug": "hive"
+    },
+    "Insomniacookies": {
+      "slug": "insomniacookies"
+    },
+    "Intenseye": {
+      "slug": "intenseye"
+    },
+    "Jamcity": {
+      "slug": "jamcity"
+    },
+    "Joshstoysandgames": {
+      "slug": "joshstoysandgames"
+    },
+    "Kiddom": {
+      "slug": "kiddom"
+    },
+    "Loopreturns": {
+      "slug": "loopreturns"
+    },
+    "Morningbrew": {
+      "slug": "morningbrew"
+    },
+    "Next Health": {
+      "slug": "next-health"
+    },
+    "Nordsec": {
+      "slug": "nordsec"
+    },
+    "Owner": {
+      "slug": "owner"
+    },
+    "Parallelwireless": {
+      "slug": "parallelwireless"
+    },
+    "Planner5D": {
+      "slug": "planner5d"
+    },
+    "Ppfa": {
+      "slug": "ppfa"
+    },
+    "Ppgny": {
+      "slug": "ppgny"
+    },
+    "Quizlet 2": {
+      "slug": "quizlet-2"
+    },
+    "Raine": {
+      "slug": "raine"
+    },
+    "Redwoodcu": {
+      "slug": "redwoodcu"
+    },
+    "Revefi": {
+      "slug": "revefi"
+    },
+    "Rld Foundation": {
+      "slug": "rld-foundation"
+    },
+    "Sfgiants": {
+      "slug": "sfgiants"
+    },
+    "Sfmoma": {
+      "slug": "sfmoma"
+    },
+    "Sideinc": {
+      "slug": "sideinc"
+    },
+    "Storiogroup": {
+      "slug": "storiogroup"
+    },
+    "Superside": {
+      "slug": "superside"
+    },
+    "Tala": {
+      "slug": "tala"
+    },
+    "Tokenmetrics": {
+      "slug": "tokenmetrics"
+    },
+    "Vida": {
+      "slug": "vida"
+    },
+    "Voleon": {
+      "slug": "voleon"
+    },
+    "Whoop": {
+      "slug": "whoop"
+    },
+    "Woven By Toyota": {
+      "slug": "woven-by-toyota"
+    },
+    "Brillio 2": {
+      "slug": "brillio-2"
+    },
+    "Cfsenergy": {
+      "slug": "cfsenergy"
+    },
+    "Coderio": {
+      "slug": "coderio"
+    },
+    "Crypto": {
+      "slug": "crypto"
+    },
+    "Electricmind": {
+      "slug": "electricmind"
+    },
+    "Finix": {
+      "slug": "finix"
+    },
+    "Freedompay": {
+      "slug": "freedompay"
+    },
+    "Heyjane": {
+      "slug": "heyjane"
+    },
+    "Idealistconsulting": {
+      "slug": "idealistconsulting"
+    },
+    "Life": {
+      "slug": "life"
+    },
+    "Macquarietechnologygroup": {
+      "slug": "macquarietechnologygroup"
+    },
+    "Mendix": {
+      "slug": "mendix"
+    },
+    "Nimblerx": {
+      "slug": "nimblerx"
+    },
+    "Onit": {
+      "slug": "onit"
+    },
+    "Pmaconsultants": {
+      "slug": "pmaconsultants"
+    },
+    "Redcanary": {
+      "slug": "redcanary"
+    },
+    "Rw1": {
+      "slug": "rw1"
+    },
+    "Saronic": {
+      "slug": "saronic"
+    },
+    "Solidcore": {
+      "slug": "solidcore"
+    },
+    "Sprypointservices": {
+      "slug": "sprypointservices"
+    },
+    "Sure": {
+      "slug": "sure"
+    },
+    "Swordhealth": {
+      "slug": "swordhealth"
+    },
+    "Telesat": {
+      "slug": "telesat"
+    },
+    "Threattec": {
+      "slug": "threattec"
+    },
+    "Titanwh": {
+      "slug": "titanwh"
+    },
+    "Turgon Ai": {
+      "slug": "turgon-ai"
+    },
+    "Valiantys": {
+      "slug": "valiantys"
+    },
+    "Vesta Tech": {
+      "slug": "vesta-tech"
+    },
+    "Viaseparations": {
+      "slug": "viaseparations"
+    },
+    "Waterfall": {
+      "slug": "waterfall"
+    },
+    "Weride": {
+      "slug": "weride"
     }
   },
   "_meta": {
@@ -355,7 +595,8 @@
       "cli",
       "migrated_from_company_ats_mapping"
     ],
-    "total_companies": 72,
-    "notes": "Added 12 companies migrated from company_ats_mapping.json. Removed Plaid (moved to Ashby)."
+    "total_companies": 152,
+    "notes": "Added 12 companies migrated from company_ats_mapping.json. Removed Plaid (moved to Ashby).",
+    "last_updated": "2025-12-30"
   }
 }

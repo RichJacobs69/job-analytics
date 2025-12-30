@@ -425,7 +425,7 @@ Examples:
         if source != 'combined':
             print(f"  {source}: {len(slugs)}")
     print(f"\nResults saved to: {output_path}")
-    print("\nNext step: Run validate_lever_sites.py to confirm which slugs are active")
+    print("\nNext step: Run 'python pipeline/utilities/validate_ats_slugs.py lever' to confirm which slugs are active")
 
 
 if __name__ == "__main__":

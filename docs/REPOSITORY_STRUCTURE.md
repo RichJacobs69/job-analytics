@@ -66,7 +66,8 @@ pipeline/utilities/
 ├── backfill_working_arrangement.py # Working arrangement backfill
 ├── migrate_locations.py            # Migrate city_code to locations JSONB (one-time)
 ├── discover_greenhouse_slugs.py    # Greenhouse company slug discovery
-└── validate_greenhouse_slugs.py    # Greenhouse slug validation
+├── discover_ats_companies.py       # Multi-ATS company discovery (Google CSE)
+└── validate_ats_slugs.py           # Unified ATS slug validation
 ```
 
 ### 3. **`scrapers/` Directory** (Data Source Integrations)
@@ -82,8 +83,7 @@ scrapers/
 └── lever/                     # Lever ATS scraper
     ├── __init__.py
     ├── lever_fetcher.py           # Main Lever job fetcher
-    ├── discover_lever_companies.py # Company discovery utility
-    └── validate_lever_sites.py    # Site validation utility
+    └── discover_lever_companies.py # Company discovery utility
 ```
 
 ### 4. **`config/` Directory** (Configuration Files)
