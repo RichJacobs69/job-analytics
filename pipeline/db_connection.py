@@ -3,7 +3,7 @@ Database connection and helper functions for Supabase
 """
 import os
 import hashlib
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Dict, List
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -339,6 +339,7 @@ def insert_enriched_job(
         # Dates
         "posted_date": posted_date.isoformat(),
         "last_seen_date": last_seen_date.isoformat(),
+        "classified_at": datetime.utcnow().isoformat(),  # Update on every classification
 
         # Dual pipeline source tracking (new fields)
         "data_source": data_source,
