@@ -46,6 +46,10 @@ python pipeline/url_validator.py --limit=100   # Check for 404 dead links
 python wrappers/check_pipeline_status.py
 python wrappers/backfill_missing_enriched.py --dry-run
 
+# ATS Company Discovery & Validation
+python pipeline/utilities/discover_ats_companies.py all        # Discover new companies (Google CSE)
+python pipeline/utilities/validate_ats_slugs.py greenhouse     # Validate all slugs for a source
+
 # Tests
 pytest tests/ -v
 ```
@@ -136,15 +140,15 @@ job-analytics/
 ```
 config/
 ├── greenhouse/
-│   ├── company_ats_mapping.json    # 348 companies (with url_type for embed/eu)
+│   ├── company_ats_mapping.json    # 401 companies (with url_type for embed/eu)
 │   ├── title_patterns.yaml         # Role filtering
 │   └── location_patterns.yaml      # City filtering
 ├── lever/
-│   ├── company_mapping.json        # 61 companies
+│   ├── company_mapping.json        # 121 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── ashby/
-│   ├── company_mapping.json        # 26+ companies
+│   ├── company_mapping.json        # 69 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── location_mapping.yaml           # Master location config
@@ -180,15 +184,15 @@ Uses JSONB array for flexible multi-location support:
 - Job feed page at `/projects/hiring-market/jobs`
 - Filter components, expandable job cards
 
-**See:** `docs/architecture/Future Ideas/EPIC_JOB_FEED.md`
+**See:** `docs/architecture/In Progress/EPIC_JOB_FEED.md`
 
 ## GitHub Actions Workflows
 
 Located in `.github/workflows/`:
-- `scrape-greenhouse.yml` - Daily batched (Mon-Thu)
-- `scrape-lever.yml` - Weekly
-- `scrape-ashby.yml` - Tue/Thu/Sat at 6 PM UTC
-- `scrape-adzuna.yml` - Daily
+- `scrape-greenhouse.yml` - Mon/Wed/Fri/Sun 7AM UTC (4 batches, ~100 companies each)
+- `scrape-adzuna.yml` - Tue/Thu/Sat 7AM UTC (5 cities)
+- `scrape-lever.yml` - Sun/Mon/Wed/Fri 6PM UTC (evening slot)
+- `scrape-ashby.yml` - Tue/Thu/Sat 6PM UTC (evening slot)
 - `refresh-derived-tables.yml` - Daily (Epic 8 derived data)
 
 ## Key References
