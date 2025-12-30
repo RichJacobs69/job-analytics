@@ -351,6 +351,7 @@ def insert_enriched_job(
     # Validate/normalize constrained fields before insert
     VALID_CURRENCIES = {'usd', 'gbp', 'cad', 'eur', 'sgd'}
     VALID_EMPLOYER_SIZES = {'startup', 'scaleup', 'enterprise'}
+    VALID_WORKING_ARRANGEMENTS = {'onsite', 'hybrid', 'remote', 'flexible', 'unknown'}
 
     if data.get('currency'):
         currency_lower = data['currency'].lower()
@@ -365,6 +366,23 @@ def insert_enriched_job(
             data['employer_size'] = size_lower
         else:
             data['employer_size'] = None  # LLM returned invalid value (e.g., prompt text)
+
+    if data.get('working_arrangement'):
+        wa_lower = data['working_arrangement'].lower()
+        if wa_lower in VALID_WORKING_ARRANGEMENTS:
+            data['working_arrangement'] = wa_lower
+        else:
+            # LLM returned invalid value (e.g., 'remote-flexible', 'work from home')
+            # Map common variants, otherwise default to 'unknown'
+            wa_mapping = {
+                'remote-flexible': 'flexible',
+                'remote-first': 'remote',
+                'work from home': 'remote',
+                'wfh': 'remote',
+                'in-office': 'onsite',
+                'on-site': 'onsite',
+            }
+            data['working_arrangement'] = wa_mapping.get(wa_lower, 'unknown')
 
     # Remove None values - Postgres CHECK constraints don't allow explicit NULL
     # Let Postgres use column defaults instead
