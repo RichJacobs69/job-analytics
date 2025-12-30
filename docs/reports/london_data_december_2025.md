@@ -1,5 +1,5 @@
-# London Data & Analytics Hiring Market
-## December 2024
+# London Data Roles Hiring Market
+## December 2025
 
 ---
 
@@ -293,7 +293,7 @@ UK does not have mandatory salary disclosure requirements.
 
 ## Methodology
 
-This report analyzes **1,863** direct employer job postings for Data & Analytics roles in London during December 2024.
+This report analyzes **1,863** direct employer job postings for Data roles in London during December 2025.
 
 **Data sources:** Aggregated from major job boards and company applicant tracking systems.
 

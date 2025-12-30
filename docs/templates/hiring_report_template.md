@@ -26,7 +26,7 @@ location_labels:
 # Job family display names for reports  
 job_family_labels:
   product: "Product Management"
-  data: "Data & Analytics"
+  data: "Data Roles"
   delivery: "Project & Delivery"
 ```
 
@@ -881,6 +881,7 @@ Gamma works best with:
 - Explicit percentage callouts (use large text for hero stats)
 - **Data tables for every stat** — Gamma visualizes tables into charts; don't just quote numbers in prose
 - **Round percentages to whole numbers** — No one cares about 20.9% vs 21%; use "21%"
+- **Double-check the year** — Use the current year from today's date; do not default to prior years
 
 **Recommended structure for Gamma import:**
 1. Each H2 section becomes a slide
