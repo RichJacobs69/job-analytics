@@ -355,6 +355,62 @@ class GreenhouseScraper:
         # URL cache from proven scraper runs (speeds up known companies)
         self.url_cache = self._load_url_cache()
 
+        # Company config with url_type (source of truth for known companies)
+        self.company_config = self._load_company_config()
+
+    def _load_company_config(self) -> Dict[str, Dict]:
+        """Load company config with url_type mappings.
+
+        Returns:
+            Dict mapping company_slug (lowercase) to config dict with url_type
+        """
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / 'config' / 'greenhouse' / 'company_ats_mapping.json'
+
+        try:
+            with open(config_path, 'r') as f:
+                data = json.load(f)
+
+            # Build slug -> config mapping
+            config = {}
+            for company_name, company_data in data.get('greenhouse', {}).items():
+                slug = company_data.get('slug', '').lower()
+                if slug:
+                    config[slug] = company_data
+
+            if config:
+                embed_count = sum(1 for c in config.values() if c.get('url_type') == 'embed')
+                logger.info(f"Loaded company config: {len(config)} companies ({embed_count} with url_type=embed)")
+            return config
+        except FileNotFoundError:
+            logger.warning("Company config not found, will use URL discovery")
+            return {}
+        except Exception as e:
+            logger.warning(f"Failed to load company config: {e}")
+            return {}
+
+    def _build_url_for_company(self, company_slug: str) -> Optional[str]:
+        """Build URL based on company's url_type from config.
+
+        Args:
+            company_slug: Company slug (e.g., 'stripe')
+
+        Returns:
+            URL if url_type is configured, None to use fallback discovery
+        """
+        slug_lower = company_slug.lower()
+        company_data = self.company_config.get(slug_lower, {})
+        url_type = company_data.get('url_type')
+
+        if url_type == 'embed':
+            return f"https://boards.greenhouse.io/embed/job_board?for={company_slug}"
+        elif url_type == 'eu':
+            return f"https://job-boards.eu.greenhouse.io/{company_slug}"
+        elif url_type == 'legacy':
+            return f"https://boards.greenhouse.io/{company_slug}"
+        # No url_type or standard - return None to use normal discovery
+        return None
+
     def _get_cache_path(self) -> Path:
         """Get path to scraper URL cache file."""
         project_root = Path(__file__).parent.parent.parent
@@ -494,17 +550,27 @@ class GreenhouseScraper:
 
         page = None
 
-        # Check URL cache first (speeds up known companies)
+        # URL resolution priority:
+        # 1. Config url_type (authoritative for known companies)
+        # 2. Runtime cache (proven working URLs)
+        # 3. BASE_URLS fallback (discovery for new companies)
         slug_lower = company_slug.lower()
-        cached_url = self.url_cache.get(slug_lower)
 
-        # Build URL list: cached URL first, then all BASE_URLS
         urls_to_try = []
-        if cached_url:
+
+        # Priority 1: Check config for url_type
+        config_url = self._build_url_for_company(company_slug)
+        if config_url:
+            urls_to_try.append(config_url)
+            logger.info(f"[{company_slug}] Using config url_type: {config_url}")
+
+        # Priority 2: Check URL cache
+        cached_url = self.url_cache.get(slug_lower)
+        if cached_url and cached_url not in urls_to_try:
             urls_to_try.append(cached_url)
             logger.info(f"[{company_slug}] Using cached URL: {cached_url}")
 
-        # Add all BASE_URLS (will skip cached_url if already tried)
+        # Priority 3: Add all BASE_URLS as fallback
         for base_url in self.BASE_URLS:
             # Handle embed URL pattern (ends with ?for=) differently
             if base_url.endswith('?for='):
@@ -512,8 +578,8 @@ class GreenhouseScraper:
             else:
                 url = f"{base_url}/{company_slug}"
 
-            # Skip if this URL was already tried from cache
-            if url != cached_url:
+            # Skip if already in list
+            if url not in urls_to_try:
                 urls_to_try.append(url)
 
         # Try each URL until one works
@@ -525,6 +591,17 @@ class GreenhouseScraper:
                         logger.info(f"[{company_slug}] Attempt {attempt + 1}/{max_retries}: Loading {url}")
 
                         await page.goto(url, wait_until='domcontentloaded', timeout=self.timeout_ms)
+
+                        # Check for redirect to non-Greenhouse domain
+                        final_url = page.url
+                        if 'greenhouse.io' not in final_url:
+                            logger.warning(f"[{company_slug}] Redirected to non-Greenhouse domain: {final_url}")
+                            # Suggest adding url_type to config if not already set
+                            if not self.company_config.get(slug_lower, {}).get('url_type'):
+                                logger.info(f"[{company_slug}] Consider adding url_type=embed to config")
+                            if page:
+                                await page.close()
+                            break  # Try next URL pattern
 
                         # Wait for job listings to appear (try multiple selectors)
                         listings_found = False
@@ -1618,15 +1695,96 @@ class GreenhouseScraper:
 
                     # Check we stayed on greenhouse
                     if 'greenhouse.io' in detail_page.url:
-                        body = await detail_page.query_selector('body')
-                        if body:
-                            embed_text = await body.text_content()
-                            if embed_text and self._is_valid_job_content(embed_text):
-                                embed_text = ' '.join(embed_text.split())
+                        # Extract job description content only (not the application form)
+                        # Try targeted selectors first, then fall back to structural extraction
+                        embed_text = ""
+
+                        # Method 1: Try standard job description selectors
+                        for selector in self.SELECTORS['job_description']:
+                            try:
+                                elem = await detail_page.query_selector(selector)
+                                if elem:
+                                    text = await elem.text_content()
+                                    if text and len(text.strip()) > 200:
+                                        embed_text = text
+                                        logger.debug(f"Embed extraction using selector: {selector}")
+                                        break
+                            except:
+                                continue
+
+                        # Method 2: Extract content around the application form
+                        # Some pages have description BEFORE form, others have it AFTER
+                        if not embed_text or len(embed_text.strip()) < 200:
+                            try:
+                                body = await detail_page.query_selector('body')
+                                if body:
+                                    full_text = await body.text_content()
+                                    if full_text:
+                                        # Form boundary markers
+                                        form_markers = [
+                                            'Apply for this Job',
+                                            'First Name*',
+                                            'Resume/CV*',
+                                            'Submit Application',
+                                        ]
+
+                                        # Try extracting BEFORE form markers first
+                                        for marker in form_markers:
+                                            if marker in full_text:
+                                                before_form = full_text.split(marker)[0]
+                                                if len(before_form.strip()) > 300:
+                                                    embed_text = before_form
+                                                    logger.debug(f"Embed extraction: content BEFORE {marker}")
+                                                    break
+
+                                        # If content before form is too short, try AFTER form
+                                        # (some EU pages have form first, then description)
+                                        if not embed_text or len(embed_text.strip()) < 300:
+                                            # Look for job content indicators after the form
+                                            job_content_markers = [
+                                                'About the role',
+                                                'About the Role',
+                                                'Responsibilities',
+                                                'Requirements',
+                                                'Qualifications',
+                                                'What you',
+                                                'You will',
+                                                'The Role',
+                                                'About Us',
+                                            ]
+                                            for marker in job_content_markers:
+                                                if marker in full_text:
+                                                    # Get content from this marker onwards
+                                                    after_marker = full_text.split(marker, 1)
+                                                    if len(after_marker) > 1:
+                                                        content = marker + after_marker[1]
+                                                        # Truncate at common end markers
+                                                        end_markers = ['Powered by Greenhouse', 'reCAPTCHA', 'Privacy Policy']
+                                                        for end in end_markers:
+                                                            if end in content:
+                                                                content = content.split(end)[0]
+                                                        if len(content.strip()) > 300:
+                                                            embed_text = content
+                                                            logger.debug(f"Embed extraction: content AFTER {marker}")
+                                                            break
+
+                                        # Last resort: use full text if nothing else worked
+                                        if not embed_text or len(embed_text.strip()) < 200:
+                                            embed_text = full_text
+                            except:
+                                pass
+
+                        # Validate and return
+                        if embed_text:
+                            embed_text = ' '.join(embed_text.split())
+                            # For embed pages, use relaxed validation (just check length and some job content)
+                            if len(embed_text) > 300:
                                 logger.info(f"Embed URL fallback succeeded: {len(embed_text)} chars")
                                 return embed_text
                             else:
-                                logger.debug(f"Embed URL returned invalid content")
+                                logger.debug(f"Embed URL returned insufficient content: {len(embed_text)} chars")
+                        else:
+                            logger.debug(f"Embed URL returned no extractable content")
                 except Exception as e:
                     logger.debug(f"Embed URL fallback failed: {str(e)[:50]}")
 

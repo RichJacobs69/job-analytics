@@ -64,7 +64,7 @@ fetch_adzuna_jobs.py           greenhouse_scraper.py               lever_fetcher
 
 | Aspect | Adzuna API | Greenhouse Scraper | Lever API |
 |--------|------------|-------------------|-----------|
-| **Coverage** | 1,500+ jobs/month (general) | 302 companies (curated) | 50+ companies (curated) |
+| **Coverage** | 1,500+ jobs/month (general) | 348 companies (curated) | 50+ companies (curated) |
 | **Description Length** | 100-200 chars (truncated) | 9,000-15,000+ chars (complete) | 5,000-15,000+ chars (complete) |
 | **Content Sections** | Basic summary only | Full posting with all sections | Full posting with all sections |
 | **Technology** | REST API | Browser automation (Playwright) | Public JSON API (no auth) |
@@ -91,7 +91,7 @@ fetch_adzuna_jobs.py           greenhouse_scraper.py               lever_fetcher
 
 ### Greenhouse Strengths
 - **Quality:** Complete job postings (9,000+ chars)
-- **Curation:** 302 premium tech companies configured
+- **Curation:** 348 premium tech companies configured
 - **Depth:** All job sections captured
 - **Reliability:** Direct from company source
 
@@ -117,7 +117,7 @@ fetch_adzuna_jobs.py           greenhouse_scraper.py               lever_fetcher
 Adzuna + Greenhouse + Lever = Complete Coverage
 
 Volume (Adzuna)      Quality (Greenhouse)       Quality (Lever)
-1,500 jobs/month  +  302 companies          +   50+ companies
+1,500 jobs/month  +  348 companies          +   50+ companies
 100-200 chars        9,000-15,000 chars         5,000-15,000 chars
 All companies        Browser automation         JSON API
 Daily updates        On-demand scraping         On-demand fetching
@@ -137,9 +137,42 @@ Result: Deep analysis of premium companies (Greenhouse + Lever)
 
 ### Pipeline B: Greenhouse - COMPLETE ✓
 - **File:** `scrapers/greenhouse/greenhouse_scraper.py`
-- **Config:** `config/greenhouse/company_ats_mapping.json` (302 companies)
+- **Config:** `config/greenhouse/company_ats_mapping.json` (348 companies)
 - **Filtering:** `config/greenhouse/title_patterns.yaml`, `config/greenhouse/location_patterns.yaml`
 - **Status:** Production-ready, 94.7% filter rate achieved
+
+#### Greenhouse URL Resolution
+
+Companies use different Greenhouse URL patterns depending on their setup. The scraper uses **config-driven resolution** with automatic fallback:
+
+| `url_type` | URL Pattern | Count | Use Case |
+|------------|-------------|-------|----------|
+| _(default)_ | `job-boards.greenhouse.io/{slug}` | 279 | Standard companies |
+| `embed` | `boards.greenhouse.io/embed/job_board?for={slug}` | 69 | Companies that redirect to custom pages |
+| `eu` | `job-boards.eu.greenhouse.io/{slug}` | - | EU-hosted companies |
+
+**Resolution Priority:**
+```
+1. Config url_type    →  Build URL directly (fast, authoritative)
+2. Runtime cache      →  Use proven URL from previous run
+3. BASE_URLS fallback →  Try patterns in order (auto-discovery)
+   └─ Redirect detection: If URL redirects to non-greenhouse domain,
+      automatically tries next pattern and logs suggestion
+```
+
+**Config Example:**
+```json
+{
+  "Stripe": {"slug": "stripe"},
+  "Cloudflare": {"slug": "cloudflare", "url_type": "embed"},
+  "JetBrains": {"slug": "jetbrains", "url_type": "eu"}
+}
+```
+
+**Adding New Companies:**
+- Add with just `slug` - scraper auto-discovers working URL
+- If redirect detected, logs: `"Consider adding url_type=embed to config"`
+- Optionally add `url_type` for faster resolution
 
 ### Pipeline C: Lever - COMPLETE ✓
 - **File:** `scrapers/lever/lever_fetcher.py`
@@ -252,7 +285,7 @@ def build_full_description(job_data: Dict) -> str:
 | Avg chars per job | 150 | 8,500+ | 7,000+ | 6,000+ |
 | Skills extraction F1 | 0.29 | 0.85+ | 0.85+ | 0.80+ |
 | Remote status F1 | 0.565 | 0.85+ | 0.85+ | 0.80+ |
-| Coverage | 1,500 jobs/mo | +302 companies | +50 companies | Full |
+| Coverage | 1,500 jobs/mo | +348 companies | +50 companies | Full |
 
 ### Classification Confidence
 
@@ -520,7 +553,7 @@ class ATSScraperOrchestrator:
 The multi-source architecture provides:
 
 - **Breadth** - 1,500+ jobs/month from Adzuna (market trends)
-- **Depth (Greenhouse)** - 302 premium companies via browser automation
+- **Depth (Greenhouse)** - 348 premium companies via browser automation
 - **Depth (Lever)** - 50+ premium companies via public API
 - **Quality** - Complete 5,000-15,000+ char descriptions (vs 100-200 char truncation)
 - **Flexibility** - Can enable/disable sources independently
@@ -531,5 +564,5 @@ The multi-source architecture provides:
 
 ---
 
-**Last Updated:** 2025-12-16
-**Changes:** Added Lever as third pipeline source (public JSON API), updated architecture diagram and comparisons
+**Last Updated:** 2025-12-30
+**Changes:** Added config-driven URL resolution (url_type field), redirect detection, updated company count to 348

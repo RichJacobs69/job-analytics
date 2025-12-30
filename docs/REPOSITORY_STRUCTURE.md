@@ -1,4 +1,4 @@
-# Repository Structure (Updated 2025-12-16)
+# Repository Structure (Updated 2025-12-30)
 
 > **Single Source of Truth for Directory Organization**
 >
@@ -88,7 +88,7 @@ scrapers/
 ```
 config/
 ├── greenhouse/                        # Greenhouse-specific configs
-│   ├── company_ats_mapping.json       # Company → ATS slug mapping (302 companies)
+│   ├── company_ats_mapping.json       # Company → ATS slug mapping (348 companies, with url_type)
 │   ├── checked_companies.json         # Validated Greenhouse companies
 │   ├── title_patterns.yaml            # Title patterns for Greenhouse filtering
 │   └── location_patterns.yaml         # Location patterns for Greenhouse filtering

@@ -7,7 +7,8 @@
             "slug": "feverup"
         },
         "Brex": {
-            "slug": "brex"
+            "slug": "brex",
+            "url_type": "embed"
         },
         "SmartAsset": {
             "slug": "smartasset"
@@ -25,10 +26,12 @@
             "slug": "labelbox"
         },
         "Capitolis": {
-            "slug": "capitolis"
+            "slug": "capitolis",
+            "url_type": "embed"
         },
         "MoneyLion": {
-            "slug": "moneylion"
+            "slug": "moneylion",
+            "url_type": "embed"
         },
         "Galileo Health": {
             "slug": "galileo"
@@ -37,7 +40,8 @@
             "slug": "thirtymadison"
         },
         "Fora Travel": {
-            "slug": "foratravel"
+            "slug": "foratravel",
+            "url_type": "embed"
         },
         "EquityMultiple": {
             "slug": "equitymultiple"
@@ -52,10 +56,8 @@
             "slug": "check"
         },
         "Monograph": {
-            "slug": "monograph"
-        },
-        "Hex": {
-            "slug": "hextechnologies"
+            "slug": "monograph",
+            "url_type": "embed"
         },
         "Hightouch": {
             "slug": "hightouch"
@@ -67,7 +69,8 @@
             "slug": "cameo"
         },
         "ClassPass": {
-            "slug": "classpass"
+            "slug": "classpass",
+            "url_type": "embed"
         },
         "Goldbelly": {
             "slug": "goldbelly"
@@ -94,13 +97,15 @@
             "slug": "wayve"
         },
         "Guild Education": {
-            "slug": "guild"
+            "slug": "guild",
+            "url_type": "embed"
         },
         "OneTrust": {
             "slug": "onetrust"
         },
         "SpotHero": {
-            "slug": "spothero"
+            "slug": "spothero",
+            "url_type": "embed"
         },
         "Typeform": {
             "slug": "typeform"
@@ -280,7 +285,8 @@
             "slug": "workato"
         },
         "Datadog": {
-            "slug": "datadog"
+            "slug": "datadog",
+            "url_type": "embed"
         },
         "The New York Times": {
             "slug": "thenewyorktimes"
@@ -373,7 +379,8 @@
             "slug": "altanaai"
         },
         "Whop": {
-            "slug": "whop"
+            "slug": "whop",
+            "url_type": "embed"
         },
         "Philo": {
             "slug": "philo"
@@ -514,16 +521,19 @@
             "slug": "recursionpharmaceuticals"
         },
         "Modulr": {
-            "slug": "modulrfinance"
+            "slug": "modulrfinance",
+            "url_type": "embed"
         },
         "Samsara": {
-            "slug": "samsara"
+            "slug": "samsara",
+            "url_type": "embed"
         },
         "Yext": {
             "slug": "yext"
         },
         "Aurora Innovation": {
-            "slug": "aurorainnovation"
+            "slug": "aurorainnovation",
+            "url_type": "embed"
         },
         "Diligent Corporation": {
             "slug": "diligentcorporation"
@@ -541,10 +551,12 @@
             "slug": "truelayer"
         },
         "Netskope": {
-            "slug": "netskope"
+            "slug": "netskope",
+            "url_type": "embed"
         },
         "Robinhood": {
-            "slug": "robinhood"
+            "slug": "robinhood",
+            "url_type": "embed"
         },
         "HubSpot": {
             "slug": "hubspotjobs"
@@ -574,7 +586,8 @@
             "slug": "dicefm-careers"
         },
         "Lightricks": {
-            "slug": "lightricks"
+            "slug": "lightricks",
+            "url_type": "embed"
         },
         "Similarweb": {
             "slug": "similarweb"
@@ -604,25 +617,29 @@
             "slug": "snorkelai"
         },
         "Databricks": {
-            "slug": "databricks"
+            "slug": "databricks",
+            "url_type": "embed"
         },
         "RELEX Solutions": {
             "slug": "relex"
         },
         "Tridge": {
-            "slug": "tridge"
+            "slug": "tridge",
+            "url_type": "embed"
         },
         "Easyship": {
             "slug": "easyship"
         },
         "MongoDB": {
-            "slug": "mongodb"
+            "slug": "mongodb",
+            "url_type": "embed"
         },
         "Flo Health": {
             "slug": "flohealth"
         },
         "Wheely": {
-            "slug": "wheely"
+            "slug": "wheely",
+            "url_type": "embed"
         },
         "Yes Energy": {
             "slug": "yesenergy"
@@ -667,22 +684,28 @@
             "slug": "surveymonkey"
         },
         "Fivetran": {
-            "slug": "fivetran"
+            "slug": "fivetran",
+            "url_type": "embed"
         },
         "Watershed": {
-            "slug": "watershed"
+            "slug": "watershed",
+            "url_type": "embed"
         },
         "Flatiron Health": {
-            "slug": "flatironhealth"
+            "slug": "flatironhealth",
+            "url_type": "embed"
         },
         "Sprout Social": {
-            "slug": "sproutsocial"
+            "slug": "sproutsocial",
+            "url_type": "embed"
         },
         "Riskified": {
-            "slug": "riskified"
+            "slug": "riskified",
+            "url_type": "embed"
         },
         "Mindbody": {
-            "slug": "mindbody"
+            "slug": "mindbody",
+            "url_type": "embed"
         },
         "Carta": {
             "slug": "carta"
@@ -691,28 +714,34 @@
             "slug": "wonderschool"
         },
         "Modus Create": {
-            "slug": "moduscreate"
+            "slug": "moduscreate",
+            "url_type": "embed"
         },
         "Salsify": {
-            "slug": "salsify"
+            "slug": "salsify",
+            "url_type": "embed"
         },
         "Lob": {
-            "slug": "lob"
+            "slug": "lob",
+            "url_type": "embed"
         },
         "PandaDoc": {
             "slug": "pandadoc"
         },
         "Squarespace": {
-            "slug": "squarespace"
+            "slug": "squarespace",
+            "url_type": "embed"
         },
         "Wizard Commerce": {
             "slug": "wizardcommerce"
         },
         "Motive": {
-            "slug": "motive"
+            "slug": "motive",
+            "url_type": "embed"
         },
         "Thorn": {
-            "slug": "thorn"
+            "slug": "thorn",
+            "url_type": "embed"
         },
         "Omada Health": {
             "slug": "omadahealth"
@@ -721,7 +750,8 @@
             "slug": "everlaw"
         },
         "Linqia": {
-            "slug": "linqia"
+            "slug": "linqia",
+            "url_type": "embed"
         },
         "Energy Exemplar": {
             "slug": "energyexemplarllc"
@@ -745,10 +775,12 @@
             "slug": "optimove"
         },
         "Glovo": {
-            "slug": "glovo"
+            "slug": "glovo",
+            "url_type": "embed"
         },
         "SumUp": {
-            "slug": "sumup"
+            "slug": "sumup",
+            "url_type": "embed"
         },
         "Pendo": {
             "slug": "pendo"
@@ -769,10 +801,12 @@
             "slug": "awin"
         },
         "Bryant Park Consulting": {
-            "slug": "bryantparkconsulting"
+            "slug": "bryantparkconsulting",
+            "url_type": "embed"
         },
         "Justworks": {
-            "slug": "justworks"
+            "slug": "justworks",
+            "url_type": "embed"
         },
         "Later": {
             "slug": "later"
@@ -793,7 +827,8 @@
             "slug": "tatari"
         },
         "Watchmaker Genomics": {
-            "slug": "watchmakergenomics"
+            "slug": "watchmakergenomics",
+            "url_type": "embed"
         },
         "Adyen": {
             "slug": "adyen"
@@ -802,7 +837,8 @@
             "slug": "amwell"
         },
         "Asana": {
-            "slug": "asana"
+            "slug": "asana",
+            "url_type": "embed"
         },
         "Cleo": {
             "slug": "cleo"
@@ -817,10 +853,12 @@
             "slug": "duolingo"
         },
         "Form3": {
-            "slug": "form3"
+            "slug": "form3",
+            "url_type": "embed"
         },
         "Formlabs": {
-            "slug": "formlabs"
+            "slug": "formlabs",
+            "url_type": "embed"
         },
         "Grammarly": {
             "slug": "grammarly"
@@ -835,10 +873,12 @@
             "slug": "masterclass"
         },
         "One Medical": {
-            "slug": "onemedical"
+            "slug": "onemedical",
+            "url_type": "embed"
         },
         "Opendoor": {
-            "slug": "opendoor"
+            "slug": "opendoor",
+            "url_type": "embed"
         },
         "Parsley Health": {
             "slug": "parsleyhealth"
@@ -850,7 +890,8 @@
             "slug": "retool"
         },
         "Stability AI": {
-            "slug": "stabilityai"
+            "slug": "stabilityai",
+            "url_type": "embed"
         },
         "Taboola": {
             "slug": "taboola"
@@ -862,31 +903,38 @@
             "slug": "vercel"
         },
         "Wiz": {
-            "slug": "wizinc"
+            "slug": "wizinc",
+            "url_type": "embed"
         },
         "Orca Security": {
-            "slug": "orcasecurity"
+            "slug": "orcasecurity",
+            "url_type": "embed"
         },
         "Axonius": {
-            "slug": "axonius"
+            "slug": "axonius",
+            "url_type": "embed"
         },
         "Cybereason": {
-            "slug": "cybereason"
+            "slug": "cybereason",
+            "url_type": "embed"
         },
         "Bitwarden": {
-            "slug": "bitwarden"
+            "slug": "bitwarden",
+            "url_type": "embed"
         },
         "Huntress": {
             "slug": "huntress"
         },
         "Expel": {
-            "slug": "expel"
+            "slug": "expel",
+            "url_type": "embed"
         },
         "Chainguard": {
             "slug": "chainguard"
         },
         "Palmetto": {
-            "slug": "palmetto"
+            "slug": "palmetto",
+            "url_type": "embed"
         },
         "Redwood Materials": {
             "slug": "redwoodmaterials"
@@ -913,7 +961,8 @@
             "slug": "alchemy"
         },
         "Consensys": {
-            "slug": "consensys"
+            "slug": "consensys",
+            "url_type": "embed"
         },
         "Figment": {
             "slug": "figment"
@@ -922,13 +971,15 @@
             "slug": "nansen"
         },
         "OpenZeppelin": {
-            "slug": "openzeppelin"
+            "slug": "openzeppelin",
+            "url_type": "embed"
         },
         "Paradigm": {
             "slug": "paradigm"
         },
         "Riot Games": {
-            "slug": "riotgames"
+            "slug": "riotgames",
+            "url_type": "embed"
         },
         "Niantic": {
             "slug": "niantic"
@@ -937,16 +988,19 @@
             "slug": "scopely"
         },
         "Manticore Games": {
-            "slug": "manticoregames"
+            "slug": "manticoregames",
+            "url_type": "embed"
         },
         "Lattice": {
-            "slug": "lattice"
+            "slug": "lattice",
+            "url_type": "embed"
         },
         "Root Insurance": {
             "slug": "root"
         },
         "Coalition": {
-            "slug": "coalition"
+            "slug": "coalition",
+            "url_type": "embed"
         },
         "Pie Insurance": {
             "slug": "pieinsurance"
@@ -967,7 +1021,8 @@
             "slug": "oura"
         },
         "Relativity Space": {
-            "slug": "relativity"
+            "slug": "relativity",
+            "url_type": "embed"
         },
         "Rocket Lab": {
             "slug": "rocketlab"
@@ -976,13 +1031,16 @@
             "slug": "planetlabs"
         },
         "Spire Global": {
-            "slug": "spire"
+            "slug": "spire",
+            "url_type": "embed"
         },
         "Capella Space": {
-            "slug": "capellaspace"
+            "slug": "capellaspace",
+            "url_type": "embed"
         },
         "BlackSky": {
-            "slug": "blacksky"
+            "slug": "blacksky",
+            "url_type": "embed"
         },
         "Figure AI": {
             "slug": "figure"
@@ -991,19 +1049,23 @@
             "slug": "skydio"
         },
         "Agility Robotics": {
-            "slug": "agilityrobotics"
+            "slug": "agilityrobotics",
+            "url_type": "embed"
         },
         "Nuro": {
-            "slug": "nuro"
+            "slug": "nuro",
+            "url_type": "embed"
         },
         "Waymo": {
-            "slug": "waymo"
+            "slug": "waymo",
+            "url_type": "embed"
         },
         "Eat Just": {
             "slug": "eatjust"
         },
         "Cloudflare": {
-            "slug": "cloudflare"
+            "slug": "cloudflare",
+            "url_type": "embed"
         },
         "Fastly": {
             "slug": "fastly"
@@ -1021,25 +1083,29 @@
             "slug": "magic"
         },
         "Dojo": {
-            "slug": "dojo"
-        }, 
+            "slug": "dojo",
+            "url_type": "embed"
+        },
         "Subsplash": {
             "slug": "subsplash"
         },
         "Quantifind": {
-            "slug": "Quantifind"
-        }, 
+            "slug": "Quantifind",
+            "url_type": "embed"
+        },
         "Havenly": {
             "slug": "havenly"
         },
         "Tifin": {
-            "slug": "tifin"
+            "slug": "tifin",
+            "url_type": "embed"
         },
         "Pleo": {
             "slug": "pleo"
         },
         "Zilch": {
-            "slug": "zilch"
+            "slug": "zilch",
+            "url_type": "embed"
         },
         "Jetbrains": {
             "slug": "jetbrains"

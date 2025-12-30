@@ -253,7 +253,7 @@ Track which companies use which ATS for coverage planning:
 
 | ATS | Coverage | Notes |
 |-----|----------|-------|
-| Greenhouse | 302 companies | Primary source |
+| Greenhouse | 348 companies | Primary source |
 | Lever | 61 companies | Secondary source |
 | Workday | 0 | Not supported (complex) |
 | Ashby | 0 | Potential future addition |

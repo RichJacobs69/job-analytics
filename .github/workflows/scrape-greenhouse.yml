@@ -55,6 +55,9 @@ jobs:
           restore-keys: |
             greenhouse-url-cache-
 
+      # URL overrides are now in config/greenhouse/company_ats_mapping.json (url_type field)
+      # No seed step needed - scraper reads url_type from config directly
+
       - name: Compute batch and run scraper
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}

@@ -118,7 +118,7 @@ job-analytics/
 ```
 config/
 ├── greenhouse/
-│   ├── company_ats_mapping.json    # 302 companies
+│   ├── company_ats_mapping.json    # 348 companies (with url_type for embed/eu)
 │   ├── title_patterns.yaml         # Role filtering
 │   └── location_patterns.yaml      # City filtering
 ├── lever/
