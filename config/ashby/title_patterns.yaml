@@ -16,6 +16,7 @@ relevant_title_patterns:
   - 'growth analyst'
   - 'insight analyst'
   - 'analytics (engineer|lead|manager)'
+  - '(manager|lead|director)[,\s]+(data\s+)?analytics'  # Reversed: "Manager, Data Analytics"
   - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
   - 'bi engineer|bi analyst'
 
@@ -23,10 +24,12 @@ relevant_title_patterns:
   - 'data engineer'
   - 'data platform'
   - 'data engineering (manager|lead)'
+  - '(engineer|manager|lead)[,\s]+data\s+(engineering|platform)'  # Reversed: "Engineer, Data Platform"
 
   # Data Scientist family
   - 'data scientist'
   - 'data science (engineer|manager|lead)'
+  - '(scientist|manager|lead|director)[,\s]+data\s+science'  # Reversed: "Scientist, Data Science"
   - 'machine learning scientist'
   - 'research scientist.*(ml|ai|machine learning|data)'
   - 'applied (scientist|ml)'
@@ -37,6 +40,7 @@ relevant_title_patterns:
   - 'ai/ml'
   - 'mlops'
   - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
+  - '(engineer|manager|lead)[,\s]+(ml|machine learning|ai)'  # Reversed: "Engineer, ML"
 
   # Data Architect family
   - 'data architect'
@@ -54,6 +58,7 @@ relevant_title_patterns:
   - 'product manager'
   - 'product owner'
   - 'technical product manager'
+  - '(manager|lead|director)[,\s]+product'  # Reversed: "Manager, Product"
 
   # Product Leadership (Director+)
   - 'director.*(product|pm)'
@@ -78,6 +83,7 @@ relevant_title_patterns:
   - 'delivery lead'
   - 'agile delivery manager'
   - 'agile delivery lead'
+  - '(manager|lead|director)[,\s]+delivery'  # Reversed: "Manager, Delivery"
 
   # Project Manager family (CRITICAL: must NOT match "product manager")
   - '(?<!product )project manager'
@@ -88,6 +94,7 @@ relevant_title_patterns:
   # Programme Manager family
   - 'program(me)? manager'
   - 'senior program(me)? manager'
+  - '(manager|lead|director)[,\s]+program(me)?s?'  # Reversed: "Manager, Programs"
 
   # Scrum Master family
   - 'scrum master'
@@ -114,6 +121,11 @@ relevant_title_patterns:
 filtering_enabled: true
 
 # Version tracking
-version: "1.0"
-last_updated: "2025-12-30"
-source: "config/greenhouse/title_patterns.yaml"
+version: "1.1"
+last_updated: "2025-12-31"
+source: "config/greenhouse/title_patterns.yaml v1.4"
+
+changes:
+  - version: "1.1"
+    date: "2025-12-31"
+    notes: "Added reversed title patterns for 'Role, Category' format (e.g., 'Manager, Data Analytics', 'Manager, Delivery')"

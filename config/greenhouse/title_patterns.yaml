@@ -24,6 +24,7 @@ relevant_title_patterns:
   - 'growth analyst'
   - 'insight analyst'
   - 'analytics (engineer|lead|manager)'
+  - '(manager|lead|director)[,\s]+(data\s+)?analytics'  # Reversed: "Manager, Data Analytics"
   - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
   - 'bi engineer|bi analyst'
 
@@ -31,10 +32,12 @@ relevant_title_patterns:
   - 'data engineer'
   - 'data platform'
   - 'data engineering (manager|lead)'
+  - '(engineer|manager|lead)[,\s]+data\s+(engineering|platform)'  # Reversed: "Engineer, Data Platform"
 
   # Data Scientist family
   - 'data scientist'
   - 'data science (engineer|manager|lead)'
+  - '(scientist|manager|lead|director)[,\s]+data\s+science'  # Reversed: "Scientist, Data Science"
   - 'machine learning scientist'
   - 'research scientist.*(ml|ai|machine learning|data)'
   - 'applied (scientist|ml)'
@@ -45,6 +48,7 @@ relevant_title_patterns:
   - 'ai/ml'
   - 'mlops'
   - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
+  - '(engineer|manager|lead)[,\s]+(ml|machine learning|ai)'  # Reversed: "Engineer, ML"
 
   # Data Architect family
   - 'data architect'
@@ -62,6 +66,7 @@ relevant_title_patterns:
   - 'product manager'
   - 'product owner'
   - 'technical product manager'
+  - '(manager|lead|director)[,\s]+product'  # Reversed: "Manager, Product"
 
   # Product Leadership (Director+)
   - 'director.*(product|pm)'
@@ -86,6 +91,7 @@ relevant_title_patterns:
   - 'delivery lead'
   - 'agile delivery manager'
   - 'agile delivery lead'
+  - '(manager|lead|director)[,\s]+delivery'  # Reversed: "Manager, Delivery"
 
   # Project Manager family (CRITICAL: must NOT match "product manager")
   - '(?<!product )project manager'
@@ -96,6 +102,7 @@ relevant_title_patterns:
   # Programme Manager family
   - 'program(me)? manager'
   - 'senior program(me)? manager'
+  - '(manager|lead|director)[,\s]+program(me)?s?'  # Reversed: "Manager, Programs"
 
   # Scrum Master family
   - 'scrum master'
@@ -132,6 +139,7 @@ pattern_notes: |
   - Analytics variations: "Analytics Engineer", "Analytics Lead", "Analytics Manager"
   - Applied roles: "Applied Scientist", "Applied ML"
   - Combined titles: "AI Product Manager", "Data Product Manager", "ML PM"
+  - Reversed "Role, Category" format: "Manager, Data Analytics", "Manager, Delivery", "Lead, Product"
 
   Known Good Matches (from validation):
   - "Analytics Lead" [OK]
@@ -148,6 +156,10 @@ pattern_notes: |
   - "VP of Data" [OK] (added 2025-12-23)
   - "Head of Data Science" [OK] (added 2025-12-23)
   - "Chief Data Officer" [OK] (added 2025-12-23)
+  - "Manager, Data Analytics" [OK] (added 2025-12-31)
+  - "Manager, Delivery" [OK] (added 2025-12-31)
+  - "Lead, Product" [OK] (added 2025-12-31)
+  - "Engineer, ML" [OK] (added 2025-12-31)
 
   Known Filtered Roles (expected to NOT match):
   - "Account Executive" [NOT OK]
@@ -168,8 +180,8 @@ pattern_notes: |
   - "Growth Engineer" - Engineering role, not product/data focus
 
 # Version tracking
-version: "1.3"
-last_updated: "2025-12-27"
+version: "1.4"
+last_updated: "2025-12-31"
 validated_on:
   - company: "Stripe"
     jobs_scraped: 100
@@ -177,6 +189,9 @@ validated_on:
     false_negatives: "<5%"
 
 changes:
+  - version: "1.4"
+    date: "2025-12-31"
+    notes: "Added reversed title patterns for 'Role, Category' format (e.g., 'Manager, Data Analytics', 'Manager, Delivery')"
   - version: "1.3"
     date: "2025-12-27"
     notes: "Added Delivery family patterns (Delivery Manager, Project Manager, Programme Manager, Scrum Master)"
