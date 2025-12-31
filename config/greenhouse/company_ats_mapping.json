@@ -1027,7 +1027,8 @@
       "slug": "figure"
     },
     "Skydio": {
-      "slug": "skydio"
+      "slug": "skydio",
+      "url_type": "embed"
     },
     "Agility Robotics": {
       "slug": "agilityrobotics",
@@ -1243,7 +1244,8 @@
       "slug": "reflective"
     },
     "Roblox": {
-      "slug": "roblox"
+      "slug": "roblox",
+      "url_type": "embed"
     },
     "Sanfranciscocampusforjewishliving": {
       "slug": "sanfranciscocampusforjewishliving"

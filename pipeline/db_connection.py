@@ -256,7 +256,9 @@ def insert_enriched_job(
     original_url_secondary: Optional[str] = None,
     merged_from_source: Optional[str] = None,
     # Location expansion (Global Location Expansion Epic)
-    locations: Optional[List[Dict]] = None
+    locations: Optional[List[Dict]] = None,
+    # AI-generated summary (inline from classifier)
+    summary: Optional[str] = None
 ) -> int:
     """
     Insert a classified/enriched job into the database.
@@ -273,6 +275,7 @@ def insert_enriched_job(
         posted_date: Date job was posted
         last_seen_date: Date job was last seen active
         locations: Array of location objects (Global Location Expansion)
+        summary: AI-generated 2-3 sentence role summary (from classifier)
         ... (other optional fields)
 
     Returns:
@@ -335,6 +338,9 @@ def insert_enriched_job(
 
         # Skills
         "skills": skills or [],
+
+        # AI-generated summary
+        "summary": summary,
 
         # Dates
         "posted_date": posted_date.isoformat(),

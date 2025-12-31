@@ -39,7 +39,7 @@ python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
 
 # Derived data jobs (Epic 8 - Job Feed)
 python pipeline/employer_stats.py              # Compute employer fill stats
-python pipeline/summary_generator.py --limit=50 # Generate role summaries
+python pipeline/summary_generator.py --limit=50 # Backfill summaries (new jobs get inline)
 python pipeline/url_validator.py --limit=100   # Check for 404 dead links
 
 # Utilities
@@ -92,10 +92,11 @@ Adzuna API ─────┐                    ┌───── Greenhouse/L
                          │
          ┌───────────────┼───────────────┐
          v               v               v
-  employer_stats.py  summary_gen.py  url_validator.py
+  employer_stats.py  (inline summary)  url_validator.py
          │               │               │
          v               v               v
-  employer_fill_stats  job_summaries  url_status
+  employer_fill_stats  enriched_jobs   url_status
+                       .summary
                          │
                          v
               Next.js Dashboard + Job Feed API
@@ -129,7 +130,7 @@ job-analytics/
 | `pipeline/location_extractor.py` | Pattern-based location extraction |
 | `pipeline/agency_detection.py` | Agency filtering (hard + soft) |
 | `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
-| `pipeline/summary_generator.py` | AI role summaries via Gemini (Epic 8) |
+| `pipeline/summary_generator.py` | Backfill utility for summaries (new jobs get inline via classifier) |
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
@@ -175,10 +176,10 @@ Uses JSONB array for flexible multi-location support:
 ## Current Work: Epic 8 Job Feed
 
 **Phase 1 (Infrastructure) - COMPLETE:**
-- Database: `employer_fill_stats`, `job_summaries`, `url_status` column
-- Pipeline: `employer_stats.py`, `summary_generator.py`, `url_validator.py`
+- Database: `employer_fill_stats`, `enriched_jobs.summary` column, `url_status` column
+- Pipeline: Summaries generated inline during classification (not batch)
 - API: `/api/hiring-market/jobs/feed`, `/api/hiring-market/jobs/[id]/context`
-- GitHub Actions: `refresh-derived-tables.yml`
+- GitHub Actions: `refresh-derived-tables.yml` (URL validation + employer stats only)
 
 **Phase 2 (Frontend) - TODO:**
 - Job feed page at `/projects/hiring-market/jobs`
@@ -193,7 +194,7 @@ Located in `.github/workflows/`:
 - `scrape-adzuna.yml` - Tue/Thu/Sat 7AM UTC (5 cities)
 - `scrape-lever.yml` - Sun/Mon/Wed/Fri 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu/Sat 6PM UTC (evening slot)
-- `refresh-derived-tables.yml` - Daily (Epic 8 derived data)
+- `refresh-derived-tables.yml` - Mon-Thu 9AM UTC (URL validation + employer stats)
 
 ## Key References
 

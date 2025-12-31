@@ -46,7 +46,7 @@ pipeline/
 ├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
 ├── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
 ├── employer_stats.py          # Compute median fill times per employer (Epic 8)
-├── summary_generator.py       # AI-generated role summaries via Gemini (Epic 8)
+├── summary_generator.py       # Backfill utility for summaries (new jobs get inline)
 └── url_validator.py           # HTTP 404 detection for dead link filtering (Epic 8)
 ```
 
@@ -123,8 +123,9 @@ migrations/
 ├── 008_add_locations_jsonb.sql            # Add locations JSONB column with GIN index
 ├── 009_add_sfo_sgp_city_codes.sql         # Add SF and Singapore city codes
 ├── 010_create_employer_fill_stats.sql     # Employer fill stats table (Epic 8)
-├── 011_create_job_summaries.sql           # AI-generated job summaries table (Epic 8)
-└── 012_add_url_status_column.sql          # URL health tracking column (Epic 8)
+├── 011_create_job_summaries.sql           # [DEPRECATED] Replaced by inline summary
+├── 012_add_url_status_column.sql          # URL health tracking column (Epic 8)
+└── 013_add_summary_column.sql             # Inline summary column on enriched_jobs
 ```
 
 ### 6. **`docs/` Directory** (Documentation)

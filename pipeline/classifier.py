@@ -284,8 +284,16 @@ Return JSON with this EXACT structure:
   "skills": [
     {{"name": "Python", "family_code": "programming"}},
     {{"name": "SQL", "family_code": "programming"}}
-  ]
+  ],
+  "summary": "2-3 sentence summary of day-to-day responsibilities (required)"
 }}
+
+# SUMMARY GENERATION RULES
+- Write 2-3 concise sentences describing what the person will do day-to-day
+- Focus on key responsibilities, team context, and product/domain if mentioned
+- Avoid generic phrases like "exciting opportunity" or "fast-paced environment"
+- Be specific and actionable (e.g., "Build data pipelines" not "Work with data")
+- Maximum 50 words
 
 # WORKING ARRANGEMENT GUIDANCE (location is extracted separately from source metadata)
 - "Remote or hybrid" → flexible
@@ -532,6 +540,64 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
         raise
 
 
+def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structured_input: dict = None, max_retries: int = 2) -> Dict:
+    """
+    Wrapper around classify_job_with_gemini that retries if summary is missing.
+
+    Args:
+        job_text: Job posting text
+        verbose: Enable verbose logging
+        structured_input: Structured fields from API
+        max_retries: Maximum attempts (default 2 = 1 initial + 1 retry)
+
+    Returns:
+        Classification result with summary (or best attempt)
+    """
+    total_cost_data = {
+        'input_tokens': 0,
+        'output_tokens': 0,
+        'input_cost': 0.0,
+        'output_cost': 0.0,
+        'total_cost': 0.0,
+        'latency_ms': 0.0,
+        'provider': 'gemini',
+        'attempts': 0
+    }
+
+    for attempt in range(max_retries):
+        total_cost_data['attempts'] += 1
+
+        result = classify_job_with_gemini(job_text, verbose=verbose, structured_input=structured_input)
+
+        # Accumulate costs
+        if '_cost_data' in result:
+            cost = result['_cost_data']
+            total_cost_data['input_tokens'] += cost.get('input_tokens', 0)
+            total_cost_data['output_tokens'] += cost.get('output_tokens', 0)
+            total_cost_data['input_cost'] += cost.get('input_cost', 0)
+            total_cost_data['output_cost'] += cost.get('output_cost', 0)
+            total_cost_data['total_cost'] += cost.get('total_cost', 0)
+            total_cost_data['latency_ms'] += cost.get('latency_ms', 0)
+
+        # Check if summary is present and non-empty
+        summary = result.get('summary')
+        if summary and isinstance(summary, str) and len(summary.strip()) > 10:
+            # Success - attach accumulated cost data
+            result['_cost_data'] = total_cost_data
+            return result
+
+        # Summary missing - log and retry
+        if attempt < max_retries - 1:
+            title = structured_input.get('title', 'Unknown') if structured_input else 'Unknown'
+            print(f"[RETRY] Summary missing for '{title[:40]}' - retrying ({attempt + 2}/{max_retries})")
+
+    # All retries exhausted - return best result with warning
+    title = structured_input.get('title', 'Unknown') if structured_input else 'Unknown'
+    print(f"[WARNING] Summary still missing after {max_retries} attempts for '{title[:40]}'")
+    result['_cost_data'] = total_cost_data
+    return result
+
+
 def classify_job_with_claude(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """
     Classify a job posting using Claude 3.5 Haiku.
@@ -695,7 +761,8 @@ def classify_job(job_text: str, verbose: bool = False, structured_input: dict = 
         Dictionary with classified job data matching schema
     """
     if LLM_PROVIDER == "gemini":
-        return classify_job_with_gemini(job_text, verbose=verbose, structured_input=structured_input)
+        # Use retry wrapper to ensure summary is included
+        return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input)
     else:
         return classify_job_with_claude(job_text, verbose=verbose, structured_input=structured_input)
 

@@ -53,7 +53,9 @@
       "Bash(git rm:*)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\pip.exe\" install pytest --quiet)",
+      "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Cursor Projects\\\\job-analytics\\\\tests\\\\test_inline_summary.py\" -v --tb=short)"
     ],
     "deny": [],
     "ask": []

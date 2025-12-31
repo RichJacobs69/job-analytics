@@ -20,6 +20,43 @@ Trigger when user asks to:
 - Review pipeline data quality
 - Analyze costs and performance trends
 
+## Prerequisites: Verify GitHub API Access
+
+**IMPORTANT:** Before running any GitHub API commands, verify the token is available in `.env`.
+
+### Step 0: Check GITHUB_TOKEN in .env
+
+```bash
+# Check if GITHUB_TOKEN is set
+grep GITHUB_TOKEN .env
+```
+
+**Expected:** Line showing `GITHUB_TOKEN=ghp_...` or `GITHUB_TOKEN=github_pat_...`
+
+### Step 0b: Test API Connection
+
+```bash
+# Windows PowerShell - test API access
+$env:GITHUB_TOKEN = (Get-Content .env | Select-String "GITHUB_TOKEN" | ForEach-Object { $_.Line.Split("=")[1] })
+curl -H "Authorization: token $env:GITHUB_TOKEN" "https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=1"
+```
+
+```bash
+# Or use Python (cross-platform)
+python -c "import os; from dotenv import load_dotenv; load_dotenv(); import requests; r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=1', headers={'Authorization': f'token {os.getenv(\"GITHUB_TOKEN\")}'}); print('OK' if r.status_code == 200 else f'Error: {r.status_code}')"
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `GITHUB_TOKEN` not in .env | Create token at https://github.com/settings/tokens with `repo` and `workflow` scopes |
+| `401 Unauthorized` | Token expired or invalid - regenerate at GitHub |
+| `403 Forbidden` | Token lacks required scopes - needs `repo` and `workflow` |
+| `404 Not Found` | Check repository name spelling |
+
+**If GitHub API access is not available, inform the user and stop analysis.**
+
 ## Repository Context
 
 The job-analytics repository has three main scraping workflows:
@@ -32,32 +69,97 @@ The job-analytics repository has three main scraping workflows:
 
 ## Analysis Workflow
 
+**Note:** All commands use the GitHub REST API via Python. Ensure `GITHUB_TOKEN` is set in `.env`.
+
 ### Step 1: Fetch Recent Runs
 
-```bash
+```python
 # List recent workflow runs (all workflows)
-gh run list --repo richjacobs/job-analytics --limit 20
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=20',
+    headers={'Authorization': f'token {token}'})
+for run in r.json().get('workflow_runs', []):
+    print(f\"{run['id']} | {run['name'][:30]:30} | {run['status']:12} | {run['conclusion'] or 'running':10} | {run['created_at'][:10]}\")
+"
 
-# List runs for specific workflow
-gh run list --repo richjacobs/job-analytics --workflow scrape-greenhouse.yml --limit 10
-gh run list --repo richjacobs/job-analytics --workflow scrape-lever.yml --limit 10
-gh run list --repo richjacobs/job-analytics --workflow scrape-adzuna.yml --limit 10
+# List runs for specific workflow (by workflow file name)
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+# Get workflow ID first
+wf = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/workflows',
+    headers={'Authorization': f'token {token}'}).json()
+wf_id = next((w['id'] for w in wf['workflows'] if 'greenhouse' in w['path']), None)
+if wf_id:
+    r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/workflows/{wf_id}/runs?per_page=10',
+        headers={'Authorization': f'token {token}'})
+    for run in r.json().get('workflow_runs', []):
+        print(f\"{run['id']} | {run['status']:12} | {run['conclusion'] or 'running':10} | {run['created_at']}\")
+"
 
 # Check for failed runs
-gh run list --repo richjacobs/job-analytics --status failure --limit 10
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?status=failure&per_page=10',
+    headers={'Authorization': f'token {token}'})
+for run in r.json().get('workflow_runs', []):
+    print(f\"{run['id']} | {run['name'][:30]:30} | {run['created_at'][:10]}\")
+"
 ```
 
 ### Step 2: Get Detailed Run Information
 
-```bash
+```python
 # View specific run details (replace RUN_ID)
-gh run view RUN_ID --repo richjacobs/job-analytics
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}',
+    headers={'Authorization': f'token {token}'})
+run = r.json()
+print(f\"Run: {run['name']}\")
+print(f\"Status: {run['status']} / {run['conclusion']}\")
+print(f\"Started: {run['created_at']}\")
+print(f\"Updated: {run['updated_at']}\")
+print(f\"URL: {run['html_url']}\")
+"
 
-# Download logs for a specific run
-gh run view RUN_ID --repo richjacobs/job-analytics --log
+# Get jobs for a run
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}/jobs',
+    headers={'Authorization': f'token {token}'})
+for job in r.json().get('jobs', []):
+    print(f\"{job['name']}: {job['conclusion']} ({job['started_at']} - {job['completed_at']})\")
+"
 
-# Get just failed job logs
-gh run view RUN_ID --repo richjacobs/job-analytics --log-failed
+# Download logs for a specific run (returns zip file URL)
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}/logs',
+    headers={'Authorization': f'token {token}'}, allow_redirects=False)
+print(f\"Logs URL: {r.headers.get('Location', 'Not available')}\")
+"
 ```
 
 ### Step 3: Analyze for Specific Issues
@@ -137,9 +239,19 @@ quota exceeded|billing
 
 Adzuna uses matrix strategy for cities. Analyze:
 
-```bash
+```python
 # Check matrix job timing
-gh run view RUN_ID --repo richjacobs/job-analytics --json jobs --jq '.jobs[] | {name, conclusion, startedAt, completedAt}'
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}/jobs',
+    headers={'Authorization': f'token {token}'})
+for job in r.json().get('jobs', []):
+    print(f\"{job['name']}: {job['conclusion']} | {job['started_at']} -> {job['completed_at']}\")
+"
 ```
 
 **Parallelization Metrics:**
@@ -303,12 +415,26 @@ job_hash
 
 Analyze timing trends:
 
-```bash
+```python
 # Get timing for last 10 Greenhouse runs
-gh run list --repo richjacobs/job-analytics --workflow scrape-greenhouse.yml --json databaseId,createdAt,updatedAt,conclusion --limit 10
-
-# Calculate duration in minutes
-# (updatedAt - createdAt) / 60000
+python -c "
+import os, requests
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+wf = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/workflows',
+    headers={'Authorization': f'token {token}'}).json()
+wf_id = next((w['id'] for w in wf['workflows'] if 'greenhouse' in w['path']), None)
+if wf_id:
+    r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/workflows/{wf_id}/runs?per_page=10',
+        headers={'Authorization': f'token {token}'})
+    for run in r.json().get('workflow_runs', []):
+        start = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
+        end = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
+        duration = (end - start).total_seconds() / 60
+        print(f\"{run['id']} | {run['conclusion']:10} | {duration:5.1f} min | {run['created_at'][:10]}\")
+"
 ```
 
 **Timing Benchmarks:**
@@ -322,12 +448,22 @@ gh run list --repo richjacobs/job-analytics --workflow scrape-greenhouse.yml --j
 
 Check step summary output:
 
-```bash
+```python
 # View run summary
-gh run view RUN_ID --repo richjacobs/job-analytics
-
-# Look for summary stats in logs
-grep -E "Companies:|Batch:|Timestamp:|Jobs:" logs.txt
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}',
+    headers={'Authorization': f'token {token}'})
+run = r.json()
+print(f\"Run: {run['name']}\")
+print(f\"Status: {run['status']} / {run['conclusion']}\")
+print(f\"Commit: {run['head_sha'][:7]}\")
+print(f\"URL: {run['html_url']}\")
+"
 ```
 
 **Summary Verification:**
@@ -339,29 +475,77 @@ grep -E "Companies:|Batch:|Timestamp:|Jobs:" logs.txt
 
 ### Quick Health Check
 
-```bash
+```python
 # Last 5 runs status summary
-gh run list --repo richjacobs/job-analytics --limit 5 --json status,conclusion,name,createdAt
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=5',
+    headers={'Authorization': f'token {token}'})
+for run in r.json().get('workflow_runs', []):
+    print(f\"{run['name'][:35]:35} | {run['status']:12} | {run['conclusion'] or 'running':10} | {run['created_at']}\")
+"
 
 # Check if any workflow is currently running
-gh run list --repo richjacobs/job-analytics --status in_progress
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?status=in_progress',
+    headers={'Authorization': f'token {token}'})
+runs = r.json().get('workflow_runs', [])
+if runs:
+    for run in runs:
+        print(f\"RUNNING: {run['name']} (ID: {run['id']}) started {run['created_at']}\")
+else:
+    print('No workflows currently running')
+"
 ```
 
 ### Deep Dive on Failures
 
-```bash
-# Get full logs for failed run
-gh run view RUN_ID --repo richjacobs/job-analytics --log-failed 2>&1 | head -500
-
-# Extract error lines
-gh run view RUN_ID --repo richjacobs/job-analytics --log 2>&1 | grep -i "error\|failed\|exception"
+```python
+# Get failed run details and job info
+python -c "
+import os, requests
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+RUN_ID = 'REPLACE_ME'
+# Get jobs
+r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}/jobs',
+    headers={'Authorization': f'token {token}'})
+for job in r.json().get('jobs', []):
+    print(f\"Job: {job['name']} - {job['conclusion']}\")
+    for step in job.get('steps', []):
+        status = '[FAIL]' if step['conclusion'] == 'failure' else '[OK]'
+        print(f\"  {status} {step['name']}\")
+"
 ```
 
 ### Performance Analysis
 
-```bash
-# Get timing data for recent runs
-gh run list --repo richjacobs/job-analytics --workflow scrape-greenhouse.yml --json databaseId,createdAt,updatedAt,conclusion --limit 10
+```python
+# Get timing data for recent runs across all workflows
+python -c "
+import os, requests
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv('GITHUB_TOKEN')
+r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=15',
+    headers={'Authorization': f'token {token}'})
+print(f\"{'ID':12} | {'Workflow':35} | {'Duration':10} | {'Status':10} | Date\")
+print('-' * 90)
+for run in r.json().get('workflow_runs', []):
+    start = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
+    end = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
+    duration = (end - start).total_seconds() / 60
+    print(f\"{run['id']} | {run['name'][:35]:35} | {duration:6.1f} min | {run['conclusion'] or 'running':10} | {run['created_at'][:10]}\")
+"
 ```
 
 ### Database State Check (via Supabase)

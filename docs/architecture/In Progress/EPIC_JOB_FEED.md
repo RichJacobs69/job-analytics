@@ -3,7 +3,7 @@
 **Epic ID:** EPIC-008
 **Version:** 1.1
 **Created:** 2025-12-27
-**Updated:** 2025-12-30
+**Updated:** 2025-12-31
 **Owner:** Rich
 **Status:** In Progress (Phase 1 Infrastructure Complete)
 
@@ -15,15 +15,15 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Database Migrations** | [DONE] | 010, 011, 012 executed on Supabase |
+| **Database Migrations** | [DONE] | 010, 012, 013 executed on Supabase |
 | `employer_fill_stats` table | [DONE] | Stores median fill times per employer |
-| `job_summaries` table | [DONE] | AI-generated role summaries |
+| `enriched_jobs.summary` column | [DONE] | AI-generated role summaries (inline, migration 013) |
 | `url_status` column | [DONE] | 404 detection for dead link filtering |
-| **Pipeline Scripts** | [DONE] | 3 new scripts in `pipeline/` |
+| **Pipeline Scripts** | [DONE] | Summary generation now inline in classifier |
 | `employer_stats.py` | [DONE] | Uses 404 as closed signal (not last_seen_date) |
-| `summary_generator.py` | [DONE] | Gemini 2.5 Flash Lite, with retry logic |
+| `classifier.py` | [DONE] | Now generates summaries inline during classification |
 | `url_validator.py` | [DONE] | Parallel HTTP HEAD checks, 10 workers |
-| **GitHub Actions** | [DONE] | `refresh-derived-tables.yml` workflow |
+| **GitHub Actions** | [DONE] | `refresh-derived-tables.yml` (URL validation + stats only) |
 | **API Endpoints** | [DONE] | 2 new endpoints in portfolio-site |
 | `/api/hiring-market/jobs/feed` | [DONE] | 5 groups, all working |
 | `/api/hiring-market/jobs/[id]/context` | [DONE] | Summary + fit signals |
@@ -45,8 +45,8 @@
 |----------|-----------|
 | **404 for closed detection** | More reliable than `last_seen_date` heuristic |
 | **Fixed 30-day threshold for "Still Hiring"** | Simpler than employer median comparison; median is display-only |
-| **Gemini for summaries** | Consistent with classifier, 88% cheaper than Claude |
-| **No `key_skills` in job_summaries** | Already exists in `enriched_jobs.skills`, avoid duplication |
+| **Inline summary generation** | Summaries generated during classification (single Gemini call), not batch. Ensures 100% data completeness, eliminates GHA runaway risk |
+| **Summary in enriched_jobs column** | Simpler than separate table; no JOIN needed; `job_summaries` table deprecated |
 | **REST not GraphQL** | 2 endpoints don't justify new tooling/patterns |
 | **localStorage + URL params** | No auth needed, shareable URLs |
 
@@ -411,7 +411,7 @@ When user clicks "Show more" or "View all X matching jobs", show compact list vi
 **New/derived fields needed:**
 - `days_open`: Calculated from `posted_date`
 - `company_role_count`: Count of active roles per company (aggregation)
-- `role_summary`: AI-generated 2-3 sentence summary (batch job)
+- `summary`: AI-generated 2-3 sentence summary (inline during classification)
 - `employer_median_fill_days`: Median time-to-fill for this employer (calculated from historical closed roles)
 - `salary_percentile`: Percentile rank of salary within role/city (US cities only)
 
@@ -562,15 +562,29 @@ Adzuna jobs excluded due to poor apply UX (redirect chains, registration gates).
 
 ### Role Summary Generation
 
-**Option A: Batch pre-generation (recommended for v1)**
-- Run nightly job to generate summaries for new jobs
-- Use Claude Haiku: ~$0.001 per summary
-- Store in `enriched_jobs.role_summary`
+**Architecture Decision: Inline Generation (Implemented 2025-12-31)**
 
-**Option B: On-demand generation**
-- Generate on first card expand
-- Cache result
-- Higher latency on first view
+Summaries are now generated inline during job classification, not via batch job.
+
+**How it works:**
+- `classifier.py` prompt includes summary generation (adds ~100 output tokens)
+- Single Gemini call does both classification AND summary
+- Summary stored in `enriched_jobs.summary` column
+- New jobs always have summaries from day 1
+
+**Why inline over batch:**
+- **Data completeness**: 100% of jobs have summaries (batch had 2,190 job backlog)
+- **Simpler architecture**: No separate GHA workflow, no `job_summaries` table
+- **Cost efficient**: Combined prompt vs two separate LLM calls
+- **No runaway risk**: Batch job caused 39-min GHA timeout; inline is bounded per job
+
+**Backfill utility:**
+- `summary_generator.py` remains as a backfill tool for regeneration
+- Not scheduled; run manually when needed: `python pipeline/summary_generator.py --limit=500`
+
+**Deprecated:**
+- `job_summaries` table (dropped)
+- Summary step in `refresh-derived-tables.yml` (removed)
 
 ### "Why This Fits" Reasoning Engine
 
@@ -696,7 +710,7 @@ Questions to ask beta users:
 
 ## Open Questions
 
-1. **Summary generation timing:** Batch nightly vs. on-demand? (Recommend: batch for v1 simplicity)
+1. ~~**Summary generation timing:** Batch nightly vs. on-demand?~~ **RESOLVED**: Inline during classification (2025-12-31)
 2. **"All jobs" view:** Full list or paginated? (Recommend: paginated, 20 per page)
 3. **Mobile-first or desktop-first?** (Recommend: desktop-first given job-seeking context)
 

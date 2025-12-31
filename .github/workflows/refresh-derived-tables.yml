@@ -1,7 +1,10 @@
-name: Refresh Derived Tables (Daily)
+name: URL Validation & Stats (Daily)
 
-# Runs after scraping completes to populate derived tables for job feed
+# Validates job URLs for 404s and computes employer fill statistics
 # Part of: EPIC-008 Curated Job Feed
+#
+# NOTE: Summary generation has moved inline to classifier.py
+# The summary_generator.py script remains as a backfill utility only.
 
 on:
   schedule:
@@ -9,31 +12,21 @@ on:
     - cron: '0 9 * * 1-4'  # Monday-Thursday (matches Greenhouse schedule)
   workflow_dispatch:
     inputs:
-      run_employer_stats:
-        description: 'Run employer_stats.py'
-        required: false
-        default: true
-        type: boolean
-      run_summary_generator:
-        description: 'Run summary_generator.py'
-        required: false
-        default: true
-        type: boolean
-      run_url_validator:
-        description: 'Run url_validator.py'
-        required: false
-        default: true
-        type: boolean
-      summary_limit:
-        description: 'Limit for summary generation (blank = all)'
+      url_limit:
+        description: 'Limit for URL validation (blank = default 500)'
         required: false
         default: ''
         type: string
+      run_employer_stats:
+        description: 'Run employer_stats.py after URL validation'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
-  refresh-derived-tables:
+  validate-urls:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Most time spent on summaries and URL validation
+    timeout-minutes: 30  # Reduced from 45 (no summary generation)
 
     steps:
       - name: Checkout repository
@@ -49,6 +42,24 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      # Step 1: URL Validation (must run before employer_stats)
+      - name: Run url_validator.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "=========================================="
+          echo "STEP 1: URL Validation"
+          echo "=========================================="
+          # Default limit of 500 for scheduled runs to prevent runaway
+          LIMIT="${{ github.event.inputs.url_limit }}"
+          if [ -z "$LIMIT" ]; then
+            LIMIT="500"
+          fi
+          echo "Checking up to $LIMIT URLs..."
+          python pipeline/url_validator.py --limit=$LIMIT
+
+      # Step 2: Employer Stats (depends on 404 data from URL validation)
       - name: Run employer_stats.py
         if: ${{ github.event.inputs.run_employer_stats != 'false' }}
         env:
@@ -56,36 +67,9 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 1: Employer Fill Stats"
+          echo "STEP 2: Employer Fill Stats"
           echo "=========================================="
           python pipeline/employer_stats.py
-
-      - name: Run summary_generator.py
-        if: ${{ github.event.inputs.run_summary_generator != 'false' }}
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: |
-          echo "=========================================="
-          echo "STEP 2: Summary Generation"
-          echo "=========================================="
-          LIMIT_ARG=""
-          if [ -n "${{ github.event.inputs.summary_limit }}" ]; then
-            LIMIT_ARG="--limit=${{ github.event.inputs.summary_limit }}"
-          fi
-          python pipeline/summary_generator.py $LIMIT_ARG
-
-      - name: Run url_validator.py
-        if: ${{ github.event.inputs.run_url_validator != 'false' }}
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: |
-          echo "=========================================="
-          echo "STEP 3: URL Validation"
-          echo "=========================================="
-          python pipeline/url_validator.py
 
       - name: Summary
         if: always()
@@ -95,11 +79,11 @@ jobs:
           from datetime import datetime
 
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-              f.write("## Derived Tables Refresh Complete\n\n")
+              f.write("## URL Validation & Stats Complete\n\n")
               f.write(f"| Step | Status |\n")
               f.write(f"|------|--------|\n")
-              f.write(f"| **Employer Stats** | ✅ Complete |\n")
-              f.write(f"| **Summary Generator** | ✅ Complete |\n")
-              f.write(f"| **URL Validator** | ✅ Complete |\n")
+              f.write(f"| **URL Validator** | Complete |\n")
+              f.write(f"| **Employer Stats** | Complete |\n")
               f.write(f"\n**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+              f.write(f"\n_Note: Summary generation now happens inline during job scraping._\n")
           EOF

@@ -1,13 +1,17 @@
 """
-Job Summary Generator
-Generates AI role summaries for expanded job cards in curated feed.
+Job Summary Generator (Backfill Utility)
+Generates AI role summaries for jobs that don't have them.
 
 Part of: EPIC-008 Curated Job Feed
-Runs: Nightly via GitHub Actions (after scraping completes)
 
-Uses Gemini (consistent with classifier.py) to generate:
-- 2-3 sentence role summary
-- Key skills extraction (top 5-7)
+NOTE: New jobs get summaries inline during classification (classifier.py).
+This script is only for backfilling existing jobs or regenerating summaries.
+
+Usage:
+  python pipeline/summary_generator.py                  # Generate all missing
+  python pipeline/summary_generator.py --limit=100      # Generate first 100
+  python pipeline/summary_generator.py --dry-run        # Preview without updating
+  python pipeline/summary_generator.py --verify         # Just check current state
 """
 
 import sys
@@ -76,7 +80,7 @@ def generate_summary(title: str, company: str, description: str, max_retries: in
     Generate summary for a single job using Gemini.
 
     Returns:
-        Dict with 'summary' and 'key_skills', or None on failure
+        Dict with 'summary', or None on failure
     """
     # Truncate description if too long (Gemini has context limits)
     max_desc_length = 8000
@@ -123,6 +127,7 @@ def generate_summary(title: str, company: str, description: str, max_retries: in
 def generate_summaries(batch_size: int = 50, limit: int = None, dry_run: bool = False):
     """
     Generate summaries for jobs that don't have them yet.
+    Updates the enriched_jobs.summary column directly.
 
     Args:
         batch_size: How many jobs to process before pausing
@@ -130,44 +135,38 @@ def generate_summaries(batch_size: int = 50, limit: int = None, dry_run: bool = 
         dry_run: If True, show what would be generated without updating database
     """
     print("=" * 70)
-    print("JOB SUMMARY GENERATOR")
+    print("JOB SUMMARY GENERATOR (Backfill Utility)")
     print("=" * 70)
     print(f"Timestamp: {datetime.now().isoformat()}")
     print(f"Batch size: {batch_size}")
     print(f"Limit: {limit or 'None (process all)'}")
     print(f"Dry run: {dry_run}")
     print()
+    print("NOTE: New jobs get summaries inline during classification.")
+    print("      This script is for backfilling existing jobs only.")
+    print()
 
-    # Step 1: Find jobs needing summaries (Greenhouse/Lever only)
+    # Step 1: Find jobs needing summaries (Greenhouse/Lever/Ashby with NULL summary)
     print("[DATA] Finding jobs without summaries...")
 
     try:
-        # Get enriched job IDs that already have summaries
-        existing_result = supabase.table("job_summaries") \
-            .select("enriched_job_id") \
-            .execute()
-        existing_ids = {r['enriched_job_id'] for r in existing_result.data}
-        print(f"   [INFO] {len(existing_ids)} jobs already have summaries")
-
-        # Get Greenhouse/Lever jobs
         jobs_to_process = []
         offset = 0
         page_size = 1000
 
         while True:
+            # Query enriched_jobs where summary IS NULL
             result = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id, title_display, employer_name") \
-                .in_("data_source", ["greenhouse", "lever"]) \
+                .in_("data_source", ["greenhouse", "lever", "ashby"]) \
+                .is_("summary", "null") \
                 .range(offset, offset + page_size - 1) \
                 .execute()
 
             if not result.data:
                 break
 
-            # Filter out jobs that already have summaries
-            for job in result.data:
-                if job['id'] not in existing_ids:
-                    jobs_to_process.append(job)
+            jobs_to_process.extend(result.data)
 
             if len(result.data) < page_size:
                 break
@@ -243,15 +242,14 @@ def generate_summaries(batch_size: int = 50, limit: int = None, dry_run: bool = 
         result = generate_summary(title, company, description)
 
         if result:
-            # Insert into database
+            # Update enriched_jobs.summary column directly
             try:
-                supabase.table("job_summaries") \
-                    .insert({
-                        'enriched_job_id': enriched_job_id,
+                supabase.table("enriched_jobs") \
+                    .update({
                         'summary': result['summary'],
-                        'model_name': 'gemini-2.5-flash-lite',
-                        'generated_at': datetime.now().isoformat()
+                        'summary_model': 'gemini-2.5-flash-lite'
                     }) \
+                    .eq('id', enriched_job_id) \
                     .execute()
 
                 print("OK")
@@ -285,41 +283,45 @@ def generate_summaries(batch_size: int = 50, limit: int = None, dry_run: bool = 
 
 
 def verify_summaries():
-    """Verify job_summaries table contents."""
+    """Verify enriched_jobs.summary column contents."""
     print("\n" + "=" * 70)
     print("VERIFICATION")
     print("=" * 70)
 
     try:
-        # Get total count
-        count_result = supabase.table("job_summaries") \
-            .select("id", count='exact') \
-            .execute()
+        # Get counts by source
+        for source in ['greenhouse', 'lever', 'ashby']:
+            total = supabase.table("enriched_jobs") \
+                .select("id", count='exact') \
+                .eq("data_source", source) \
+                .execute()
 
-        print(f"\nTotal summaries in database: {count_result.count}")
+            with_summary = supabase.table("enriched_jobs") \
+                .select("id", count='exact') \
+                .eq("data_source", source) \
+                .not_.is_("summary", "null") \
+                .execute()
+
+            pct = (with_summary.count / total.count * 100) if total.count > 0 else 0
+            print(f"\n{source.capitalize():12} {with_summary.count:5} / {total.count:5} have summaries ({pct:.1f}%)")
 
         # Get recent samples
-        result = supabase.table("job_summaries") \
-            .select("enriched_job_id, summary, generated_at") \
-            .order("generated_at", desc=True) \
-            .limit(5) \
+        result = supabase.table("enriched_jobs") \
+            .select("title_display, employer_name, summary") \
+            .not_.is_("summary", "null") \
+            .order("classified_at", desc=True) \
+            .limit(3) \
             .execute()
 
         if result.data:
-            print("\nMost recent summaries:")
+            print("\n" + "-" * 70)
+            print("Recent summaries:")
             print("-" * 70)
 
             for row in result.data:
-                # Get job title
-                job = supabase.table("enriched_jobs") \
-                    .select("title_display, employer_name") \
-                    .eq("id", row['enriched_job_id']) \
-                    .single() \
-                    .execute()
-
-                if job.data:
-                    print(f"\n{job.data['title_display']} @ {job.data['employer_name']}")
-                    print(f"Summary: {row['summary'][:150]}...")
+                print(f"\n{row['title_display']} @ {row['employer_name']}")
+                summary = row['summary'] or ''
+                print(f"  {summary[:120]}...")
 
     except Exception as e:
         print(f"[ERROR] Verification failed: {e}")

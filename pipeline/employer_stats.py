@@ -49,7 +49,7 @@ def compute_employer_fill_stats(dry_run: bool = False):
         while True:
             result = supabase.table("enriched_jobs") \
                 .select("employer_name, posted_date, url_checked_at") \
-                .in_("data_source", ["greenhouse", "lever"]) \
+                .in_("data_source", ["greenhouse", "lever", "ashby"]) \
                 .eq("url_status", "404") \
                 .not_.is_("url_checked_at", "null") \
                 .range(offset, offset + page_size - 1) \

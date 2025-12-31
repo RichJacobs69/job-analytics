@@ -1559,6 +1559,9 @@ class GreenhouseScraper:
 
         If the page redirects away from greenhouse.io or returns invalid content,
         automatically tries the embed URL pattern as fallback.
+
+        For embed companies (url_type=embed), uses the embed job detail URL directly
+        to avoid redirects to custom career sites.
         """
         detail_page = None
         try:
@@ -1569,10 +1572,21 @@ class GreenhouseScraper:
             self.active_pages += 1
             detail_page = await self.context.new_page()
 
+            # For embed companies, use the embed job detail URL directly
+            # This avoids redirects to custom career sites (e.g., careers.roblox.com)
+            url_to_try = job_url
+            slug_lower = company_slug.lower() if company_slug else None
+            is_embed_company = slug_lower and self.company_config.get(slug_lower, {}).get('url_type') == 'embed'
+
+            if is_embed_company and job_id:
+                # Construct embed job detail URL: boards.greenhouse.io/embed/job_app?for=SLUG&token=JOB_ID
+                url_to_try = f"https://boards.greenhouse.io/embed/job_app?for={company_slug}&token={job_id}"
+                logger.debug(f"[{company_slug}] Using embed job detail URL: {url_to_try}")
+
             try:
-                await detail_page.goto(job_url, wait_until='domcontentloaded', timeout=self.timeout_ms)
+                await detail_page.goto(url_to_try, wait_until='domcontentloaded', timeout=self.timeout_ms)
             except Exception as e:
-                logger.debug(f"Failed to navigate to {job_url}: {str(e)[:50]}")
+                logger.debug(f"Failed to navigate to {url_to_try}: {str(e)[:50]}")
                 return ""
 
             # Wait for JavaScript rendering (increased from 0.5s to 2s for better reliability)

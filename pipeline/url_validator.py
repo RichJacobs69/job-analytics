@@ -125,7 +125,7 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
             # Build query
             query = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id") \
-                .in_("data_source", ["greenhouse", "lever"])
+                .in_("data_source", ["greenhouse", "lever", "ashby"])
 
             if not force:
                 # Only check jobs not recently validated
