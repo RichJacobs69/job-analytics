@@ -258,7 +258,9 @@ def insert_enriched_job(
     # Location expansion (Global Location Expansion Epic)
     locations: Optional[List[Dict]] = None,
     # AI-generated summary (inline from classifier)
-    summary: Optional[str] = None
+    summary: Optional[str] = None,
+    # URL validation status (defaults to active for freshly scraped jobs)
+    url_status: str = 'active'
 ) -> int:
     """
     Insert a classified/enriched job into the database.
@@ -352,7 +354,10 @@ def insert_enriched_job(
         "description_source": description_source,
         "deduplicated": deduplicated,
         "original_url_secondary": original_url_secondary,
-        "merged_from_source": merged_from_source
+        "merged_from_source": merged_from_source,
+
+        # URL validation (default active for freshly scraped jobs)
+        "url_status": url_status
     }
 
     # Validate/normalize constrained fields before insert

@@ -38,8 +38,8 @@ def compute_employer_fill_stats(dry_run: bool = False):
     print(f"Dry run: {dry_run}")
     print()
 
-    # Step 1: Fetch closed roles (url_status = '404')
-    print("[DATA] Fetching closed roles (url_status = 404)...")
+    # Step 1: Fetch closed roles (url_status = '404' or 'soft_404')
+    print("[DATA] Fetching closed roles (url_status = 404 or soft_404)...")
 
     try:
         closed_roles = []
@@ -50,7 +50,7 @@ def compute_employer_fill_stats(dry_run: bool = False):
             result = supabase.table("enriched_jobs") \
                 .select("employer_name, posted_date, url_checked_at") \
                 .in_("data_source", ["greenhouse", "lever", "ashby"]) \
-                .eq("url_status", "404") \
+                .in_("url_status", ["404", "soft_404"]) \
                 .not_.is_("url_checked_at", "null") \
                 .range(offset, offset + page_size - 1) \
                 .execute()
@@ -65,7 +65,7 @@ def compute_employer_fill_stats(dry_run: bool = False):
                 break
             offset += page_size
 
-        print(f"[OK] Found {len(closed_roles)} confirmed closed roles (404)")
+        print(f"[OK] Found {len(closed_roles)} confirmed closed roles (404/soft_404)")
 
         if not closed_roles:
             print("\n[WARN] No 404 roles found. Run url_validator.py first to detect closed jobs.")

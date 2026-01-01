@@ -10,6 +10,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Use instead:** `[DONE]`, `[TODO]`, `[IN PROGRESS]`, `[WARNING]`, `[OK]`, `[NOT OK]`
 
+## IMPORTANT: Use Skills When Relevant
+
+Before starting any task, check if it matches a skill in `.claude/skills/`. If it does:
+1. Invoke the skill immediately using the Skill tool
+2. Follow the skill's documented steps exactly - do not improvise
+
+| Skill | Trigger |
+|-------|---------|
+| `gha-analyzer` | Analyze GHA logs, debug workflows, check pipeline health |
+| `company-curator` | Add/validate companies, check broken career pages |
+| `config-validator` | Validate YAML/JSON, add skill/agency/location mappings |
+| `data-analyst` | Create reports, analyze trends, generate content |
+| `qa-tester` | Review test coverage, write tests, identify regressions |
+| `repo-reviewer` | Audit repo, find duplication, identify stale files |
+| `system-architect` | Plan features, review architecture decisions |
+| `ux-designer` | Design UI components, review user flows |
+
 > **For documentation navigation, see [`docs/README.md`](docs/README.md)**
 
 ## Project Overview
