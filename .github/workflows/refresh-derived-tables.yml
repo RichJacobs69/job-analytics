@@ -9,7 +9,7 @@ name: URL Validation & Stats (Daily)
 on:
   schedule:
     # Run at 9:00 AM UTC (after Greenhouse batch at 7:00 AM completes)
-    - cron: '0 9 * * 1-4'  # Monday-Thursday (matches Greenhouse schedule)
+    - cron: '0 9 * * 1-5'  # Monday-Friday (weekday schedule)
   workflow_dispatch:
     inputs:
       url_limit:

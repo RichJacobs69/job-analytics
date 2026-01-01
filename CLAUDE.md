@@ -207,11 +207,11 @@ Uses JSONB array for flexible multi-location support:
 ## GitHub Actions Workflows
 
 Located in `.github/workflows/`:
-- `scrape-greenhouse.yml` - Mon/Wed/Fri/Sun 7AM UTC (4 batches, ~100 companies each)
-- `scrape-adzuna.yml` - Tue/Thu/Sat 7AM UTC (5 cities)
-- `scrape-lever.yml` - Sun/Mon/Wed/Fri 6PM UTC (evening slot)
-- `scrape-ashby.yml` - Tue/Thu/Sat 6PM UTC (evening slot)
-- `refresh-derived-tables.yml` - Mon-Thu 9AM UTC (URL validation + employer stats)
+- `scrape-greenhouse.yml` - Mon/Tue/Thu/Fri 7AM UTC (4 batches, ~100 companies each)
+- `scrape-adzuna.yml` - Wed 7AM UTC (5 cities, weekly)
+- `scrape-lever.yml` - Mon/Wed/Fri 6PM UTC (evening slot)
+- `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
+- `refresh-derived-tables.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
 
 ## Key References
 

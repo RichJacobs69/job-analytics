@@ -1,6 +1,6 @@
 # Database Schema Updates
 
-**Last Updated:** December 2, 2025
+**Last Updated:** January 1, 2026
 **Status:** All migrations complete and verified
 
 This document tracks all database schema changes for the job-analytics platform.
@@ -11,7 +11,9 @@ This document tracks all database schema changes for the job-analytics platform.
 
 1. [Migration 1: Source Tracking (enriched_jobs)](#migration-1-source-tracking-enriched_jobs)
 2. [Migration 2: Title and Company Fields (raw_jobs)](#migration-2-title-and-company-fields-raw_jobs)
-3. [Current Schema Reference](#current-schema-reference)
+3. [Migrations 014-015: URL Validation Timestamps](#migrations-014-015-url-validation-timestamps)
+4. [Migration 016: URL Status Expansion](#migration-016-url-status-expansion)
+5. [Current Schema Reference](#current-schema-reference)
 
 ---
 
@@ -126,6 +128,125 @@ CREATE INDEX IF NOT EXISTS idx_raw_jobs_company ON raw_jobs(company);
 
 ---
 
+## Migrations 014-015: URL Validation Timestamps
+
+**Date:** December 31, 2025
+**Purpose:** Add timestamp columns for URL validation tracking
+**Status:** Complete
+
+### Summary
+
+Added `url_checked_at` and `updated_at` columns to support URL validation lifecycle for the curated job feed.
+
+### Changes Applied
+
+```sql
+-- Migration 014: Add url_checked_at
+ALTER TABLE enriched_jobs
+ADD COLUMN IF NOT EXISTS url_checked_at TIMESTAMP WITH TIME ZONE;
+
+CREATE INDEX IF NOT EXISTS idx_enriched_jobs_url_checked_at
+ON enriched_jobs(url_checked_at);
+
+-- Migration 015: Add updated_at with auto-update trigger
+ALTER TABLE enriched_jobs
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_enriched_jobs_updated_at
+    BEFORE UPDATE ON enriched_jobs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+```
+
+### Benefits
+
+- Track when each job URL was last validated
+- Support 3-day recheck window (avoid redundant validation)
+- Auto-update timestamp on any record change
+
+---
+
+## Migration 016: URL Status Expansion
+
+**Date:** January 1, 2026
+**Purpose:** Expand url_status constraint for soft 404 detection and set default to 'active'
+**Status:** Complete
+
+### Summary
+
+Expanded the `url_status` constraint to support soft 404 detection (pages that return HTTP 200 but show "job closed" content) and Playwright fallback for bot-protected sites. Changed default from 'unknown' to 'active' since freshly scraped jobs have working URLs.
+
+### Changes Applied
+
+```sql
+-- Drop old constraint
+ALTER TABLE enriched_jobs DROP CONSTRAINT IF EXISTS valid_url_status;
+
+-- Add new constraint with expanded values
+ALTER TABLE enriched_jobs
+ADD CONSTRAINT valid_url_status
+CHECK (url_status IN ('active', '404', 'soft_404', 'blocked', 'unverifiable', 'error', 'redirect', 'unknown'));
+
+-- Change default to 'active' (freshly scraped = working URL)
+ALTER TABLE enriched_jobs ALTER COLUMN url_status SET DEFAULT 'active';
+
+-- Backfill: Set NULL/unknown to 'active' for existing jobs
+UPDATE enriched_jobs
+SET url_status = 'active'
+WHERE url_status IS NULL OR url_status = 'unknown';
+```
+
+### URL Status Values
+
+| Status | Meaning | Terminal? |
+|--------|---------|-----------|
+| `active` | Job page loads correctly | No (recheck after 3 days) |
+| `404` | HTTP 404 response | Yes (never recheck) |
+| `soft_404` | HTTP 200 but content says "job closed/filled" | Yes (never recheck) |
+| `blocked` | HTTP 403 (bot protection) | No (retry with Playwright) |
+| `unverifiable` | Playwright also blocked (Cloudflare/CAPTCHA) | No (keep in feed) |
+| `error` | Network timeout or other error | No (retry next run) |
+
+### Code Changes
+
+**Modified:** `pipeline/db_connection.py`
+- Added `url_status: str = 'active'` parameter to `insert_enriched_job()`
+- New jobs now default to 'active' status
+
+**Modified:** `pipeline/url_validator.py`
+- Added soft 404 pattern detection (13 patterns)
+- Added bot protection detection (10 patterns)
+- Added Playwright fallback for blocked URLs
+- Added oldest-first ordering for validation priority
+- Skip 404/soft_404 jobs (terminal states)
+
+**Modified:** `pipeline/employer_stats.py`
+- Include soft_404 in fill time calculations (closed = 404 OR soft_404)
+
+### Validation Results (2026-01-01)
+
+Initial full validation of 2,548 ATS jobs:
+
+| Status | Count | % |
+|--------|-------|---|
+| active | 2,985 | 79.7% |
+| 404 | 171 | 4.6% |
+| soft_404 | 280 | 7.5% |
+| unverifiable | 121 | 3.2% |
+| error | 190 | 5.1% |
+
+**451 dead links identified (12.1%)** - excluded from job feed.
+
+---
+
 ## Current Schema Reference
 
 ### `raw_jobs` Table
@@ -171,16 +292,20 @@ CREATE INDEX IF NOT EXISTS idx_raw_jobs_company ON raw_jobs(company);
 | **description_source** | **text** | **YES** | **Which source provided description (NEW)** |
 | **deduplicated** | **boolean** | **YES** | **Whether job was merged from multiple sources (NEW)** |
 | **original_url_secondary** | **text** | **YES** | **Secondary URL if merged (NEW)** |
-| **merged_from_source** | **text** | **YES** | **Which source was merged in (NEW)** |
+| **merged_from_source** | **text** | **YES** | **Which source was merged in** |
+| **url_status** | **text** | **NO** | **URL validation status (default: 'active')** |
+| **url_checked_at** | **timestamp** | **YES** | **When URL was last validated** |
+| **updated_at** | **timestamp** | **YES** | **Auto-updated on any change** |
 | ... | ... | ... | (plus compensation, skills, dates, etc.) |
 
 **Indexes:**
 - `idx_enriched_jobs_job_hash` (UNIQUE)
 - `idx_enriched_jobs_city_code`
 - `idx_enriched_jobs_job_family`
-- `idx_enriched_jobs_data_source` **(NEW)**
-- `idx_enriched_jobs_deduplicated` **(NEW)**
-- `idx_enriched_jobs_description_source` **(NEW)**
+- `idx_enriched_jobs_data_source`
+- `idx_enriched_jobs_deduplicated`
+- `idx_enriched_jobs_description_source`
+- `idx_enriched_jobs_url_checked_at`
 
 ---
 
@@ -320,6 +445,16 @@ DROP COLUMN IF EXISTS company;
 ## Next Planned Migrations
 
 No migrations currently planned. Future schema changes will be documented here.
+
+### Migration History
+
+| Migration | Date | Purpose |
+|-----------|------|---------|
+| 001 | Nov 21, 2025 | Source tracking columns |
+| 002 | Dec 2, 2025 | Raw jobs title/company fields |
+| 010-013 | Dec 27-31, 2025 | Job feed infrastructure (employer_fill_stats, summary, url_status) |
+| 014-015 | Dec 31, 2025 | URL validation timestamps |
+| 016 | Jan 1, 2026 | URL status expansion (soft_404, default 'active') |
 
 ---
 

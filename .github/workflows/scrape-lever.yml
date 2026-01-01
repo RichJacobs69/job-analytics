@@ -2,8 +2,7 @@ name: Scrape Lever (Every 48h)
 
 on:
   schedule:
-    # Evening slot on Greenhouse days (avoids morning heavy scrapers)
-    - cron: '0 18 * * 0'  # Sunday at 6:00 PM UTC
+    # Weekday evening slot (jobs are posted Mon-Fri)
     - cron: '0 18 * * 1'  # Monday at 6:00 PM UTC
     - cron: '0 18 * * 3'  # Wednesday at 6:00 PM UTC
     - cron: '0 18 * * 5'  # Friday at 6:00 PM UTC

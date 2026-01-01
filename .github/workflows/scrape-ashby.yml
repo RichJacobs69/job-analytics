@@ -1,11 +1,10 @@
-name: Scrape Ashby (Tue/Thu/Sat)
+name: Scrape Ashby (Tue/Thu)
 
 on:
   schedule:
-    # Evening slot on Adzuna days (avoids morning heavy scrapers)
+    # Weekday evening slot (jobs are posted Mon-Fri)
     - cron: '0 18 * * 2'  # Tuesday at 6:00 PM UTC
     - cron: '0 18 * * 4'  # Thursday at 6:00 PM UTC
-    - cron: '0 18 * * 6'  # Saturday at 6:00 PM UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:

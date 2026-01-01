@@ -8,9 +8,11 @@ This directory contains all specifications, guides, and architectural documentat
 
 | Pipeline | Schedule | Status |
 |----------|----------|--------|
-| Greenhouse | Daily Mon-Thu | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
-| Lever | Every 48h | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
-| Adzuna | Every 48h | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
+| Greenhouse | Mon/Tue/Thu/Fri 7AM UTC | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
+| Lever | Mon/Wed/Fri 6PM UTC | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
+| Ashby | Tue/Thu 6PM UTC | ![Ashby](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-ashby.yml/badge.svg) |
+| Adzuna | Wed 7AM UTC | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
+| URL Validation | Mon-Fri 9AM UTC | ![Validation](https://github.com/RichJacobs69/job-analytics/actions/workflows/refresh-derived-tables.yml/badge.svg) |
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
@@ -111,8 +113,9 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 | Cost per classified job | $0.00976 | 2025-12-04 (point-in-time) |
 | Classification rate | 58% | 2025-12-04 (point-in-time) |
 | Model | Claude 3.5 Haiku | - |
-| **Current dataset size** | 5,629 enriched jobs | 2025-12-07 (Supabase) |
-| **Companies configured** | 302 Greenhouse companies | 2025-12-07 (config) |
+| **Current dataset size** | ~20,000 enriched jobs | 2026-01-01 (Supabase) |
+| **ATS jobs (Greenhouse/Lever/Ashby)** | 3,747 jobs | 2026-01-01 |
+| **Dead links detected** | 451 (12%) | 2026-01-01 |
 
 ## Testing Documentation
 

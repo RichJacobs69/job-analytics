@@ -217,6 +217,10 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
                     f"url_checked_at.is.null,url_checked_at.lt.{recheck_threshold}"
                 )
 
+            # Order by oldest first - older jobs more likely to be dead
+            # NULLs last since new jobs are almost certainly active
+            query = query.order("url_checked_at", nullsfirst=False)
+
             result = query.range(offset, offset + page_size - 1).execute()
 
             if not result.data:

@@ -3,7 +3,7 @@
 **Epic ID:** EPIC-008
 **Version:** 1.1
 **Created:** 2025-12-27
-**Updated:** 2025-12-31
+**Updated:** 2026-01-01
 **Owner:** Rich
 **Status:** In Progress (Phase 1 Infrastructure Complete)
 
@@ -15,15 +15,16 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Database Migrations** | [DONE] | 010, 012, 013 executed on Supabase |
+| **Database Migrations** | [DONE] | 010, 012, 013, 014, 015, 016 executed on Supabase |
 | `employer_fill_stats` table | [DONE] | Stores median fill times per employer |
 | `enriched_jobs.summary` column | [DONE] | AI-generated role summaries (inline, migration 013) |
-| `url_status` column | [DONE] | 404 detection for dead link filtering |
+| `url_status` column | [DONE] | Expanded: active, 404, soft_404, blocked, unverifiable, error (migration 016) |
+| `url_checked_at` column | [DONE] | Tracks last validation timestamp (migration 014/015) |
 | **Pipeline Scripts** | [DONE] | Summary generation now inline in classifier |
-| `employer_stats.py` | [DONE] | Uses 404 as closed signal (not last_seen_date) |
+| `employer_stats.py` | [DONE] | Uses 404 + soft_404 as closed signal |
 | `classifier.py` | [DONE] | Now generates summaries inline during classification |
-| `url_validator.py` | [DONE] | Parallel HTTP HEAD checks, 10 workers |
-| **GitHub Actions** | [DONE] | `refresh-derived-tables.yml` (URL validation + stats only) |
+| `url_validator.py` | [DONE] | Soft 404 detection, Playwright fallback, oldest-first ordering |
+| **GitHub Actions** | [DONE] | `refresh-derived-tables.yml` Mon-Fri (weekday schedule) |
 | **API Endpoints** | [DONE] | 2 new endpoints in portfolio-site |
 | `/api/hiring-market/jobs/feed` | [DONE] | 5 groups, all working |
 | `/api/hiring-market/jobs/[id]/context` | [DONE] | Summary + fit signals |
@@ -43,7 +44,11 @@
 
 | Decision | Rationale |
 |----------|-----------|
-| **404 for closed detection** | More reliable than `last_seen_date` heuristic |
+| **404 + soft_404 for closed detection** | Detects both HTTP 404s and pages showing "job closed" content |
+| **Soft 404 pattern matching** | Many ATS pages return 200 but show "position filled" text |
+| **Playwright fallback for blocked URLs** | Handles 403 bot protection (Coinbase, Pinterest, Epic Games) |
+| **Oldest-first validation ordering** | Older jobs more likely to be dead; maximizes ROI of validation budget |
+| **Weekday-only schedules** | Jobs posted Mon-Fri; no value in weekend scraping/validation |
 | **Fixed 30-day threshold for "Still Hiring"** | Simpler than employer median comparison; median is display-only |
 | **Inline summary generation** | Summaries generated during classification (single Gemini call), not batch. Ensures 100% data completeness, eliminates GHA runaway risk |
 | **Summary in enriched_jobs column** | Simpler than separate table; no JOIN needed; `job_summaries` table deprecated |
