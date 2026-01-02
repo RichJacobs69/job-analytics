@@ -1,3 +1,8 @@
+---
+name: security-audit
+description: Comprehensive security audit of the job analytics platform. Tests actual entry points (API, Supabase, frontend), scans for credential exposure, validates RLS policies, and generates prioritized remediation reports. Use when auditing security, preparing for launch, or hardening MVP.
+---
+
 # Security Audit Skill
 
 **Purpose:** Comprehensive security audit of the job analytics platform, testing actual entry points and generating actionable, prioritized remediation reports for MVP-stage security hardening.
