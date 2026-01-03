@@ -1,9 +1,9 @@
 # Job Feed UX Design
 
 **Epic:** EPIC-008 Curated Job Feed
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-01-03
-**Status:** Prototype Complete
+**Status:** Prototype Complete (Iteration 2)
 
 ---
 
@@ -63,9 +63,9 @@
 ```
 +------------------------------------------------------------------------+
 | LEFT (flex-1)                   | CENTER (max-w-280)    | RIGHT        |
-| Title (lg, semibold, white)     | [Skill] [Skill]       | [v] [Apply]  |
-| Company . Location . Arrangement| [Skill] [Skill] +N    |              |
-| Posted . Salary                 |                       |              |
+| Title (lg, semibold, white)     | [Skill] [Skill]       | [Details v]  |
+| Company . Location . Arrangement| [Skill] [Skill] +N    | [Apply]      |
+| Posted . Salary                 |   (muted, display-only)|              |
 +------------------------------------------------------------------------+
 ```
 
@@ -87,9 +87,12 @@
 |---------|---------|--------|
 | Title | `text-lg font-semibold text-white truncate` | `text-base` |
 | Meta | `text-sm text-gray-400` | Same |
-| Skills | `text-sm bg-gray-800 border border-gray-700/50 px-3 py-1.5` | `text-xs px-2.5 py-1` |
+| Skills | `text-xs bg-gray-800/40 text-gray-500 rounded-md select-none cursor-default` | Same |
 | Salary | `text-xs text-gray-400` | Same |
+| Details | `text-xs text-gray-500` with chevron | Icon only on mobile |
 | Apply | `bg-lime-500/10 text-lime-400 px-4 py-2` | Same |
+
+**Skills Note:** Skills are display-only labels, not interactive filters. Muted styling prevents rage clicks.
 
 **States:**
 
@@ -142,12 +145,45 @@
 
 ### JobFilters
 
-**Desktop (Inline):**
+**Desktop (Inline with Separators):**
 
 ```
-+------------------------------------------------------------------------+
-| [City v] [Role pill] [Role pill] [Level pill] [Level pill]    [Reset] |
-+------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------+
+| [City v] | [Data] [Product] [Delivery] [+ Roles v] | [Jr] [Mid] [Sr] [Staff+] | [Has Salary] | Reset (n)
++-------------------------------------------------------------------------------------------+
+              ^                            ^                                        ^
+           Family pills              Dropdown popover                    US cities only
+```
+
+**Job Family Hierarchy:**
+
+```
+Data (9 roles)           Product (6 roles)       Delivery (4 roles)
++- data_analyst          +- product_manager      +- delivery_manager
++- data_engineer         +- core_pm              +- project_manager
++- analytics_engineer    +- growth_pm            +- programme_manager
++- data_scientist        +- platform_pm          +- scrum_master
++- ml_engineer           +- technical_pm
++- ai_engineer           +- ai_ml_pm
++- research_scientist_ml
++- data_architect
++- product_analytics
+```
+
+**"+ Roles" Dropdown:**
+
+```
++----------------------------------+
+| DATA                             |
+| [Data Analyst] [Data Engineer]   |
+| [Analytics Engineer] ...         |
+|                                  |
+| PRODUCT                          |
+| [Product Manager] [Core PM] ...  |
+|                                  |
+| DELIVERY                         |
+| [Delivery Manager] ...           |
++----------------------------------+
 ```
 
 **Mobile (Collapsed -> Bottom Sheet):**
@@ -164,14 +200,19 @@
 | Location                         |
 | [Dropdown]                       |
 |                                  |
-| Role                             |
-| [pill] [pill] [pill]             |
+| Job Family                       |
+| [Data] [Product] [Delivery]      |
+|                                  |
+| Specific Roles                   |
+| DATA: [pill] [pill] ...          |
+| PRODUCT: [pill] [pill] ...       |
+| DELIVERY: [pill] [pill] ...      |
 |                                  |
 | Seniority                        |
-| [pill] [pill] [pill]             |
+| [Jr] [Mid] [Sr] [Staff+]         |
 |                                  |
-| Arrangement                      |
-| [pill] [pill] [pill]             |
+| Compensation (US only)           |
+| [Has Salary]                     |
 |                                  |
 | [Apply Filters]                  |
 +----------------------------------+
@@ -181,8 +222,13 @@
 
 | State | Style |
 |-------|-------|
-| Inactive | `bg-gray-800 text-gray-400 border-transparent` |
-| Active | `bg-lime-500/20 text-lime-400 border-lime-500/30` |
+| Inactive | `bg-gray-800 text-gray-400 border-transparent rounded-full` |
+| Active | `bg-lime-500/20 text-lime-400 border-lime-500/30 rounded-full` |
+
+**Salary Toggle (US Cities Only):**
+
+Shown only when city is New York, Denver, or San Francisco (salary transparency laws).
+Displayed as a toggle pill for visual consistency with other filters.
 
 ---
 
@@ -292,6 +338,12 @@ app/projects/hiring-market/jobs/
 | 2026-01-03 | Vertical layout over horizontal scroll | Easier expand/collapse; better for detailed review |
 | 2026-01-03 | Dividers between groups | Clear visual separation for focused scanning |
 | 2026-01-03 | Mobile skills below content | No room inline; separate row maintains readability |
+| 2026-01-03 | Muted skill badges (no border) | Prevents rage clicks - skills look like labels, not buttons |
+| 2026-01-03 | "Details" text + chevron | Clearer affordance than icon-only expand trigger |
+| 2026-01-03 | Family pills + roles dropdown | 19 subfamilies too many for flat pills; hierarchy scales |
+| 2026-01-03 | Salary as toggle pill | Visual consistency; checkbox looked out of place |
+| 2026-01-03 | US-only salary filter | Only NY, CO, CA have transparency laws; honest about data limits |
+| 2026-01-03 | Visual separators in filter bar | Groups related controls; reduces cognitive load |
 
 ---
 
