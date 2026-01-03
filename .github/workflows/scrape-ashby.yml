@@ -1,4 +1,4 @@
-name: Scrape Ashby (Tue/Thu)
+name: Scrape Ashby (Tue/Thu 6PM UTC)
 
 on:
   schedule:
