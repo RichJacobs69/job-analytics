@@ -3,9 +3,9 @@
 **Epic ID:** EPIC-008
 **Version:** 1.1
 **Created:** 2025-12-27
-**Updated:** 2026-01-01
+**Updated:** 2026-01-03
 **Owner:** Rich
-**Status:** In Progress (Phase 1 Infrastructure Complete)
+**Status:** In Progress (Phase 2 Frontend Prototype Complete)
 
 ---
 
@@ -29,16 +29,20 @@
 | `/api/hiring-market/jobs/feed` | [DONE] | 5 groups, all working |
 | `/api/hiring-market/jobs/[id]/context` | [DONE] | Summary + fit signals |
 
-### Phase 2: Frontend [NOT STARTED]
+### Phase 2: Frontend [PROTOTYPE COMPLETE]
 
-| Component | Status |
-|-----------|--------|
-| Job feed page (`/projects/hiring-market/jobs`) | [TODO] |
-| Filter bar component | [TODO] |
-| Job card component | [TODO] |
-| Expandable card with context | [TODO] |
-| localStorage persistence | [TODO] |
-| Analytics dashboard CTA | [TODO] |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Job feed page (`/projects/hiring-market/jobs`) | [DONE] | Static sample data, stacked groups |
+| Filter bar component | [DONE] | Family pills + roles dropdown, US-only salary toggle |
+| Job card component | [DONE] | 3-column layout, muted skills, Details text |
+| Expandable card with context | [DONE] | Summary + fit signals sections |
+| localStorage persistence | [TODO] | Not yet wired up |
+| Analytics dashboard CTA | [TODO] | "View X jobs" button |
+| API integration | [TODO] | Connect prototype to live /feed endpoint |
+| Loading/empty states | [TODO] | Skeleton loaders, no-results messaging |
+
+**UX Design Spec:** See `docs/design/JOB_FEED_UX_DESIGN.md` for detailed component specs, responsive breakpoints, and design decisions log.
 
 ### Key Design Decisions
 
@@ -54,6 +58,11 @@
 | **Summary in enriched_jobs column** | Simpler than separate table; no JOIN needed; `job_summaries` table deprecated |
 | **REST not GraphQL** | 2 endpoints don't justify new tooling/patterns |
 | **localStorage + URL params** | No auth needed, shareable URLs |
+| **Greenhouse + Lever + Ashby sources** | All three provide direct ATS links; Ashby has best salary data |
+| **Family pills + roles dropdown** | 19 subfamilies too many for flat pills; hierarchy scales |
+| **US-only salary filter** | Only NY, CO, CA have transparency laws; honest about data limits |
+| **Muted skill badges** | Prevents rage clicks; skills are display-only, not filters |
+| **Single column stacked groups** | Users scan sequentially; 2-column caused confusion |
 
 ### Test Results (2025-12-30)
 
@@ -238,7 +247,7 @@ The feed is organised into **semantic groups**, each curated to max 5 jobs. This
 - A job can appear in multiple groups (e.g., fresh + remote + top comp)
 - Groups with 0 matching jobs are hidden
 - Each group shows max 7 jobs, sorted by relevance within group
-- Source filter: Greenhouse + Lever only (no Adzuna) for direct-apply UX
+- Source filter: Greenhouse + Lever + Ashby (no Adzuna) for direct-apply UX
 - "Show more" available if group has additional matches beyond 7
 
 ```
@@ -246,12 +255,12 @@ The feed is organised into **semantic groups**, each curated to max 5 jobs. This
 │  [Logo]  Jobs for You    [Market Trends →]                 │
 ├─────────────────────────────────────────────────────────────┤
 │  FILTERS (sticky on scroll)                                 │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐       │
-│  │ City ▼  │ │ Role ▼  │ │ Level ▼ │ │ Arrangement ▼│       │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────────┘       │
-│                                          [Reset Filters]    │
+│  [City v] | [Data] [Product] [Delivery] [+ Roles v]        │
+│           | [Jr] [Mid] [Sr] [Staff+] | [Has Salary*]       │
+│                                          [Reset (n)]        │
+│  * Has Salary only shown for US cities (NY, CO, CA)        │
 ├─────────────────────────────────────────────────────────────┤
-│  YOUR MATCHES · Analytics Engineer · Senior · London        │
+│  YOUR MATCHES · Data · Senior · London                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  🆕 FRESH MATCHES (3)                                       │
@@ -557,13 +566,14 @@ function getScalingCaveat(): string {
 
 ### Source Filtering
 
-**Critical:** Only Greenhouse and Lever jobs appear in the curated feed.
+**Critical:** Only Greenhouse, Lever, and Ashby jobs appear in the curated feed.
 
 ```sql
-WHERE source IN ('greenhouse', 'lever')
+WHERE data_source IN ('greenhouse', 'lever', 'ashby')
 ```
 
 Adzuna jobs excluded due to poor apply UX (redirect chains, registration gates).
+Ashby added 2026-01-03 for best-in-class salary data (structured compensation fields).
 
 ### Role Summary Generation
 
