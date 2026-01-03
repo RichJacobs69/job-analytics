@@ -1,4 +1,4 @@
-name: Scrape Adzuna (Weekly)
+name: Scrape Adzuna (Wed 7AM UTC)
 
 on:
   schedule:

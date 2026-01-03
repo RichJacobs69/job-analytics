@@ -1,4 +1,4 @@
-name: Scrape Lever (Every 48h)
+name: Scrape Lever (Mon/Wed/Fri 6PM UTC)
 
 on:
   schedule:

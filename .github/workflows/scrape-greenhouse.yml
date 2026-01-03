@@ -1,4 +1,4 @@
-name: Scrape Greenhouse (Daily Batch)
+name: Scrape Greenhouse (Mon/Tue/Thu/Fri 7AM UTC)
 
 on:
   schedule:
