@@ -126,7 +126,8 @@ def check_url(url: str) -> Tuple[str, Optional[int], Optional[str]]:
         - ('active', 200, url) for valid URLs with live job
         - ('soft_404', 200, url) for pages that return 200 but show "not found" content
         - ('404', 404, url) for not found
-        - ('blocked', 403, url) for bot-blocked sites
+        - ('410', 410, url) for permanently removed (gone)
+        - ('blocked', 403/202, url) for bot-blocked or async-loading sites
         - ('error', None, None) for network errors
     """
     try:
@@ -143,11 +144,17 @@ def check_url(url: str) -> Tuple[str, Optional[int], Optional[str]]:
 
         if status_code == 404:
             return ('404', status_code, final_url)
+        elif status_code == 410:
+            # 410 Gone = permanently removed, treat same as 404
+            return ('410', status_code, final_url)
         elif status_code == 403:
             # Bot detection / access denied
             return ('blocked', status_code, final_url)
         elif status_code >= 500:
             return ('error', status_code, final_url)
+        elif status_code == 202:
+            # 202 Accepted = async loading page (e.g., Waymo), needs Playwright
+            return ('blocked', status_code, final_url)
         elif status_code == 200:
             # Check for URL-based error signals (e.g., ?error=true)
             if 'error=true' in final_url.lower() or 'notfound' in final_url.lower():
@@ -204,11 +211,11 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
         page_size = 1000
 
         while True:
-            # Build query - skip confirmed dead jobs (404/soft_404 are terminal)
+            # Build query - skip confirmed dead jobs (404/410/soft_404 are terminal)
             query = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id") \
                 .in_("data_source", ["greenhouse", "lever", "ashby"]) \
-                .not_.in_("url_status", ["404", "soft_404"])
+                .not_.in_("url_status", ["404", "410", "soft_404"])
 
             if not force:
                 # Only check jobs not recently validated
@@ -296,6 +303,7 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
     results = {
         'active': 0,
         '404': 0,
+        '410': 0,
         'soft_404': 0,
         'blocked': 0,
         'unverifiable': 0,
@@ -334,9 +342,11 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
                 results[status] += 1
                 processed += 1
 
-                # Log 404s and soft_404s specifically
+                # Log dead links specifically
                 if status == '404':
                     print(f"      [404] {result['url'][:60]}...")
+                elif status == '410':
+                    print(f"      [410 GONE] {result['url'][:60]}...")
                 elif status == 'soft_404':
                     print(f"      [SOFT 404] {result['url'][:60]}...")
                 elif status == 'blocked':
@@ -401,17 +411,18 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
     print(f"URLs checked: {processed}")
     print(f"  Active (200): {results['active']}")
     print(f"  Not Found (404): {results['404']}")
+    print(f"  Gone (410): {results['410']}")
     print(f"  Soft 404 (content says closed): {results['soft_404']}")
     print(f"  Blocked (403, unresolved): {results['blocked']}")
     print(f"  Unverifiable (Playwright failed): {results['unverifiable']}")
     print(f"  Redirect (3xx): {results['redirect']}")
     print(f"  Error (timeout/network): {results['error']}")
 
-    dead_total = results['404'] + results['soft_404']
+    dead_total = results['404'] + results['410'] + results['soft_404']
     if dead_total > 0:
         pct_dead = dead_total / processed * 100
         print(f"\n[WARN] {dead_total} dead links found ({pct_dead:.1f}%)")
-        print(f"       ({results['404']} hard 404, {results['soft_404']} soft 404)")
+        print(f"       ({results['404']} hard 404, {results['410']} gone 410, {results['soft_404']} soft 404)")
         print("       These will be excluded from the job feed.")
 
     if results['blocked'] > 0:
@@ -456,7 +467,7 @@ def verify_url_status():
         print(f"\nURL status distribution (Greenhouse/Lever/Ashby):")
         print("-" * 40)
 
-        for status in ['active', '404', 'soft_404', 'blocked', 'unverifiable', 'redirect', 'error', 'unknown']:
+        for status in ['active', '404', '410', 'soft_404', 'blocked', 'unverifiable', 'redirect', 'error', 'unknown']:
             count = status_counts.get(status, 0)
             pct = count / total * 100 if total > 0 else 0
             bar = '#' * int(pct / 2)  # Use # instead of █ for Windows compatibility

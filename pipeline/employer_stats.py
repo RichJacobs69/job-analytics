@@ -6,8 +6,8 @@ Part of: EPIC-008 Curated Job Feed
 Runs: Nightly via GitHub Actions (after url_validator.py completes)
 
 Logic:
-- "Closed" role = url_status = '404' (definitively closed, URL no longer exists)
-- Fill time = days between posted_date and url_checked_at (when 404 was detected)
+- "Closed" role = url_status in ('404', '410', 'soft_404') - definitively closed
+- Fill time = days between posted_date and url_checked_at (when dead link was detected)
 - Median fill time = informational metric for users, not a filter criterion
 - Minimum sample size = 3 (for meaningful statistics)
 """
@@ -25,8 +25,8 @@ def compute_employer_fill_stats(dry_run: bool = False):
     """
     Compute median fill times per employer and upsert to employer_fill_stats table.
 
-    Uses 404 detection as the definitive signal that a job is closed.
-    Fill time = posted_date to url_checked_at (when 404 was detected).
+    Uses 404/410/soft_404 as definitive signals that a job is closed.
+    Fill time = posted_date to url_checked_at (when dead link was detected).
 
     Args:
         dry_run: If True, show what would be computed without updating database
@@ -38,8 +38,8 @@ def compute_employer_fill_stats(dry_run: bool = False):
     print(f"Dry run: {dry_run}")
     print()
 
-    # Step 1: Fetch closed roles (url_status = '404' or 'soft_404')
-    print("[DATA] Fetching closed roles (url_status = 404 or soft_404)...")
+    # Step 1: Fetch closed roles (url_status = '404', '410', or 'soft_404')
+    print("[DATA] Fetching closed roles (url_status = 404/410/soft_404)...")
 
     try:
         closed_roles = []
@@ -50,7 +50,7 @@ def compute_employer_fill_stats(dry_run: bool = False):
             result = supabase.table("enriched_jobs") \
                 .select("employer_name, posted_date, url_checked_at") \
                 .in_("data_source", ["greenhouse", "lever", "ashby"]) \
-                .in_("url_status", ["404", "soft_404"]) \
+                .in_("url_status", ["404", "410", "soft_404"]) \
                 .not_.is_("url_checked_at", "null") \
                 .range(offset, offset + page_size - 1) \
                 .execute()
@@ -65,10 +65,10 @@ def compute_employer_fill_stats(dry_run: bool = False):
                 break
             offset += page_size
 
-        print(f"[OK] Found {len(closed_roles)} confirmed closed roles (404/soft_404)")
+        print(f"[OK] Found {len(closed_roles)} confirmed closed roles (404/410/soft_404)")
 
         if not closed_roles:
-            print("\n[WARN] No 404 roles found. Run url_validator.py first to detect closed jobs.")
+            print("\n[WARN] No closed roles found. Run url_validator.py first to detect dead links.")
             return
 
     except Exception as e:
