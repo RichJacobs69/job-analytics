@@ -1,11 +1,11 @@
 # Epic: Curated Job Feed
 
 **Epic ID:** EPIC-008
-**Version:** 1.1
+**Version:** 1.2
 **Created:** 2025-12-27
 **Updated:** 2026-01-03
 **Owner:** Rich
-**Status:** In Progress (Phase 2 Frontend Prototype Complete)
+**Status:** In Progress (Phase 2 API Integration Complete)
 
 ---
 
@@ -29,18 +29,21 @@
 | `/api/hiring-market/jobs/feed` | [DONE] | 5 groups, all working |
 | `/api/hiring-market/jobs/[id]/context` | [DONE] | Summary + fit signals |
 
-### Phase 2: Frontend [PROTOTYPE COMPLETE]
+### Phase 2: Frontend [API INTEGRATION COMPLETE]
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Job feed page (`/projects/hiring-market/jobs`) | [DONE] | Static sample data, stacked groups |
+| Job feed page (`/projects/hiring-market/jobs`) | [DONE] | Live API data, stacked groups |
 | Filter bar component | [DONE] | Family pills + roles dropdown, US-only salary toggle |
 | Job card component | [DONE] | 3-column layout, muted skills, Details text |
-| Expandable card with context | [DONE] | Summary + fit signals sections |
+| Expandable card with context | [DONE] | Fetches summary + fit signals on expand |
+| API integration | [DONE] | Connected to live /feed endpoint with filter params |
+| Loading/empty/error states | [DONE] | Skeleton loaders, no-results messaging, retry button |
+| Relevance sorting | [DONE] | Location primacy > freshness > filter matches |
+| Exclusive group routing | [DONE] | Each job appears in exactly one group (no duplicates) |
+| Country-scoped remote filtering | [DONE] | Post-filters to exclude wrong-country remote jobs |
 | localStorage persistence | [TODO] | Not yet wired up |
 | Analytics dashboard CTA | [TODO] | "View X jobs" button |
-| API integration | [TODO] | Connect prototype to live /feed endpoint |
-| Loading/empty states | [TODO] | Skeleton loaders, no-results messaging |
 
 **UX Design Spec:** See `docs/design/JOB_FEED_UX_DESIGN.md` for detailed component specs, responsive breakpoints, and design decisions log.
 
@@ -63,6 +66,10 @@
 | **US-only salary filter** | Only NY, CO, CA have transparency laws; honest about data limits |
 | **Muted skill badges** | Prevents rage clicks; skills are display-only, not filters |
 | **Single column stacked groups** | Users scan sequentially; 2-column caused confusion |
+| **Relevance scoring algorithm** | Location primacy (100) > Freshness (0-50) > Filter matches (10 each) > Salary bonus (5) |
+| **Exclusive group routing** | Each job in exactly one group; priority: Remote > Fresh > Top Comp > Still Hiring > Scaling |
+| **Post-filter for country-scoped remote** | PostgREST can't do multi-key JSONB in OR; filter in application layer |
+| **Context fetch on expand** | Summary + fit signals fetched lazily to reduce initial payload |
 
 ### Test Results (2025-12-30)
 

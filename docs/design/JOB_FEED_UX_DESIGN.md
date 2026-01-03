@@ -1,9 +1,9 @@
 # Job Feed UX Design
 
 **Epic:** EPIC-008 Curated Job Feed
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-01-03
-**Status:** Prototype Complete (Iteration 2)
+**Status:** API Integration Complete
 
 ---
 
@@ -317,15 +317,18 @@ app/projects/hiring-market/jobs/
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| JobCard | [DONE] | 3-column layout, expand/collapse |
-| JobFeedGroup | [DONE] | Vertical + horizontal layouts |
-| JobFilters | [DONE] | Desktop inline, mobile sheet |
+| JobCard | [DONE] | 3-column layout, expand/collapse, context fetch on expand |
+| JobFeedGroup | [DONE] | Accepts API format, vertical + horizontal layouts |
+| JobFilters | [DONE] | Desktop inline, mobile sheet, family hierarchy |
 | Page layout | [DONE] | Stacked groups with dividers |
-| API integration | [TODO] | Connect to /feed endpoint |
+| API integration | [DONE] | Live data from /feed endpoint with filter params |
+| Relevance sorting | [DONE] | Location primacy > freshness > filter matches |
+| Exclusive group routing | [DONE] | Each job in exactly one group (no duplicates) |
+| Loading skeletons | [DONE] | Skeleton cards while loading |
+| Empty states | [DONE] | No results messaging with reset button |
+| Error states | [DONE] | Error display with retry button |
 | localStorage | [TODO] | Persist filter preferences |
 | Dashboard CTA | [TODO] | "View X jobs" button |
-| Empty states | [TODO] | No results messaging |
-| Loading skeletons | [TODO] | Skeleton cards while loading |
 
 ---
 
@@ -344,14 +347,17 @@ app/projects/hiring-market/jobs/
 | 2026-01-03 | Salary as toggle pill | Visual consistency; checkbox looked out of place |
 | 2026-01-03 | US-only salary filter | Only NY, CO, CA have transparency laws; honest about data limits |
 | 2026-01-03 | Visual separators in filter bar | Groups related controls; reduces cognitive load |
+| 2026-01-03 | Relevance scoring | Location primacy (100) > Freshness (0-50) > Filter matches (10 each) |
+| 2026-01-03 | Exclusive group routing | Remote > Fresh > Top Comp > Still Hiring > Scaling; no duplicates |
+| 2026-01-03 | Post-filter country-scoped remote | PostgREST limitation; filter wrong-country remote in application layer |
+| 2026-01-03 | Context fetch on expand | Lazy load summary + fit signals to reduce initial payload |
+| 2026-01-03 | Disabled Apply button | Grayed out when posting URL unavailable; prevents broken links |
 
 ---
 
 ## Next Steps
 
-1. **API Integration** - Connect prototype to live /feed endpoint
+1. **localStorage** - Persist user filter preferences
 2. **Dashboard CTA** - Add "View X jobs" button to analytics page
-3. **localStorage** - Persist user filter preferences
-4. **Empty States** - Design no-results and error states
-5. **Loading States** - Add skeleton loaders
-6. **Analytics** - Track card expansions, apply clicks
+3. **Analytics** - Track card expansions, apply clicks
+4. **URL params** - Make filter state shareable via URL
