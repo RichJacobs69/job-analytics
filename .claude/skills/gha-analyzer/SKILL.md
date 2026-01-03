@@ -15,7 +15,7 @@ Trigger when user asks to:
 - Optimize batch timing or parallelization
 - Investigate classifier issues (job_family, skills extraction)
 - Review deduplication behavior
-- Check pipeline health across sources (Greenhouse, Lever, Adzuna)
+- Check pipeline health (Greenhouse, Lever, Ashby, Adzuna)
 - Find rate limiting or API issues
 - Review pipeline data quality
 - Analyze costs and performance trends
