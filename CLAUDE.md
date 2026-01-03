@@ -24,6 +24,7 @@ Before starting any task, check if it matches a skill in `.claude/skills/`. If i
 | `data-analyst` | Create reports, analyze trends, generate content |
 | `qa-tester` | Review test coverage, write tests, identify regressions |
 | `repo-reviewer` | Audit repo, find duplication, identify stale files |
+| `security-audit` | Test security of APIs, Supabase, credentials, generate audit reports |
 | `system-architect` | Plan features, review architecture decisions |
 | `ux-designer` | Design UI components, review user flows |
 
