@@ -341,7 +341,10 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
             - jobs_written_enriched: int
     """
     from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
@@ -568,6 +571,9 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     locations=extracted_locations  # NEW: Structured location data
                 )
 
+                # Ensure employer exists in metadata table (for working_arrangement fallback)
+                ensure_employer_metadata(job.company, display_name=job.company)
+
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
 
@@ -751,7 +757,10 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
     Returns:
         Stats dictionary with processing metrics
     """
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
@@ -942,7 +951,10 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                 deduplicated=False,
                 locations=extracted_locations  # NEW: Structured location data
             )
-            
+
+            # Ensure employer exists in metadata table (for working_arrangement fallback)
+            ensure_employer_metadata(company, display_name=company)
+
             stats['jobs_written_enriched'] += 1
             logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
             
@@ -992,7 +1004,10 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
         Dict with processing statistics
     """
     from scrapers.lever.lever_fetcher import fetch_lever_jobs, load_company_mapping
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import DataSource
@@ -1252,6 +1267,9 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                     deduplicated=False
                 )
 
+                # Ensure employer exists in metadata table (for working_arrangement fallback)
+                ensure_employer_metadata(company_display, display_name=company_display)
+
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
                 logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
@@ -1338,7 +1356,10 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
         Dict with processing statistics
     """
     from scrapers.ashby.ashby_fetcher import fetch_ashby_jobs, load_company_mapping
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import DataSource
@@ -1620,6 +1641,9 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
                     deduplicated=False
                 )
 
+                # Ensure employer exists in metadata table (for working_arrangement fallback)
+                ensure_employer_metadata(company_name, display_name=company_name)
+
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
                 logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
@@ -1814,7 +1838,10 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
     """
 
     try:
-        from pipeline.db_connection import insert_raw_job, insert_enriched_job, get_working_arrangement_fallback
+        from pipeline.db_connection import (
+            insert_raw_job, insert_enriched_job, get_working_arrangement_fallback,
+            ensure_employer_metadata
+        )
         from datetime import date
         from pipeline.unified_job_ingester import UnifiedJob, DataSource
 
@@ -1901,6 +1928,9 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     description_source=description_source,
                     deduplicated=deduplicated
                 )
+
+                # Ensure employer exists in metadata table (for working_arrangement fallback)
+                ensure_employer_metadata(company, display_name=company)
 
                 stored_count += 1
                 if stored_count % 10 == 0:

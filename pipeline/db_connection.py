@@ -605,6 +605,106 @@ def upsert_employer_metadata(
         return False
 
 
+def ensure_employer_metadata(employer_name: str, display_name: str = None) -> bool:
+    """
+    Create employer_metadata entry if not exists.
+
+    Args:
+        employer_name: The employer name (will be normalized to lowercase)
+        display_name: Optional pretty name for UI (defaults to employer_name)
+
+    Returns:
+        True if new entry was created, False if already exists
+    """
+    canonical = employer_name.lower().strip()
+
+    # Check if already exists
+    existing = get_employer_metadata(canonical)
+    if existing:
+        return False  # Already exists
+
+    # Create minimal entry (working_arrangement_default will be inferred later)
+    return upsert_employer_metadata(
+        canonical_name=canonical,
+        display_name=display_name or employer_name
+    )
+
+
+def update_employer_working_arrangement_if_confident(
+    employer_name: str,
+    threshold: float = 0.7,
+    min_jobs: int = 3
+) -> bool:
+    """
+    Compute working_arrangement from classified jobs and update if confident.
+
+    Only updates if:
+    - working_arrangement_default is currently NULL
+    - OR working_arrangement_source is 'inferred' (can be updated with more data)
+
+    Never overwrites 'manual' or 'scraped' sources.
+
+    Args:
+        employer_name: The employer name to check
+        threshold: Minimum agreement percentage (default: 70%)
+        min_jobs: Minimum jobs with known arrangement (default: 3)
+
+    Returns:
+        True if metadata was updated
+    """
+    from collections import Counter
+
+    canonical = employer_name.lower().strip()
+    metadata = get_employer_metadata(canonical)
+
+    if not metadata:
+        return False  # Employer not in metadata table
+
+    # Check source priority - never overwrite manual or scraped
+    current_source = metadata.get('working_arrangement_source')
+    if current_source in ('manual', 'scraped'):
+        return False  # Higher priority source, don't overwrite
+
+    # Query job counts by working_arrangement (exclude 'unknown')
+    try:
+        response = supabase.table("enriched_jobs").select(
+            "working_arrangement"
+        ).ilike(
+            "employer_name", canonical
+        ).neq(
+            "working_arrangement", "unknown"
+        ).execute()
+
+        if not response.data:
+            return False  # No jobs with known arrangement
+
+        # Count arrangements
+        counts = Counter(row["working_arrangement"] for row in response.data)
+        total = sum(counts.values())
+
+        if total < min_jobs:
+            return False  # Not enough data
+
+        # Get top value
+        top_value, top_count = counts.most_common(1)[0]
+        confidence = top_count / total
+
+        if confidence < threshold:
+            return False  # Threshold not met
+
+        # Update metadata
+        return upsert_employer_metadata(
+            canonical_name=canonical,
+            display_name=metadata.get('display_name', employer_name),
+            working_arrangement_default=top_value,
+            working_arrangement_source='inferred'
+        )
+
+    except Exception as e:
+        print(f"[WARN] Failed to compute working arrangement for '{employer_name}': {e}")
+        return False
+
+
 def test_connection():
     """Test that we can connect to Supabase"""
     try:

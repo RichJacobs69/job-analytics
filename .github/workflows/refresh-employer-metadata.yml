@@ -1,0 +1,75 @@
+# Refresh Employer Metadata Workflow
+# Purpose: Run weekly to infer working_arrangement_default from accumulated job data
+#
+# This workflow:
+# 1. Runs the backfill script to update employer_metadata
+# 2. Uses majority vote (70%+ agreement) to infer working arrangements
+# 3. Only updates employers with NULL or 'inferred' source (preserves manual overrides)
+#
+# Schedule: Sundays at 8AM UTC
+# Manual trigger: workflow_dispatch
+
+name: Refresh Employer Metadata
+
+on:
+  schedule:
+    # Run every Sunday at 8AM UTC
+    - cron: '0 8 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no changes)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  refresh-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run backfill script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "Running in dry-run mode..."
+            python pipeline/utilities/backfill_working_arrangement_defaults.py --dry-run
+          else
+            echo "Applying changes..."
+            python pipeline/utilities/backfill_working_arrangement_defaults.py --apply
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Employer Metadata Refresh Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Threshold**: 70% agreement required" >> $GITHUB_STEP_SUMMARY
+          echo "- **Minimum jobs**: 3 jobs with known arrangement" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source priority**: manual > scraped > inferred" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "[WARNING] This was a dry-run - no changes were made" >> $GITHUB_STEP_SUMMARY
+          fi
