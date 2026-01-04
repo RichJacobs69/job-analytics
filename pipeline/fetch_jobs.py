@@ -359,8 +359,9 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     if config_path.exists():
         with open(config_path) as f:
             gh_config = json.load(f)
-            # Config structure: {"DisplayName": {"slug": "company-slug"}, ...}
-            for display_name, info in gh_config.items():
+            # Config structure: {"greenhouse": {"DisplayName": {"slug": "company-slug"}, ...}}
+            companies = gh_config.get('greenhouse', gh_config)
+            for display_name, info in companies.items():
                 if isinstance(info, dict) and 'slug' in info:
                     slug_to_display_name[info['slug']] = display_name
 
