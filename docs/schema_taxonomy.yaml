@@ -1,12 +1,12 @@
 # Job Market Intelligence Platform - Taxonomy Schema
-# Version: 1.5.0
-# Last Updated: 2025-12-27
+# Version: 1.6.0
+# Last Updated: 2026-01-04
 # Purpose: Define classification taxonomy for job postings in Product, Data, and Delivery roles
-# Changes from v1.4.0: Added Delivery job family with 4 subfamilies, delivery skills ontology
+# Changes from v1.5.0: Added employer_industry taxonomy (18 domain-focused categories)
 
 metadata:
-  version: 1.5.0
-  last_updated: "2025-12-27"
+  version: 1.6.0
+  last_updated: "2026-01-04"
   scope: ["Product", "Data", "Delivery"]
   markets: ["London", "New York", "Denver", "San Francisco", "Singapore"]
 
@@ -325,6 +325,125 @@ enums:
     - {code: startup, label: "Startup (1-50)", description: "Small startup, 1-50 employees, early-stage"}
     - {code: scaleup, label: "Scale-up (51-500)", description: "Growth stage company, 51-500 employees, Series A-C"}
     - {code: enterprise, label: "Enterprise (500+)", description: "Large corporation, 500+ employees, established company"}
+
+  # Employer industry (19 domain-focused categories)
+  # Design decision: These are industry VERTICALS, not business models.
+  # "B2B SaaS" was intentionally excluded - it's a business model that spans multiple industries.
+  # A company like Stripe is "fintech" (not "b2b_saas") even though it sells B2B SaaS.
+  employer_industry:
+    - code: fintech
+      label: "FinTech"
+      description: "Tech-first financial disruptors - payments, neobanks, lending platforms, insurtech"
+      signals: ["payments", "neobank", "digital bank", "lending platform", "insurtech", "fintech"]
+      examples: ["Stripe", "Monzo", "Affirm", "Plaid", "Wise", "Revolut", "Brex"]
+
+    - code: financial_services
+      label: "Financial Services"
+      description: "Traditional banks, insurers, asset managers, investment firms"
+      signals: ["bank", "insurance company", "asset management", "investment bank", "hedge fund"]
+      examples: ["JPMorgan", "Capital One", "Goldman Sachs", "BlackRock", "Citi", "HSBC"]
+
+    - code: healthtech
+      label: "HealthTech"
+      description: "Digital health, biotech, pharma tech, medical devices, healthcare platforms"
+      signals: ["health", "medical", "patient", "clinical", "pharma", "biotech", "care", "therapy"]
+      examples: ["Flatiron Health", "Omada Health", "Oscar", "Tempus"]
+
+    - code: ecommerce
+      label: "E-commerce & Marketplace"
+      description: "Online retail, marketplaces, delivery platforms, consumer commerce"
+      signals: ["marketplace", "retail", "shopping", "delivery", "commerce", "logistics", "supply chain"]
+      examples: ["Instacart", "DoorDash", "Deliveroo", "Etsy"]
+
+    - code: ai_ml
+      label: "AI/ML"
+      description: "AI-first companies building foundation models, AI tools, or ML products"
+      signals: ["artificial intelligence", "machine learning", "foundation model", "LLM", "generative ai", "ai-first"]
+      examples: ["OpenAI", "Anthropic", "Harvey AI", "Cursor", "Runway"]
+
+    - code: consumer
+      label: "Consumer Tech"
+      description: "Consumer apps, social media, entertainment, gaming, content platforms"
+      signals: ["consumer", "social", "entertainment", "gaming", "content", "streaming", "media"]
+      examples: ["Spotify", "Reddit", "Strava", "Peloton", "Discord"]
+
+    - code: mobility
+      label: "Mobility & Logistics"
+      description: "Transportation, autonomous vehicles, logistics, fleet management"
+      signals: ["mobility", "autonomous", "vehicle", "transportation", "fleet", "logistics", "shipping"]
+      examples: ["Uber", "Waymo", "Zoox", "Wayve", "Zipline"]
+
+    - code: proptech
+      label: "PropTech"
+      description: "Real estate technology, property management, home services"
+      signals: ["real estate", "property", "home", "housing", "mortgage", "rental"]
+      examples: ["Airbnb", "Zillow", "CoStar", "Rightmove"]
+
+    - code: edtech
+      label: "EdTech"
+      description: "Education technology, learning platforms, training, upskilling"
+      signals: ["education", "learning", "training", "course", "school", "university", "tutoring"]
+      examples: ["Coursera", "Duolingo", "Guild Education", "Quizlet"]
+
+    - code: climate
+      label: "Climate Tech"
+      description: "Clean energy, sustainability, carbon tracking, environmental tech"
+      signals: ["climate", "sustainability", "carbon", "clean energy", "renewable", "environmental"]
+      examples: ["Watershed", "Crusoe", "Yes Energy"]
+
+    - code: crypto
+      label: "Crypto & Web3"
+      description: "Blockchain, cryptocurrency, DeFi, NFTs, web3 infrastructure"
+      signals: ["crypto", "blockchain", "defi", "web3", "nft", "token", "chain"]
+      examples: ["Coinbase", "Kraken", "OpenSea", "Alchemy"]
+
+    - code: devtools
+      label: "Developer Tools"
+      description: "Developer productivity, IDEs, CI/CD, code collaboration, infrastructure tools"
+      signals: ["developer", "IDE", "CI/CD", "code", "git", "devops", "infrastructure"]
+      examples: ["GitHub", "Vercel", "Linear", "Retool", "Supabase"]
+
+    - code: data_infra
+      label: "Data Infrastructure"
+      description: "Data platforms, analytics tools, data pipelines, business intelligence"
+      signals: ["data platform", "analytics", "data warehouse", "ETL", "BI", "data pipeline"]
+      examples: ["Snowflake", "Databricks", "dbt Labs", "Fivetran", "Dagster"]
+
+    - code: cybersecurity
+      label: "Cybersecurity"
+      description: "Security software, identity management, compliance, threat detection"
+      signals: ["security", "identity", "compliance", "threat", "authentication", "encryption"]
+      examples: ["Okta", "Vanta", "1Password", "OneTrust"]
+
+    - code: hr_tech
+      label: "HR Tech"
+      description: "HR software, payroll, workforce management, recruiting platforms"
+      signals: ["HR", "payroll", "workforce", "recruiting", "talent", "employee", "benefits"]
+      examples: ["Rippling", "Gusto", "Deel", "Lattice"]
+
+    - code: martech
+      label: "Marketing Tech"
+      description: "Marketing automation, analytics, CRM, customer data platforms"
+      signals: ["marketing", "CRM", "customer data", "analytics", "advertising", "email"]
+      examples: ["Braze", "Amplitude", "HubSpot", "Mixpanel"]
+
+    - code: professional_services
+      label: "Professional Services"
+      description: "Consulting, legal tech, accounting tech, business services"
+      signals: ["consulting", "legal", "accounting", "advisory", "professional services"]
+      examples: ["Deloitte", "Accenture", "PwC", "EY"]
+
+    - code: hardware
+      label: "Hardware & Robotics"
+      description: "Hardware products, robotics, semiconductors, IoT devices"
+      signals: ["hardware", "robotics", "semiconductor", "device", "sensor", "iot", "chip"]
+      examples: ["Apple", "Gecko Robotics", "Cruise"]
+
+    - code: other
+      label: "Other"
+      description: "Diversified conglomerates or industries not fitting above categories"
+      signals: []
+      examples: []
 
   # Skill parent families
   skill_parent:

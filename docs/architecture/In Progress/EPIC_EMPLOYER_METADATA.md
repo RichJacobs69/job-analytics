@@ -1,9 +1,10 @@
 # Epic: Employer Metadata System
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** Medium
 **Complexity:** Low-Moderate
 **Started:** 2026-01-04
+**Completed:** 2026-01-04
 
 ## Problem Statement
 
@@ -40,8 +41,8 @@ This epic was accelerated due to Ashby/Lever jobs missing working arrangement da
 | Run seed script | [DONE] | 5,586 employers (expanded from Adzuna data) |
 | Agency cleanup | [DONE] | 1,995 agency jobs deleted from enriched_jobs |
 | employer_name normalization | [DONE] | All values now lowercase canonical |
-| Set known company arrangements | [TODO] | Harvey AI, Intercom, etc. |
-| Update Job Feed API to use view | [TODO] | portfolio-site changes |
+| Set known company arrangements | [DONE] | Curate directly in DB via SQL |
+| Update Job Feed API to use view | [DONE] | feed + context routes use jobs_with_employer_context |
 
 ### Database Schema (Implemented)
 
@@ -138,19 +139,30 @@ python -m pipeline.utilities.seed_employer_metadata --dry-run
 
 # Seed with minimum 3 jobs per employer
 python -m pipeline.utilities.seed_employer_metadata --min-jobs 3
-
-# Include known working arrangements
-python -m pipeline.utilities.seed_employer_metadata --seed-known
 ```
 
-### Update known company arrangements
+The seed script only updates `canonical_name` and `display_name`. It preserves any existing `employer_size` or `working_arrangement` fields that were manually set.
 
-```bash
-# Update only known arrangements
-python -m pipeline.utilities.seed_employer_metadata --update-known-only
+### Manually curate employer metadata
+
+Use SQL directly in Supabase to set employer attributes:
+
+```sql
+-- Set working arrangement and employer size
+UPDATE employer_metadata
+SET working_arrangement_default = 'hybrid',
+    working_arrangement_source = 'manual',
+    employer_size = 'scaleup'
+WHERE canonical_name = 'harvey ai';
+
+-- Batch update multiple companies
+UPDATE employer_metadata
+SET working_arrangement_default = 'remote',
+    working_arrangement_source = 'manual'
+WHERE canonical_name IN ('gitlab', 'zapier', 'automattic');
 ```
 
-### Add new company manually
+### Add new company via Python
 
 ```python
 from pipeline.db_connection import upsert_employer_metadata
@@ -159,17 +171,28 @@ upsert_employer_metadata(
     canonical_name='harvey ai',
     display_name='Harvey AI',
     working_arrangement_default='hybrid',
-    working_arrangement_source='manual'
+    working_arrangement_source='manual',
+    employer_size='scaleup'
 )
 ```
 
 ## Known Companies with Working Arrangements
 
-| Company | Arrangement | Source |
-|---------|-------------|--------|
-| Harvey AI | hybrid | Career page: "3 days/week in office" |
-| Intercom | hybrid | Career page |
-| (add more as verified) | | |
+Curated directly in the `employer_metadata` table. Query to see current state:
+
+```sql
+SELECT canonical_name, display_name, working_arrangement_default, employer_size
+FROM employer_metadata
+WHERE working_arrangement_default IS NOT NULL
+   OR employer_size IS NOT NULL
+ORDER BY display_name;
+```
+
+**Research sources for curation:**
+- Company career pages (e.g., "We're in the office three days a week")
+- LinkedIn company pages
+- Glassdoor reviews
+- Funding announcements (for employer_size)
 
 ## Future Enhancement: Career Page Scraping
 
@@ -227,13 +250,13 @@ The view automatically:
 
 ---
 
-**Document Version:** 6.0
+**Document Version:** 7.0
 **Last Updated:** 2026-01-04
-**Previous Version:** 5.0 (2026-01-04) - FK constraint, employer_name normalization
-**Changes in v6.0:**
-- Removed employer_size from enriched_jobs (migration 024)
-- employer_size now exclusively on employer_metadata (manually curated)
-- Removed aliases column (migration 023)
-- Fixed dead code in seed_employer_metadata.py (removed query for non-existent column)
-- Fixed dead code in backfill_missing_enriched.py (removed employer_size parameter)
-- Added apply_employer_size_corrections.py for manual curation
+**Previous Version:** 6.0 (2026-01-04) - employer_size migration
+**Changes in v7.0:**
+- Simplified seed_employer_metadata.py to only update display_name
+- Removed KNOWN_WORKING_ARRANGEMENTS dict (curate directly in DB instead)
+- Removed --seed-known and --update-known-only flags
+- employer_size and working_arrangement fields preserved on upsert
+- Updated usage docs with SQL examples for manual curation
+- Marked all implementation items as [DONE]

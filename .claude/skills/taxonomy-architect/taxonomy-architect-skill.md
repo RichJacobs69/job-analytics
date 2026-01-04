@@ -359,66 +359,57 @@ data_ml:
 
 ---
 
-## Company Taxonomy (Future)
+## Company/Employer Taxonomy
 
-### Proposed Structure
+**System of Record:** `docs/schema_taxonomy.yaml` (see `enums.employer_industry`)
 
-```yaml
-company:
-  size:
-    startup:
-      label: "Startup (1-50)"
-      signals: ["seed", "series A", "early stage", "<50 employees"]
-      
-    scaleup:
-      label: "Scale-up (51-500)"
-      signals: ["series B", "series C", "growth stage", "scaling"]
-      
-    enterprise:
-      label: "Enterprise (500+)"
-      signals: ["public", "Fortune 500", "established", "1000+ employees"]
-      
-  industry:
-    fintech:
-      label: "FinTech"
-      signals: ["payments", "banking", "trading", "insurance", "lending"]
-      examples: ["Stripe", "Monzo", "Revolut", "Wise"]
-      
-    healthtech:
-      label: "HealthTech"
-      signals: ["healthcare", "medical", "pharma", "biotech", "patient"]
-      
-    ecommerce:
-      label: "E-commerce/Marketplace"
-      signals: ["retail", "marketplace", "shopping", "delivery"]
-      examples: ["Amazon", "Deliveroo", "Instacart"]
-      
-    saas_b2b:
-      label: "SaaS/B2B"
-      signals: ["enterprise software", "B2B", "SaaS", "platform"]
-      
-    consumer:
-      label: "Consumer Tech"
-      signals: ["consumer", "social", "entertainment", "gaming"]
-      
-    ai_ml:
-      label: "AI/ML"
-      signals: ["artificial intelligence", "machine learning", "AI-first"]
-      examples: ["OpenAI", "Anthropic", "DeepMind"]
-      
-  data_maturity:
-    emerging:
-      label: "Emerging"
-      signals: ["building data team", "first data hire", "early analytics"]
-      
-    established:
-      label: "Established"
-      signals: ["data team", "analytics function", "existing pipelines"]
-      
-    advanced:
-      label: "Advanced"
-      signals: ["ML in production", "data platform", "data mesh", "MLOps"]
-```
+### Employer Industry (18 Domain-Focused Categories)
+
+**Design Decision:** These are industry VERTICALS, not business models. "B2B SaaS" was intentionally excluded - it's a business model that spans multiple industries. A company like Stripe is `fintech` even though it sells B2B SaaS.
+
+| Code | Label | Examples |
+|------|-------|----------|
+| `fintech` | FinTech | Stripe, Monzo, Affirm, Plaid |
+| `healthtech` | HealthTech | Flatiron, Omada, Oscar |
+| `ecommerce` | E-commerce & Marketplace | Instacart, Deliveroo, Etsy |
+| `ai_ml` | AI/ML | OpenAI, Anthropic, Harvey AI |
+| `consumer` | Consumer Tech | Spotify, Reddit, Strava |
+| `mobility` | Mobility & Logistics | Uber, Waymo, Zipline |
+| `proptech` | PropTech | Airbnb, Zillow, CoStar |
+| `edtech` | EdTech | Coursera, Duolingo |
+| `climate` | Climate Tech | Watershed, Crusoe |
+| `crypto` | Crypto & Web3 | Coinbase, Kraken |
+| `devtools` | Developer Tools | GitHub, Vercel, Linear |
+| `data_infra` | Data Infrastructure | Snowflake, Databricks, dbt Labs |
+| `cybersecurity` | Cybersecurity | Okta, Vanta, 1Password |
+| `hr_tech` | HR Tech | Rippling, Gusto, Deel |
+| `martech` | Marketing Tech | Braze, Amplitude, HubSpot |
+| `professional_services` | Professional Services | Deloitte, Accenture |
+| `hardware` | Hardware & Robotics | Apple, Gecko Robotics |
+| `other` | Other | Catch-all |
+
+### Employer Size
+
+| Code | Label | Signals |
+|------|-------|---------|
+| `startup` | Startup (1-50) | seed, series A, early stage |
+| `scaleup` | Scale-up (51-500) | series B/C, growth stage |
+| `enterprise` | Enterprise (500+) | public, Fortune 500, established |
+
+### Multi-Industry Companies
+
+Some companies span multiple industries. Classification rules:
+
+1. **Single primary industry** - Each company gets ONE `industry` value (MECE)
+2. **Classify by core product/revenue** - Stripe is `fintech` (payments), not `devtools`
+3. **For conglomerates** - Classify by the division most relevant to the job posting
+
+| Company | Industry | Rationale |
+|---------|----------|-----------|
+| Stripe | `fintech` | Core is payments, even though they have dev tools |
+| Uber | `mobility` | Core is transportation |
+| Airbnb | `proptech` | Real estate marketplace |
+| Amazon (AWS jobs) | `devtools` or `data_infra` | Depends on specific role |
 
 ---
 

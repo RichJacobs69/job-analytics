@@ -6,27 +6,24 @@ Seeds the employer_metadata table from existing enriched_jobs data.
 Creates entries with:
 - canonical_name: lowercase employer name
 - display_name: from ATS config files (source of truth) or most common casing variant
-- working_arrangement_default: NULL (populated manually or via hardcoded known companies)
 
-NOTE: employer_size is NOT set by this script. It is manually curated via
-apply_employer_size_corrections.py to ensure data quality.
+NOTE: employer_size and working_arrangement_default are NOT set by this script.
+These fields are manually curated directly in the database. The seed script
+preserves any existing manual entries (working_arrangement_source='manual').
 
 Display Name Priority:
 1. DISPLAY_NAME_OVERRIDES (manual overrides - highest priority)
-2. KNOWN_WORKING_ARRANGEMENTS display_name
-3. ATS config file key (e.g., "Nuro" from greenhouse/company_ats_mapping.json)
-4. Most common capitalized variant from enriched_jobs data
-5. Most common variant overall (fallback)
+2. ATS config file key (e.g., "Nuro" from greenhouse/company_ats_mapping.json)
+3. Most common capitalized variant from enriched_jobs data
+4. Most common variant overall (fallback)
 
 Usage:
     python -m pipeline.utilities.seed_employer_metadata --dry-run
     python -m pipeline.utilities.seed_employer_metadata --min-jobs 3
-    python -m pipeline.utilities.seed_employer_metadata --seed-known
 
 Options:
     --dry-run       Show what would be created without making changes
     --min-jobs N    Only create entries for employers with N+ jobs (default: 3)
-    --seed-known    Also seed known company working arrangements (Harvey AI, etc.)
 """
 
 import os
@@ -43,16 +40,6 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 load_dotenv()
 
-
-# Known company working arrangements (manually verified)
-# These are companies where we know the policy from career pages/job postings
-KNOWN_WORKING_ARRANGEMENTS = {
-    'harvey ai': {'arrangement': 'hybrid', 'display_name': 'Harvey AI'},
-    'intercom': {'arrangement': 'hybrid', 'display_name': 'Intercom'},
-    # Add more as we verify them
-    # 'gitlab': {'arrangement': 'remote', 'display_name': 'GitLab'},
-    # 'zapier': {'arrangement': 'remote', 'display_name': 'Zapier'},
-}
 
 # Display name overrides for companies not in ATS configs (e.g., Adzuna-only employers)
 # These ensure proper casing even when source data is lowercase
@@ -217,9 +204,12 @@ def get_supabase():
     return create_client(url, key)
 
 
-def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known: bool = False):
+def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3):
     """
     Seed employer_metadata from existing enriched_jobs.
+
+    Only sets canonical_name and display_name. Preserves any existing
+    employer_size or working_arrangement fields (manually curated in DB).
     """
     supabase = get_supabase()
 
@@ -228,7 +218,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
     print("=" * 70)
     print(f"Dry run: {dry_run}")
     print(f"Minimum jobs threshold: {min_jobs}")
-    print(f"Seed known arrangements: {seed_known}")
     print()
 
     # Step 0: Load display names from config files (source of truth)
@@ -280,8 +269,7 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             continue
 
         # Find best display_name variant
-        # Priority: 1) DISPLAY_NAME_OVERRIDES, 2) KNOWN_WORKING_ARRANGEMENTS,
-        #           3) Config file, 4) Capitalized variant, 5) Most common
+        # Priority: 1) DISPLAY_NAME_OVERRIDES, 2) Config file, 3) Capitalized variant, 4) Most common
         name_counts = defaultdict(int)
         for name in data['names']:
             name_counts[name] += 1
@@ -290,10 +278,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
         if canonical in DISPLAY_NAME_OVERRIDES:
             display_name = DISPLAY_NAME_OVERRIDES[canonical]
             display_name_source = 'override'
-        # Check KNOWN_WORKING_ARRANGEMENTS (companies with known policies)
-        elif canonical in KNOWN_WORKING_ARRANGEMENTS:
-            display_name = KNOWN_WORKING_ARRANGEMENTS[canonical]['display_name']
-            display_name_source = 'known'
         # Check config files (ATS company mappings)
         elif canonical in config_display_names:
             display_name = config_display_names[canonical]
@@ -310,15 +294,10 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
                 display_name = max(name_counts.keys(), key=lambda n: name_counts[n])
             display_name_source = 'inferred'
 
-        # Check if this is a known company with working arrangement
-        known_info = KNOWN_WORKING_ARRANGEMENTS.get(canonical) if seed_known else None
-
         entries.append({
             'canonical_name': canonical,
             'display_name': display_name,
             'display_name_source': display_name_source,  # Track where display_name came from
-            'working_arrangement_default': known_info['arrangement'] if known_info else None,
-            'working_arrangement_source': 'manual' if known_info else None,
             'job_count': job_count  # For sorting/display only
         })
 
@@ -328,32 +307,25 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
     # Display name source stats
     config_count = sum(1 for e in entries if e['display_name_source'] == 'config')
     override_count = sum(1 for e in entries if e['display_name_source'] == 'override')
-    known_count_dn = sum(1 for e in entries if e['display_name_source'] == 'known')
     inferred_count = sum(1 for e in entries if e['display_name_source'] == 'inferred')
     print(f"\n[DISPLAY NAME SOURCES]")
     print(f"  From config files: {config_count}")
     print(f"  From DISPLAY_NAME_OVERRIDES: {override_count}")
-    print(f"  From KNOWN_WORKING_ARRANGEMENTS: {known_count_dn}")
     print(f"  Inferred from data: {inferred_count}")
-
-    if seed_known:
-        known_count = sum(1 for e in entries if e['working_arrangement_default'])
-        print(f"\n[KNOWN] {known_count} employers have known working arrangements")
 
     # Step 3: Show preview
     print(f"\n[PREVIEW] Top 20 by job count:")
-    print("-" * 65)
-    print(f"  {'Display Name':<30} {'Source':<10} {'Jobs':>5}  WA")
-    print("-" * 65)
+    print("-" * 55)
+    print(f"  {'Display Name':<30} {'Source':<10} {'Jobs':>5}")
+    print("-" * 55)
 
     # Sort by job count for preview
     entries_sorted = sorted(entries, key=lambda e: e['job_count'], reverse=True)
 
     for entry in entries_sorted[:20]:
         job_count = entry['job_count']
-        wa = entry['working_arrangement_default'] or '-'
         src = entry['display_name_source'][:8]
-        print(f"  {entry['display_name'][:30]:<30} {src:<10} {job_count:>5}  {wa}")
+        print(f"  {entry['display_name'][:30]:<30} {src:<10} {job_count:>5}")
 
     if len(entries) > 20:
         print(f"  ... and {len(entries) - 20} more")
@@ -364,27 +336,21 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
         return
 
     print(f"\n[DB] Upserting {len(entries)} entries...")
+    print("[NOTE] Only updating canonical_name and display_name.")
+    print("[NOTE] employer_size and working_arrangement fields are preserved if already set.")
 
     success = 0
     errors = 0
 
     for entry in entries:
         try:
-            # Build data dict (exclude job_count, it's just for display)
-            # Note: employer_size is NOT set here - it's manually curated via apply_employer_size_corrections.py
-            data = {
+            # Only upsert canonical_name and display_name
+            # This preserves any existing employer_size or working_arrangement fields
+            # which are manually curated directly in the database
+            supabase.table("employer_metadata").upsert({
                 'canonical_name': entry['canonical_name'],
                 'display_name': entry['display_name'],
-            }
-
-            # Add optional fields only if not None
-            if entry['working_arrangement_default']:
-                data['working_arrangement_default'] = entry['working_arrangement_default']
-                data['working_arrangement_source'] = entry['working_arrangement_source']
-
-            supabase.table("employer_metadata").upsert(
-                data, on_conflict='canonical_name'
-            ).execute()
+            }, on_conflict='canonical_name').execute()
             success += 1
         except Exception as e:
             print(f"   [ERROR] {entry['canonical_name']}: {e}")
@@ -393,50 +359,10 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
     print(f"\n[DONE] Success: {success}, Errors: {errors}")
 
 
-def update_known_arrangements(dry_run: bool = False):
-    """
-    Update working_arrangement_default for known companies.
-    Separate from seeding - can be run independently.
-    """
-    supabase = get_supabase()
-
-    print("=" * 70)
-    print("UPDATE KNOWN WORKING ARRANGEMENTS")
-    print("=" * 70)
-    print(f"Dry run: {dry_run}")
-    print(f"Known companies: {len(KNOWN_WORKING_ARRANGEMENTS)}")
-    print()
-
-    for canonical, info in KNOWN_WORKING_ARRANGEMENTS.items():
-        print(f"  {info['display_name']}: {info['arrangement']}")
-
-        if not dry_run:
-            try:
-                supabase.table("employer_metadata").upsert({
-                    'canonical_name': canonical,
-                    'display_name': info['display_name'],
-                    'working_arrangement_default': info['arrangement'],
-                    'working_arrangement_source': 'manual'
-                }, on_conflict='canonical_name').execute()
-                print(f"    [OK] Updated")
-            except Exception as e:
-                print(f"    [ERROR] {e}")
-
-    if dry_run:
-        print(f"\n[DRY RUN] Would update {len(KNOWN_WORKING_ARRANGEMENTS)} entries")
-    else:
-        print(f"\n[DONE] Updated {len(KNOWN_WORKING_ARRANGEMENTS)} entries")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed employer_metadata table")
     parser.add_argument("--dry-run", action="store_true", help="Preview without changes")
     parser.add_argument("--min-jobs", type=int, default=3, help="Minimum jobs threshold")
-    parser.add_argument("--seed-known", action="store_true", help="Include known working arrangements")
-    parser.add_argument("--update-known-only", action="store_true", help="Only update known arrangements")
     args = parser.parse_args()
 
-    if args.update_known_only:
-        update_known_arrangements(dry_run=args.dry_run)
-    else:
-        seed_employer_metadata(dry_run=args.dry_run, min_jobs=args.min_jobs, seed_known=args.seed_known)
+    seed_employer_metadata(dry_run=args.dry_run, min_jobs=args.min_jobs)
