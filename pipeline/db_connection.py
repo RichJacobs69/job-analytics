@@ -259,7 +259,9 @@ def insert_enriched_job(
     # AI-generated summary (inline from classifier)
     summary: Optional[str] = None,
     # URL validation status (defaults to active for freshly scraped jobs)
-    url_status: str = 'active'
+    url_status: str = 'active',
+    # Display name hint for employer_metadata auto-creation (from ATS config key)
+    display_name_hint: Optional[str] = None
 ) -> int:
     """
     Insert a classified/enriched job into the database.
@@ -307,7 +309,9 @@ def insert_enriched_job(
 
     # Ensure employer exists in employer_metadata (auto-create if needed for FK)
     # This maintains referential integrity while allowing new companies to be scraped
-    ensure_employer_metadata(employer_name_canonical, display_name=employer_name)
+    # Use display_name_hint from config if provided, otherwise fall back to employer_name
+    display_name = display_name_hint if display_name_hint else employer_name
+    ensure_employer_metadata(employer_name_canonical, display_name=display_name)
 
     # Generate deduplication hash
     job_hash = generate_job_hash(employer_name_canonical, title_display, city_code)

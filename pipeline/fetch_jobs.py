@@ -350,6 +350,19 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
     from datetime import date
     import json
+    from pathlib import Path
+
+    # Load greenhouse config to create slug -> display_name mapping
+    project_root = Path(__file__).parent.parent
+    config_path = project_root / 'config' / 'greenhouse' / 'company_ats_mapping.json'
+    slug_to_display_name = {}
+    if config_path.exists():
+        with open(config_path) as f:
+            gh_config = json.load(f)
+            # Config structure: {"DisplayName": {"slug": "company-slug"}, ...}
+            for display_name, info in gh_config.items():
+                if isinstance(info, dict) and 'slug' in info:
+                    slug_to_display_name[info['slug']] = display_name
 
     from datetime import datetime
     import time
@@ -541,6 +554,9 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 else:
                     working_arrangement = wa_from_classifier
 
+                # Get display name from config (e.g., "Rightmove" instead of "rightmovecareers")
+                employer_display_name = slug_to_display_name.get(company_slug, job.company)
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=job.company,
@@ -567,11 +583,9 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     data_source='greenhouse',
                     description_source='greenhouse',
                     deduplicated=False,
-                    locations=extracted_locations  # NEW: Structured location data
+                    locations=extracted_locations,  # Structured location data
+                    display_name_hint=employer_display_name  # From config key
                 )
-
-                # Ensure employer exists in metadata table (for working_arrangement fallback)
-                ensure_employer_metadata(job.company, display_name=job.company)
 
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
@@ -1045,6 +1059,12 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
     mapping = load_company_mapping()
     lever_companies = mapping.get('lever', {})
 
+    # Create slug -> display_name mapping for proper employer names
+    slug_to_display_name = {}
+    for display_name, info in lever_companies.items():
+        if isinstance(info, dict) and 'slug' in info:
+            slug_to_display_name[info['slug']] = display_name
+
     if not lever_companies:
         logger.warning("No companies in Lever mapping")
         return stats
@@ -1152,7 +1172,8 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                 logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:50]}... (classifying...)")
 
                 # Step 2: Hard filter - check if agency before classification
-                company_display = job.company_slug.replace('-', ' ').title()
+                # Get proper display name from config (e.g., "Figma" instead of "Figma Inc")
+                company_display = slug_to_display_name.get(job.company_slug, job.company_slug.replace('-', ' ').title())
                 if is_agency_job(company_display):
                     stats['jobs_agency_filtered'] += 1
                     company_agencies_blocked += 1
@@ -1260,12 +1281,10 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                     summary=classification.get('summary'),
                     data_source='lever',
                     description_source='lever',
-                    locations=extracted_locations,  # NEW: Structured location data
-                    deduplicated=False
+                    locations=extracted_locations,
+                    deduplicated=False,
+                    display_name_hint=company_display  # From config key
                 )
-
-                # Ensure employer exists in metadata table (for working_arrangement fallback)
-                ensure_employer_metadata(company_display, display_name=company_display)
 
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
@@ -1396,6 +1415,12 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
     # Load company mapping
     mapping = load_company_mapping()
     ashby_companies = mapping.get('ashby', {})
+
+    # Create slug -> display_name mapping for proper employer names
+    slug_to_display_name = {}
+    for display_name, info in ashby_companies.items():
+        if isinstance(info, dict) and 'slug' in info:
+            slug_to_display_name[info['slug']] = display_name
 
     if not ashby_companies:
         logger.warning("No companies in Ashby mapping")
@@ -1634,11 +1659,9 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
                     data_source='ashby',
                     description_source='ashby',
                     locations=extracted_locations,
-                    deduplicated=False
+                    deduplicated=False,
+                    display_name_hint=company_name  # From config key
                 )
-
-                # Ensure employer exists in metadata table (for working_arrangement fallback)
-                ensure_employer_metadata(company_name, display_name=company_name)
 
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
@@ -1921,11 +1944,9 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     # Dual pipeline source tracking
                     data_source=source,
                     description_source=description_source,
-                    deduplicated=deduplicated
+                    deduplicated=deduplicated,
+                    display_name_hint=company  # From Adzuna API
                 )
-
-                # Ensure employer exists in metadata table (for working_arrangement fallback)
-                ensure_employer_metadata(company, display_name=company)
 
                 stored_count += 1
                 if stored_count % 10 == 0:
