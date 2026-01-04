@@ -1,4 +1,4 @@
--- Migration 022: Drop employer_size from enriched_jobs
+-- Migration 024: Drop employer_size from enriched_jobs
 -- Part of: Employer Metadata Architecture Cleanup
 -- Date: 2026-01-04
 -- Purpose: Remove duplicate employer_size column - employer_metadata is source of truth

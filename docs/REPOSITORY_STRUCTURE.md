@@ -136,7 +136,8 @@ migrations/
 ├── 020_create_jobs_with_employer_context_view.sql # View with display_name JOIN
 ├── 021_add_employer_name_fk.sql           # FK constraint on enriched_jobs.employer_name
 ├── 022_simplify_view_joins.sql            # Remove LOWER() from view JOINs
-└── 023_drop_aliases_column.sql            # Remove unused aliases column
+├── 023_drop_aliases_column.sql            # Remove unused aliases column
+└── 024_drop_enriched_jobs_employer_size.sql # Remove employer_size from enriched_jobs
 ```
 
 ### 6. **`docs/` Directory** (Documentation)
@@ -274,7 +275,7 @@ main()
 | Core pipeline | 12 | Python scripts (incl. 3 Epic 8 scripts) |
 | Utilities | 13 | Python scripts (incl. seed_employer_metadata.py) |
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
-| Migrations | 19 | SQL scripts (incl. employer_metadata, views) |
+| Migrations | 24 | SQL scripts (incl. employer_metadata, views, cleanup) |
 | Config files | 12 | YAML/JSON files (6 shared + 3 greenhouse + 3 lever) |
 | Test files | 10 | Python scripts |
 | **Total active** | **80** | **Scripts + configs** |
@@ -309,5 +310,5 @@ main()
 ---
 
 **Last Updated:** 2026-01-04
-**Changes:** Added employer_metadata system - new table for canonical employer names, seed utility (seed_employer_metadata.py), jobs_with_employer_context view for API, and 7 new migrations (014-020). Updated file counts.
-**Status:** Clean structure, Epic 8 Phase 1 infrastructure complete
+**Changes:** employer_size cleanup - removed from enriched_jobs (now employer_metadata only), fixed dead code in seed_employer_metadata.py and backfill_missing_enriched.py, added migrations 021-024.
+**Status:** Clean structure, employer_metadata is source of truth for employer attributes

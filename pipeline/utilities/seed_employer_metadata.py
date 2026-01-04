@@ -6,14 +6,17 @@ Seeds the employer_metadata table from existing enriched_jobs data.
 Creates entries with:
 - canonical_name: lowercase employer name
 - display_name: from ATS config files (source of truth) or most common casing variant
-- employer_size: majority vote from existing jobs (optional)
 - working_arrangement_default: NULL (populated manually or via hardcoded known companies)
 
+NOTE: employer_size is NOT set by this script. It is manually curated via
+apply_employer_size_corrections.py to ensure data quality.
+
 Display Name Priority:
-1. ATS config file key (e.g., "Nuro" from greenhouse/company_ats_mapping.json)
-2. KNOWN_WORKING_ARRANGEMENTS display_name (manual overrides)
-3. Most common capitalized variant from enriched_jobs data
-4. Most common variant overall (fallback)
+1. DISPLAY_NAME_OVERRIDES (manual overrides - highest priority)
+2. KNOWN_WORKING_ARRANGEMENTS display_name
+3. ATS config file key (e.g., "Nuro" from greenhouse/company_ats_mapping.json)
+4. Most common capitalized variant from enriched_jobs data
+5. Most common variant overall (fallback)
 
 Usage:
     python -m pipeline.utilities.seed_employer_metadata --dry-run
@@ -233,16 +236,16 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
     config_display_names = load_display_names_from_config()
     print(f"[OK] Loaded {len(config_display_names)} display names from config")
 
-    # Step 1: Fetch all employer names and sizes
+    # Step 1: Fetch all employer names
     print("\n[DATA] Fetching employer data from enriched_jobs...")
 
-    employer_data = defaultdict(lambda: {'names': [], 'sizes': []})
+    employer_data = defaultdict(lambda: {'names': []})
     offset = 0
     page_size = 1000
 
     while True:
         result = supabase.table("enriched_jobs") \
-            .select("employer_name, employer_size") \
+            .select("employer_name") \
             .range(offset, offset + page_size - 1) \
             .execute()
 
@@ -256,10 +259,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
 
             canonical = name.lower().strip()
             employer_data[canonical]['names'].append(name)
-
-            size = row.get('employer_size')
-            if size:
-                employer_data[canonical]['sizes'].append(size)
 
         if len(result.data) < page_size:
             break
@@ -281,24 +280,24 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             continue
 
         # Find best display_name variant
-        # Priority: 1) Config file, 2) DISPLAY_NAME_OVERRIDES, 3) KNOWN_WORKING_ARRANGEMENTS,
-        #           4) Capitalized variant, 5) Most common
+        # Priority: 1) DISPLAY_NAME_OVERRIDES, 2) KNOWN_WORKING_ARRANGEMENTS,
+        #           3) Config file, 4) Capitalized variant, 5) Most common
         name_counts = defaultdict(int)
         for name in data['names']:
             name_counts[name] += 1
 
-        # Check config files first (source of truth for ATS companies)
-        if canonical in config_display_names:
-            display_name = config_display_names[canonical]
-            display_name_source = 'config'
-        # Check DISPLAY_NAME_OVERRIDES (manual overrides for Adzuna-only employers)
-        elif canonical in DISPLAY_NAME_OVERRIDES:
+        # Check DISPLAY_NAME_OVERRIDES first (manual overrides take precedence)
+        if canonical in DISPLAY_NAME_OVERRIDES:
             display_name = DISPLAY_NAME_OVERRIDES[canonical]
             display_name_source = 'override'
         # Check KNOWN_WORKING_ARRANGEMENTS (companies with known policies)
         elif canonical in KNOWN_WORKING_ARRANGEMENTS:
             display_name = KNOWN_WORKING_ARRANGEMENTS[canonical]['display_name']
             display_name_source = 'known'
+        # Check config files (ATS company mappings)
+        elif canonical in config_display_names:
+            display_name = config_display_names[canonical]
+            display_name_source = 'config'
         else:
             # Fall back to data-inferred: prefer capitalized variants
             capitalized_variants = {n: c for n, c in name_counts.items() if n and n[0].isupper()}
@@ -311,14 +310,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
                 display_name = max(name_counts.keys(), key=lambda n: name_counts[n])
             display_name_source = 'inferred'
 
-        # Majority vote for employer_size (if available)
-        employer_size = None
-        if data['sizes']:
-            size_counts = defaultdict(int)
-            for s in data['sizes']:
-                size_counts[s] += 1
-            employer_size = max(size_counts.keys(), key=lambda s: size_counts[s])
-
         # Check if this is a known company with working arrangement
         known_info = KNOWN_WORKING_ARRANGEMENTS.get(canonical) if seed_known else None
 
@@ -326,7 +317,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             'canonical_name': canonical,
             'display_name': display_name,
             'display_name_source': display_name_source,  # Track where display_name came from
-            'employer_size': employer_size,
             'working_arrangement_default': known_info['arrangement'] if known_info else None,
             'working_arrangement_source': 'manual' if known_info else None,
             'job_count': job_count  # For sorting/display only
@@ -352,19 +342,18 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
 
     # Step 3: Show preview
     print(f"\n[PREVIEW] Top 20 by job count:")
-    print("-" * 80)
-    print(f"  {'Display Name':<30} {'Source':<10} {'Jobs':>5}  {'Size':<10}  WA")
-    print("-" * 80)
+    print("-" * 65)
+    print(f"  {'Display Name':<30} {'Source':<10} {'Jobs':>5}  WA")
+    print("-" * 65)
 
     # Sort by job count for preview
     entries_sorted = sorted(entries, key=lambda e: e['job_count'], reverse=True)
 
     for entry in entries_sorted[:20]:
         job_count = entry['job_count']
-        size = entry['employer_size'] or 'N/A'
         wa = entry['working_arrangement_default'] or '-'
         src = entry['display_name_source'][:8]
-        print(f"  {entry['display_name'][:30]:<30} {src:<10} {job_count:>5}  {size:<10}  {wa}")
+        print(f"  {entry['display_name'][:30]:<30} {src:<10} {job_count:>5}  {wa}")
 
     if len(entries) > 20:
         print(f"  ... and {len(entries) - 20} more")
@@ -382,14 +371,13 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
     for entry in entries:
         try:
             # Build data dict (exclude job_count, it's just for display)
+            # Note: employer_size is NOT set here - it's manually curated via apply_employer_size_corrections.py
             data = {
                 'canonical_name': entry['canonical_name'],
                 'display_name': entry['display_name'],
             }
 
             # Add optional fields only if not None
-            if entry['employer_size']:
-                data['employer_size'] = entry['employer_size']
             if entry['working_arrangement_default']:
                 data['working_arrangement_default'] = entry['working_arrangement_default']
                 data['working_arrangement_source'] = entry['working_arrangement_source']

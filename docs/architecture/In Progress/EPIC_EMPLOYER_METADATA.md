@@ -31,6 +31,8 @@ This epic was accelerated due to Ashby/Lever jobs missing working arrangement da
 | Migration `020_create_jobs_with_employer_context_view.sql` | [DONE] | View for API with display_name JOIN |
 | Migration `021_add_employer_name_fk.sql` | [DONE] | FK constraint on enriched_jobs.employer_name |
 | Migration `022_simplify_view_joins.sql` | [DONE] | Remove LOWER() from JOINs |
+| Migration `023_drop_aliases_column.sql` | [DONE] | Remove unused aliases column |
+| Migration `024_drop_enriched_jobs_employer_size.sql` | [DONE] | employer_size now only on employer_metadata |
 | `db_connection.py` functions | [DONE] | Cache + lookup + upsert + lowercase normalization |
 | `seed_employer_metadata.py` utility | [DONE] | Seeds from config files (source of truth) |
 | `employer_stats.py` updated | [DONE] | Uses canonical_name (lowercase) |
@@ -90,7 +92,6 @@ enriched_jobs                           |           employer_fill_stats
 | (lowercase, FK)  |                                | median_days_to_fill        |
 | title_display    |                                | sample_size                |
 | job_family       |                                +----------------------------+
-| employer_size    | (deprecated - use em.employer_size)
 | working_arr...   |
 +------------------+
         |
@@ -226,13 +227,13 @@ The view automatically:
 
 ---
 
-**Document Version:** 5.0
+**Document Version:** 6.0
 **Last Updated:** 2026-01-04
-**Previous Version:** 4.0 (2026-01-04) - display_name source priority, view
-**Changes in v5.0:**
-- Added FK constraint from enriched_jobs.employer_name to employer_metadata.canonical_name
-- Normalized all employer_name values to lowercase canonical
-- Deleted 1,995 agency jobs from enriched_jobs (is_agency=true or blacklisted)
-- Added 4,131 employers to employer_metadata (from Adzuna data)
-- Updated db_connection.py to store lowercase employer_name
-- Created migrations 021 (FK) and 022 (simplified view JOINs)
+**Previous Version:** 5.0 (2026-01-04) - FK constraint, employer_name normalization
+**Changes in v6.0:**
+- Removed employer_size from enriched_jobs (migration 024)
+- employer_size now exclusively on employer_metadata (manually curated)
+- Removed aliases column (migration 023)
+- Fixed dead code in seed_employer_metadata.py (removed query for non-existent column)
+- Fixed dead code in backfill_missing_enriched.py (removed employer_size parameter)
+- Added apply_employer_size_corrections.py for manual curation

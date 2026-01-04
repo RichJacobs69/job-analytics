@@ -317,7 +317,7 @@ SELECT
     ej.employer_name AS employer_name_raw,
     COALESCE(em.display_name, ej.employer_name) AS employer_name,
     em.canonical_name AS employer_canonical,
-    COALESCE(em.employer_size, ej.employer_size) AS employer_size,
+    em.employer_size,  -- From employer_metadata only (source of truth)
     em.working_arrangement_default,
     efs.median_days_to_fill AS employer_median_days_to_fill,
     (CURRENT_DATE - ej.posted_date) AS days_open,
@@ -326,6 +326,8 @@ FROM enriched_jobs ej
 LEFT JOIN employer_metadata em ON ej.employer_name = em.canonical_name
 LEFT JOIN employer_fill_stats efs ON ej.employer_name = efs.canonical_name;
 ```
+
+**Note:** employer_size now comes exclusively from employer_metadata (no COALESCE fallback).
 
 ### Migration 021: Add FK Constraint on employer_name
 
@@ -369,6 +371,41 @@ LEFT JOIN employer_metadata em ON LOWER(ej.employer_name) = em.canonical_name
 -- After (migration 022):
 LEFT JOIN employer_metadata em ON ej.employer_name = em.canonical_name
 ```
+
+### Migration 023: Drop Aliases Column
+
+**File:** `migrations/023_drop_aliases_column.sql`
+
+Removed unused `aliases` column from employer_metadata table.
+
+```sql
+ALTER TABLE employer_metadata DROP COLUMN IF EXISTS aliases;
+```
+
+### Migration 024: Drop employer_size from enriched_jobs
+
+**File:** `migrations/024_drop_enriched_jobs_employer_size.sql`
+
+Removed duplicate employer_size column from enriched_jobs. employer_metadata is now the single source of truth for employer attributes.
+
+```sql
+-- Update view to use only employer_metadata.employer_size
+CREATE OR REPLACE VIEW jobs_with_employer_context AS
+SELECT
+    ...
+    em.employer_size,  -- Now only from employer_metadata (no COALESCE)
+    ...
+FROM enriched_jobs ej
+LEFT JOIN employer_metadata em ON ej.employer_name = em.canonical_name;
+
+-- Drop the column
+ALTER TABLE enriched_jobs DROP COLUMN IF EXISTS employer_size;
+```
+
+**Impact:**
+- `employer_size` is now exclusively on `employer_metadata` table
+- Manually curated via `apply_employer_size_corrections.py`
+- View provides employer_size via JOIN (NULL if not set)
 
 ### Data Migration Summary
 

@@ -276,7 +276,7 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             track=role.get('track'),
             experience_range=role.get('experience_range'),
             employer_department=employer.get('department'),
-            employer_size=employer.get('company_size_estimate'),
+            # Note: employer_size removed - now sourced from employer_metadata table only
             is_agency=employer.get('is_agency'),
             agency_confidence=employer.get('agency_confidence'),
             currency=compensation.get('currency'),
