@@ -114,10 +114,18 @@ Adzuna API ─────┐                    ┌───── Greenhouse/L
          │               │               │
          v               v               v
   employer_fill_stats  enriched_jobs   url_status
-                       .summary
-                         │
-                         v
-              Next.js Dashboard + Job Feed API
+  (canonical_name)     .summary
+         │               │
+         └───────┬───────┘
+                 │
+                 v
+         employer_metadata (display_name, working_arrangement_default)
+                 │
+                 v
+    jobs_with_employer_context (VIEW)
+                 │
+                 v
+    Next.js Dashboard + Job Feed API
 ```
 
 ## Directory Structure
@@ -144,12 +152,13 @@ job-analytics/
 |--------|---------|
 | `pipeline/fetch_jobs.py` | Main orchestrator, coordinates sources |
 | `pipeline/classifier.py` | Gemini LLM integration, extracts structured data |
-| `pipeline/db_connection.py` | Supabase client, deduplication |
+| `pipeline/db_connection.py` | Supabase client, deduplication, employer metadata cache |
 | `pipeline/location_extractor.py` | Pattern-based location extraction |
 | `pipeline/agency_detection.py` | Agency filtering (hard + soft) |
 | `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
 | `pipeline/summary_generator.py` | Backfill utility for summaries (new jobs get inline via classifier) |
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
+| `pipeline/utilities/seed_employer_metadata.py` | Seed employer_metadata from ATS config files |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
 | `scrapers/ashby/ashby_fetcher.py` | Ashby API client (structured compensation) |
@@ -198,6 +207,12 @@ Uses JSONB array for flexible multi-location support:
 - Pipeline: Summaries generated inline during classification (not batch)
 - API: `/api/hiring-market/jobs/feed`, `/api/hiring-market/jobs/[id]/context`
 - GitHub Actions: `refresh-derived-tables.yml` (URL validation + employer stats only)
+
+**Employer Metadata System - COMPLETE:**
+- Database: `employer_metadata` table, `jobs_with_employer_context` view
+- Pipeline: `working_arrangement_default` fallback in fetch_jobs.py
+- API: Uses view for proper `display_name` (e.g., "Figma" not "figma")
+- **See:** `docs/architecture/In Progress/EPIC_EMPLOYER_METADATA.md`
 
 **Phase 2 (Frontend) - TODO:**
 - Job feed page at `/projects/hiring-market/jobs`

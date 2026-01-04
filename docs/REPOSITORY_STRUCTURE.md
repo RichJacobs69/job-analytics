@@ -65,6 +65,7 @@ pipeline/utilities/
 ├── backfill_source_job_id.py       # Source job ID backfill
 ├── backfill_working_arrangement.py # Working arrangement backfill
 ├── migrate_locations.py            # Migrate city_code to locations JSONB (one-time)
+├── seed_employer_metadata.py       # Seed employer_metadata from config files
 ├── discover_greenhouse_slugs.py    # Greenhouse company slug discovery
 ├── discover_ats_companies.py       # Multi-ATS company discovery (Google CSE)
 └── validate_ats_slugs.py           # Unified ATS slug validation
@@ -125,7 +126,14 @@ migrations/
 ├── 010_create_employer_fill_stats.sql     # Employer fill stats table (Epic 8)
 ├── 011_create_job_summaries.sql           # [DEPRECATED] Replaced by inline summary
 ├── 012_add_url_status_column.sql          # URL health tracking column (Epic 8)
-└── 013_add_summary_column.sql             # Inline summary column on enriched_jobs
+├── 013_add_summary_column.sql             # Inline summary column on enriched_jobs
+├── 014_add_updated_at_trigger.sql         # Auto-update updated_at column
+├── 015_add_timestamps_all_tables.sql      # Add timestamps to all tables
+├── 016_update_url_status.sql              # Expand url_status values
+├── 017_add_410_url_status.sql             # Add HTTP 410 (Gone) status
+├── 018_create_employer_metadata.sql       # Employer metadata table (canonical names)
+├── 019_rename_employer_fill_stats_column.sql # Rename employer_name to canonical_name
+└── 020_create_jobs_with_employer_context_view.sql # View with display_name JOIN
 ```
 
 ### 6. **`docs/` Directory** (Documentation)
@@ -261,12 +269,12 @@ main()
 |------|-------|------|
 | Root wrappers | 8 | Python scripts |
 | Core pipeline | 12 | Python scripts (incl. 3 Epic 8 scripts) |
-| Utilities | 12 | Python scripts |
+| Utilities | 13 | Python scripts (incl. seed_employer_metadata.py) |
 | Scrapers | 6 | Python scripts (across 3 ATS integrations) |
-| Migrations | 12 | SQL scripts (incl. 3 Epic 8 migrations) |
+| Migrations | 19 | SQL scripts (incl. employer_metadata, views) |
 | Config files | 12 | YAML/JSON files (6 shared + 3 greenhouse + 3 lever) |
 | Test files | 10 | Python scripts |
-| **Total active** | **72** | **Scripts + configs** |
+| **Total active** | **80** | **Scripts + configs** |
 
 ## Current Status
 
@@ -297,6 +305,6 @@ main()
 
 ---
 
-**Last Updated:** 2025-12-30
-**Changes:** Added Epic 8 (Curated Job Feed) infrastructure - 3 new pipeline scripts (employer_stats.py, summary_generator.py, url_validator.py), 3 new migrations (010-012), and GitHub Actions workflow for derived tables. Updated file counts.
+**Last Updated:** 2026-01-04
+**Changes:** Added employer_metadata system - new table for canonical employer names, seed utility (seed_employer_metadata.py), jobs_with_employer_context view for API, and 7 new migrations (014-020). Updated file counts.
 **Status:** Clean structure, Epic 8 Phase 1 infrastructure complete
