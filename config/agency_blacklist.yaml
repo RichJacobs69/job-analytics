@@ -4,9 +4,9 @@
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.4
-  last_updated: "2025-12-30"
-  total_agencies: 155
+  version: 1.5
+  last_updated: "2026-01-04"
+  total_agencies: 210
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -214,6 +214,70 @@ hard_filter:
   - anson mccade
   - jack & jill
   - jack & jill/external ats
+
+  # Added 2026-01-04 from employer_metadata audit
+  - ef recruitment
+  - cymertek
+  - zone it solutions
+  - technopride ltd
+  - kavaliro
+  - arthur recruitment
+  - suncap technology
+  - redline group ltd
+  - concept resourcing
+  - altamira
+  - mm international
+  - cella
+  - cella inc
+  - online remote jobs
+  - atlas search
+  - mitchell maguire
+  - engineering employment
+  - carrington recruitment solutions limited
+  - akaasa technologies
+  - gliacell technologies
+  - kellymitchell group
+  - si solutions, llc
+  - travelnursesource
+  - diverse lynx
+  - prospero integrated
+  - elliot partnership
+  - talencia
+  - actalent
+  - wyetech
+  - tech aalto
+  - drc systems
+  - mackay sposito
+  - vdart inc
+  - seacare manpower services pte ltd
+  - rapsys technologies pte ltd.
+  - unison group
+  - falcon green personnel
+  - resolvesoft inc
+  - techohana
+  - indigo tg
+  - appic solutions
+  - eligo recruitment ltd
+  - microtech global ltd
+  - xcellink pte ltd
+  - sphere digital recruitment
+  - pyramid etc companies, llc
+  - catapult solutions group
+  - mindbank consulting group
+  - quality talent group
+  - us tech solutions, inc.
+  - veerteq solutions inc.
+  - purple drive
+  - talent international uk ltd
+  - jacobs massey
+  - blank space recruitment
+  - skilled careers ltd
+  - pri technology
+  - shulman fleming & partners
+  - magnet medical
+  - staffworx limited
+  - achieving stars therapy
+  - summer browning associates
 
 # =========================
 # PATTERN DETECTION
