@@ -306,6 +306,10 @@ def insert_enriched_job(
     # Normalize employer_name to lowercase for FK constraint
     employer_name_canonical = employer_name.lower().strip()
 
+    # Ensure employer exists in employer_metadata (auto-create if needed for FK)
+    # This maintains referential integrity while allowing new companies to be scraped
+    ensure_employer_metadata(employer_name_canonical, display_name=employer_name)
+
     # Generate deduplication hash
     job_hash = generate_job_hash(employer_name_canonical, title_display, city_code)
 
