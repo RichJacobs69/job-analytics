@@ -233,7 +233,9 @@ def main():
 
     # Step 3: Process each employer
     results = {
-        "updated": [],
+        "updated_from_null": [],      # NULL -> inferred
+        "updated_reinferred": [],     # inferred -> inferred (value changed)
+        "updated_unchanged": [],      # inferred -> same value (no-op but still counts)
         "skipped_low_confidence": [],
         "skipped_no_data": [],
         "skipped_few_jobs": [],
@@ -245,6 +247,8 @@ def main():
     for employer in employers:
         canonical = employer["canonical_name"]
         display = employer.get("display_name", canonical)
+        previous_value = employer.get("working_arrangement_default")
+        previous_source = employer.get("working_arrangement_source")
         counts = counts_by_employer.get(canonical, Counter())
 
         inferred, confidence, total = compute_inference(
@@ -267,12 +271,24 @@ def main():
             results["skipped_low_confidence"].append((canonical, confidence, total, dist))
             continue
 
-        # Apply inference
+        # Apply inference - show transition from previous state
         prefix = "[DRY RUN]" if dry_run else "[UPDATED]"
-        print(f"{prefix} {display}: {inferred} ({confidence*100:.0f}% of {total} jobs)")
+        if previous_value is None:
+            transition = f"NULL -> {inferred}"
+        elif previous_value == inferred:
+            transition = f"{inferred} (unchanged)"
+        else:
+            transition = f"{previous_value} -> {inferred}"
+        print(f"{prefix} {display}: {transition} ({confidence*100:.0f}% of {total} jobs)")
 
         if apply_inference(canonical, inferred, dry_run):
-            results["updated"].append((canonical, inferred, confidence, total))
+            # Track which type of update this was
+            if previous_value is None:
+                results["updated_from_null"].append((canonical, inferred, confidence, total))
+            elif previous_value == inferred:
+                results["updated_unchanged"].append((canonical, inferred, confidence, total))
+            else:
+                results["updated_reinferred"].append((canonical, previous_value, inferred, confidence, total))
         else:
             results["errors"].append(canonical)
 
@@ -281,11 +297,21 @@ def main():
     print("  SUMMARY")
     print(f"{'='*70}\n")
 
-    print(f"Updated: {len(results['updated'])}")
+    total_updated = len(results['updated_from_null']) + len(results['updated_reinferred']) + len(results['updated_unchanged'])
+    print(f"Updated: {total_updated}")
+    print(f"  - NULL -> inferred: {len(results['updated_from_null'])}")
+    print(f"  - Re-inferred (value changed): {len(results['updated_reinferred'])}")
+    print(f"  - Re-inferred (unchanged): {len(results['updated_unchanged'])}")
     print(f"Skipped (low confidence <{args.threshold*100:.0f}%): {len(results['skipped_low_confidence'])}")
     print(f"Skipped (no data): {len(results['skipped_no_data'])}")
     print(f"Skipped (< {args.min_jobs} jobs): {len(results['skipped_few_jobs'])}")
     print(f"Errors: {len(results['errors'])}")
+
+    # Show re-inferred changes if any
+    if results['updated_reinferred']:
+        print(f"\n--- Re-inferred Value Changes ({len(results['updated_reinferred'])}) ---")
+        for canonical, old_val, new_val, conf, total in results['updated_reinferred']:
+            print(f"  {canonical}: {old_val} -> {new_val} ({conf*100:.0f}% of {total} jobs)")
 
     # Show low-confidence employers for manual review
     if results["skipped_low_confidence"]:
