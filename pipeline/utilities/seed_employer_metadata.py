@@ -52,6 +52,102 @@ KNOWN_WORKING_ARRANGEMENTS = {
     # 'zapier': {'arrangement': 'remote', 'display_name': 'Zapier'},
 }
 
+# Display name overrides for companies not in ATS configs (e.g., Adzuna-only employers)
+# These ensure proper casing even when source data is lowercase
+DISPLAY_NAME_OVERRIDES = {
+    # Big Tech
+    'amazon': 'Amazon',
+    'google': 'Google',
+    'meta': 'Meta',
+    'oracle': 'Oracle',
+    'microsoft': 'Microsoft',
+    'microsoft corporation': 'Microsoft Corporation',
+    'apple': 'Apple',
+    'ibm': 'IBM',
+
+    # Finance
+    'capital one': 'Capital One',
+    'jpmorgan chase': 'JPMorgan Chase',
+    'jpmorgan chase bank, n.a.': 'JPMorgan Chase Bank, N.A.',
+    'jpmorgan chase & co.': 'JPMorgan Chase & Co.',
+    'jpmorganchase': 'JPMorganChase',
+    'goldman sachs': 'Goldman Sachs',
+    'blackrock': 'BlackRock',
+    'bny mellon': 'BNY Mellon',
+    'american express': 'American Express',
+    'mastercard': 'Mastercard',
+    'visa': 'Visa',
+    'hsbc': 'HSBC',
+    'mufg': 'MUFG',
+    'citi': 'Citi',
+    'barclays': 'Barclays',
+    'sofi': 'SoFi',
+    's&p global': 'S&P Global',
+    'u.s. bank': 'U.S. Bank',
+    'london stock exchange group': 'London Stock Exchange Group',
+
+    # Consulting/Professional Services
+    'deloitte': 'Deloitte',
+    'pwc': 'PwC',
+    'ey': 'EY',
+    'kpmg': 'KPMG',
+    'accenture': 'Accenture',
+    'capgemini': 'Capgemini',
+    'guidehouse': 'Guidehouse',
+    'cognizant': 'Cognizant',
+    'turner & townsend': 'Turner & Townsend',
+    'tata consultancy services': 'Tata Consultancy Services',
+
+    # Defense/Aerospace
+    'northrop grumman': 'Northrop Grumman',
+    'lockheed martin': 'Lockheed Martin',
+    'raytheon': 'Raytheon',
+    'boeing': 'Boeing',
+
+    # Media/Entertainment
+    'nbc universal': 'NBC Universal',
+    'nbcuniversal': 'NBCUniversal',
+    'the walt disney company': 'The Walt Disney Company',
+    'bloomberg': 'Bloomberg',
+    'twitch': 'Twitch',
+
+    # Tech
+    'uber': 'Uber',
+    'salesforce': 'Salesforce',
+    'cisco': 'Cisco',
+    'unity technologies': 'Unity Technologies',
+    'tubi': 'Tubi',
+    'strava': 'Strava',
+    'digitalocean': 'DigitalOcean',
+    'rippling': 'Rippling',
+    'scale ai': 'Scale AI',
+    'ibotta': 'Ibotta',
+    'crusoe': 'Crusoe',
+    'lumen': 'Lumen',
+    'trimble': 'Trimble',
+    'echostar': 'EchoStar',
+
+    # Healthcare/Insurance
+    'humana': 'Humana',
+    'genentech': 'Genentech',
+    'pfizer': 'Pfizer',
+    'cvs health': 'CVS Health',
+    'usaa': 'USAA',
+    'cardinal health': 'Cardinal Health',
+    'highmark health': 'Highmark Health',
+    'maximus': 'Maximus',
+
+    # Other
+    'cbre': 'CBRE',
+    'sephora': 'Sephora',
+    'pernod ricard': 'Pernod Ricard',
+    'western union': 'Western Union',
+    'nanyang technological university': 'Nanyang Technological University',
+    'flyzipline': 'Zipline',
+    'launch potato': 'Launch Potato',
+    'policy expert': 'Policy Expert',
+}
+
 
 def load_display_names_from_config() -> dict:
     """
@@ -186,16 +282,21 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             continue
 
         # Find best display_name variant
-        # Priority: 1) Config file, 2) KNOWN_WORKING_ARRANGEMENTS, 3) Capitalized variant, 4) Most common
+        # Priority: 1) Config file, 2) DISPLAY_NAME_OVERRIDES, 3) KNOWN_WORKING_ARRANGEMENTS,
+        #           4) Capitalized variant, 5) Most common
         name_counts = defaultdict(int)
         for name in data['names']:
             name_counts[name] += 1
 
-        # Check config files first (source of truth)
+        # Check config files first (source of truth for ATS companies)
         if canonical in config_display_names:
             display_name = config_display_names[canonical]
             display_name_source = 'config'
-        # Check KNOWN_WORKING_ARRANGEMENTS (manual overrides)
+        # Check DISPLAY_NAME_OVERRIDES (manual overrides for Adzuna-only employers)
+        elif canonical in DISPLAY_NAME_OVERRIDES:
+            display_name = DISPLAY_NAME_OVERRIDES[canonical]
+            display_name_source = 'override'
+        # Check KNOWN_WORKING_ARRANGEMENTS (companies with known policies)
         elif canonical in KNOWN_WORKING_ARRANGEMENTS:
             display_name = KNOWN_WORKING_ARRANGEMENTS[canonical]['display_name']
             display_name_source = 'known'
@@ -241,10 +342,12 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
 
     # Display name source stats
     config_count = sum(1 for e in entries if e['display_name_source'] == 'config')
+    override_count = sum(1 for e in entries if e['display_name_source'] == 'override')
     known_count_dn = sum(1 for e in entries if e['display_name_source'] == 'known')
     inferred_count = sum(1 for e in entries if e['display_name_source'] == 'inferred')
     print(f"\n[DISPLAY NAME SOURCES]")
     print(f"  From config files: {config_count}")
+    print(f"  From DISPLAY_NAME_OVERRIDES: {override_count}")
     print(f"  From KNOWN_WORKING_ARRANGEMENTS: {known_count_dn}")
     print(f"  Inferred from data: {inferred_count}")
 
