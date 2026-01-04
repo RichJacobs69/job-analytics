@@ -47,7 +47,6 @@ This epic was accelerated due to Ashby/Lever jobs missing working arrangement da
 CREATE TABLE employer_metadata (
     id SERIAL PRIMARY KEY,
     canonical_name TEXT NOT NULL UNIQUE,      -- lowercase, normalized
-    aliases TEXT[] DEFAULT '{}',              -- name variations
     display_name TEXT NOT NULL,               -- pretty version for UI
     employer_size TEXT CHECK (employer_size IN ('startup', 'scaleup', 'enterprise')),
     working_arrangement_default TEXT CHECK (

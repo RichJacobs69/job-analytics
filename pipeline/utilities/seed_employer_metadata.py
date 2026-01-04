@@ -6,7 +6,6 @@ Seeds the employer_metadata table from existing enriched_jobs data.
 Creates entries with:
 - canonical_name: lowercase employer name
 - display_name: from ATS config files (source of truth) or most common casing variant
-- aliases: all name variations seen
 - employer_size: majority vote from existing jobs (optional)
 - working_arrangement_default: NULL (populated manually or via hardcoded known companies)
 
@@ -312,9 +311,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
                 display_name = max(name_counts.keys(), key=lambda n: name_counts[n])
             display_name_source = 'inferred'
 
-        # Collect unique aliases (excluding display_name)
-        aliases = list(set(n for n in data['names'] if n != display_name))
-
         # Majority vote for employer_size (if available)
         employer_size = None
         if data['sizes']:
@@ -330,7 +326,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             'canonical_name': canonical,
             'display_name': display_name,
             'display_name_source': display_name_source,  # Track where display_name came from
-            'aliases': aliases[:10],  # Limit to 10 aliases
             'employer_size': employer_size,
             'working_arrangement_default': known_info['arrangement'] if known_info else None,
             'working_arrangement_source': 'manual' if known_info else None,
@@ -390,7 +385,6 @@ def seed_employer_metadata(dry_run: bool = False, min_jobs: int = 3, seed_known:
             data = {
                 'canonical_name': entry['canonical_name'],
                 'display_name': entry['display_name'],
-                'aliases': entry['aliases'],
             }
 
             # Add optional fields only if not None

@@ -283,7 +283,6 @@ Created the `employer_metadata` table as the single source of truth for employer
 CREATE TABLE employer_metadata (
     id SERIAL PRIMARY KEY,
     canonical_name TEXT NOT NULL UNIQUE,      -- Lowercase normalized (PK for JOINs)
-    aliases TEXT[] DEFAULT '{}',              -- Name variations
     display_name TEXT NOT NULL,               -- Proper casing for UI
     employer_size TEXT CHECK (employer_size IN ('startup', 'scaleup', 'enterprise')),
     working_arrangement_default TEXT CHECK (
@@ -296,6 +295,8 @@ CREATE TABLE employer_metadata (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+Note: `aliases` column was removed in migration 023 (unused with FK constraint approach).
 
 ### Migration 019: Rename employer_fill_stats Column
 
@@ -615,6 +616,7 @@ No migrations currently planned. Future schema changes will be documented here.
 | 020 | Jan 4, 2026 | Create jobs_with_employer_context view |
 | 021 | Jan 4, 2026 | FK constraint on enriched_jobs.employer_name |
 | 022 | Jan 4, 2026 | Simplify view JOINs (remove LOWER()) |
+| 023 | Jan 4, 2026 | Drop unused aliases column from employer_metadata |
 
 ---
 

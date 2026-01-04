@@ -559,7 +559,6 @@ def get_working_arrangement_fallback(employer_name: str) -> Optional[str]:
 def upsert_employer_metadata(
     canonical_name: str,
     display_name: str,
-    aliases: Optional[List[str]] = None,
     employer_size: Optional[str] = None,
     working_arrangement_default: Optional[str] = None,
     working_arrangement_source: str = 'manual'
@@ -570,7 +569,6 @@ def upsert_employer_metadata(
     Args:
         canonical_name: Lowercase normalized name (PK)
         display_name: Pretty name for UI
-        aliases: List of name variations
         employer_size: 'startup', 'scaleup', or 'enterprise'
         working_arrangement_default: Default working arrangement
         working_arrangement_source: 'manual', 'inferred', or 'scraped'
@@ -586,8 +584,6 @@ def upsert_employer_metadata(
     }
 
     # Add optional fields only if provided
-    if aliases is not None:
-        data['aliases'] = aliases
     if employer_size is not None:
         data['employer_size'] = employer_size
     if working_arrangement_default is not None:
