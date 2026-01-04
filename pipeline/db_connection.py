@@ -458,6 +458,153 @@ def get_raw_job_by_id(raw_job_id: int) -> Optional[Dict]:
         return None
 
 
+# ============================================
+# Employer Metadata Functions
+# ============================================
+
+# In-memory cache for employer metadata (refreshed on script restart)
+_employer_metadata_cache: Dict[str, Dict] = {}
+_employer_metadata_loaded: bool = False
+
+
+def _normalize_employer_name(name: str) -> str:
+    """Normalize employer name for canonical lookup."""
+    if not name:
+        return ""
+    return name.lower().strip()
+
+
+def _load_employer_metadata_cache():
+    """Load all employer metadata into memory cache."""
+    global _employer_metadata_cache, _employer_metadata_loaded
+
+    if _employer_metadata_loaded:
+        return
+
+    try:
+        offset = 0
+        page_size = 1000
+
+        while True:
+            result = supabase.table("employer_metadata") \
+                .select("canonical_name, display_name, employer_size, working_arrangement_default, working_arrangement_source") \
+                .range(offset, offset + page_size - 1) \
+                .execute()
+
+            if not result.data:
+                break
+
+            for row in result.data:
+                _employer_metadata_cache[row['canonical_name']] = {
+                    'display_name': row['display_name'],
+                    'employer_size': row['employer_size'],
+                    'working_arrangement_default': row['working_arrangement_default'],
+                    'working_arrangement_source': row['working_arrangement_source']
+                }
+
+            if len(result.data) < page_size:
+                break
+            offset += page_size
+
+        _employer_metadata_loaded = True
+        if _employer_metadata_cache:
+            print(f"[OK] Loaded {len(_employer_metadata_cache)} employer metadata entries into cache")
+
+    except Exception as e:
+        # Table may not exist yet - that's OK
+        if 'does not exist' not in str(e).lower():
+            print(f"[WARN] Failed to load employer metadata cache: {e}")
+        _employer_metadata_loaded = True  # Mark as loaded to avoid retry spam
+
+
+def get_employer_metadata(employer_name: str) -> Optional[Dict]:
+    """
+    Get employer metadata by name (case-insensitive).
+
+    Args:
+        employer_name: Employer name as it appears in job posting
+
+    Returns:
+        Dict with display_name, employer_size, working_arrangement_default,
+        working_arrangement_source - or None if not found
+    """
+    _load_employer_metadata_cache()
+
+    canonical = _normalize_employer_name(employer_name)
+    return _employer_metadata_cache.get(canonical)
+
+
+def get_working_arrangement_fallback(employer_name: str) -> Optional[str]:
+    """
+    Get working arrangement fallback for an employer.
+
+    Use this when the classifier returns 'unknown' for working_arrangement.
+    Returns None if no fallback is configured for this employer.
+
+    Args:
+        employer_name: Employer name as it appears in job posting
+
+    Returns:
+        'hybrid', 'remote', 'onsite', 'flexible', or None
+    """
+    metadata = get_employer_metadata(employer_name)
+    if metadata:
+        return metadata.get('working_arrangement_default')
+    return None
+
+
+def upsert_employer_metadata(
+    canonical_name: str,
+    display_name: str,
+    aliases: Optional[List[str]] = None,
+    employer_size: Optional[str] = None,
+    working_arrangement_default: Optional[str] = None,
+    working_arrangement_source: str = 'manual'
+) -> bool:
+    """
+    Insert or update employer metadata.
+
+    Args:
+        canonical_name: Lowercase normalized name (PK)
+        display_name: Pretty name for UI
+        aliases: List of name variations
+        employer_size: 'startup', 'scaleup', or 'enterprise'
+        working_arrangement_default: Default working arrangement
+        working_arrangement_source: 'manual', 'inferred', or 'scraped'
+
+    Returns:
+        True if successful
+    """
+    global _employer_metadata_loaded
+
+    data = {
+        'canonical_name': canonical_name.lower().strip(),
+        'display_name': display_name,
+    }
+
+    # Add optional fields only if provided
+    if aliases is not None:
+        data['aliases'] = aliases
+    if employer_size is not None:
+        data['employer_size'] = employer_size
+    if working_arrangement_default is not None:
+        data['working_arrangement_default'] = working_arrangement_default
+        data['working_arrangement_source'] = working_arrangement_source
+
+    try:
+        supabase.table("employer_metadata").upsert(
+            data, on_conflict='canonical_name'
+        ).execute()
+
+        # Invalidate cache so next lookup gets fresh data
+        _employer_metadata_loaded = False
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Failed to upsert employer metadata: {e}")
+        return False
+
+
 def test_connection():
     """Test that we can connect to Supabase"""
     try:

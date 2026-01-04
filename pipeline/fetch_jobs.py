@@ -341,7 +341,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
             - jobs_written_enriched: int
     """
     from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
@@ -530,13 +530,21 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 elif extracted_locations and extracted_locations[0].get('type') == 'remote':
                     legacy_city_code = 'remote'
 
+                # Determine working arrangement with employer metadata fallback
+                wa_from_classifier = location.get('working_arrangement') or 'unknown'
+                if wa_from_classifier == 'unknown':
+                    wa_fallback = get_working_arrangement_fallback(job.company)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+                else:
+                    working_arrangement = wa_from_classifier
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=job.company,
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
                     city_code=legacy_city_code,  # DEPRECATED - use locations instead
-                    working_arrangement=location.get('working_arrangement') or 'unknown',
+                    working_arrangement=working_arrangement,
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
                     last_seen_date=date.today(),
@@ -743,13 +751,13 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
     Returns:
         Stats dictionary with processing metrics
     """
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import UnifiedJob, DataSource
     from datetime import date
     import time
-    
+
     logger.info(f"\n{'='*80}")
     logger.info(f"ADZUNA INCREMENTAL PIPELINE - {city_code.upper()}")
     logger.info(f"{'='*80}\n")
@@ -897,13 +905,21 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
             elif extracted_locations and extracted_locations[0].get('type') == 'remote':
                 legacy_city_code = 'remote'
 
+            # Determine working arrangement with employer metadata fallback
+            wa_from_classifier = location.get('working_arrangement')
+            if not wa_from_classifier or wa_from_classifier == 'unknown':
+                wa_fallback = get_working_arrangement_fallback(company)
+                working_arrangement = wa_fallback if wa_fallback else 'onsite'  # Adzuna defaults to onsite
+            else:
+                working_arrangement = wa_from_classifier
+
             enriched_job_id = insert_enriched_job(
                 raw_job_id=raw_job_id,
                 employer_name=company,
                 title_display=title,
                 job_family=role.get('job_family') or 'out_of_scope',
                 city_code=legacy_city_code,  # DEPRECATED - use locations instead
-                working_arrangement=location.get('working_arrangement') or 'onsite',
+                working_arrangement=working_arrangement,
                 position_type=role.get('position_type') or 'full_time',
                 posted_date=date.today(),
                 last_seen_date=date.today(),
@@ -976,7 +992,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
         Dict with processing statistics
     """
     from scrapers.lever.lever_fetcher import fetch_lever_jobs, load_company_mapping
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import DataSource
@@ -1198,13 +1214,21 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                 elif extracted_locations and extracted_locations[0].get('type') == 'remote':
                     legacy_city_code = 'remote'
 
+                # Determine working arrangement with employer metadata fallback
+                wa_from_classifier = location.get('working_arrangement') or 'unknown'
+                if wa_from_classifier == 'unknown':
+                    wa_fallback = get_working_arrangement_fallback(company_display)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+                else:
+                    working_arrangement = wa_from_classifier
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company_display,
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
                     city_code=legacy_city_code,  # DEPRECATED - use locations instead
-                    working_arrangement=location.get('working_arrangement') or 'unknown',
+                    working_arrangement=working_arrangement,
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
                     last_seen_date=date.today(),
@@ -1314,7 +1338,7 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
         Dict with processing statistics
     """
     from scrapers.ashby.ashby_fetcher import fetch_ashby_jobs, load_company_mapping
-    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job
+    from pipeline.db_connection import insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
     from pipeline.unified_job_ingester import DataSource
@@ -1558,10 +1582,13 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
                 final_salary_max = job.salary_max or compensation.get('base_salary_range', {}).get('max')
                 final_currency = job.salary_currency or compensation.get('currency')
 
-                # Derive working arrangement from Ashby's isRemote flag
+                # Derive working arrangement: classifier > is_remote flag > employer metadata > unknown
                 working_arrangement = location.get('working_arrangement') or 'unknown'
                 if job.is_remote and working_arrangement == 'unknown':
                     working_arrangement = 'remote'
+                elif working_arrangement == 'unknown':
+                    wa_fallback = get_working_arrangement_fallback(company_name)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
 
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
@@ -1787,7 +1814,7 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
     """
 
     try:
-        from pipeline.db_connection import insert_raw_job, insert_enriched_job
+        from pipeline.db_connection import insert_raw_job, insert_enriched_job, get_working_arrangement_fallback
         from datetime import date
         from pipeline.unified_job_ingester import UnifiedJob, DataSource
 
@@ -1833,6 +1860,14 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                 compensation = classification.get('compensation', {})
                 employer = classification.get('employer', {})
 
+                # Determine working arrangement with employer metadata fallback
+                wa_from_classifier = location.get('working_arrangement') or 'unknown'
+                if wa_from_classifier == 'unknown':
+                    wa_fallback = get_working_arrangement_fallback(company)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+                else:
+                    working_arrangement = wa_from_classifier
+
                 # Step 3: Insert enriched job
                 # Use extracted location > source city > 'unk' (unknown)
                 # This way: Adzuna jobs use source_city if extraction fails, Greenhouse jobs use 'unk'
@@ -1842,7 +1877,7 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     title_display=title,
                     job_family=role.get('job_family') or 'out_of_scope',
                     city_code=location.get('city_code') or source_city or 'unk',
-                    working_arrangement=location.get('working_arrangement') or 'unknown',
+                    working_arrangement=working_arrangement,
                     position_type=role.get('position_type') or 'full_time',
                     posted_date=date.today(),
                     last_seen_date=date.today(),

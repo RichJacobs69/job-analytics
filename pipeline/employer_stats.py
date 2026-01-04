@@ -75,8 +75,8 @@ def compute_employer_fill_stats(dry_run: bool = False):
         print(f"[ERROR] Failed to fetch closed roles: {e}")
         return
 
-    # Step 2: Group by employer and compute fill times
-    print("\n[COMPUTE] Computing fill times per employer...")
+    # Step 2: Group by employer (canonical_name = lowercase) and compute fill times
+    print("\n[COMPUTE] Computing fill times per employer (using canonical names)...")
 
     employer_fill_days = defaultdict(list)
 
@@ -84,6 +84,9 @@ def compute_employer_fill_stats(dry_run: bool = False):
         employer = role['employer_name']
         if not employer:
             continue
+
+        # Normalize to canonical_name (lowercase)
+        canonical_name = employer.lower().strip()
 
         try:
             posted = datetime.strptime(role['posted_date'], '%Y-%m-%d')
@@ -99,7 +102,7 @@ def compute_employer_fill_stats(dry_run: bool = False):
 
             # Sanity check: fill time should be positive and reasonable
             if 0 < fill_days < 365:
-                employer_fill_days[employer].append(fill_days)
+                employer_fill_days[canonical_name].append(fill_days)
         except (ValueError, TypeError) as e:
             continue
 
@@ -111,13 +114,13 @@ def compute_employer_fill_stats(dry_run: bool = False):
     employer_stats = []
     insufficient_sample = 0
 
-    for employer, fill_days in employer_fill_days.items():
+    for canonical_name, fill_days in employer_fill_days.items():
         sample_size = len(fill_days)
 
         if sample_size >= 3:
             median_days = statistics.median(fill_days)
             employer_stats.append({
-                'employer_name': employer,
+                'canonical_name': canonical_name,
                 'median_days_to_fill': round(median_days, 1),
                 'sample_size': sample_size
             })
@@ -133,11 +136,11 @@ def compute_employer_fill_stats(dry_run: bool = False):
     # Step 4: Show top employers
     print("\n[PREVIEW] Top 15 employers by sample size:")
     print("-" * 60)
-    print(f"{'Employer':<35} {'Median Days':>12} {'Sample':>8}")
+    print(f"{'Canonical Name':<35} {'Median Days':>12} {'Sample':>8}")
     print("-" * 60)
 
     for stat in employer_stats[:15]:
-        print(f"{stat['employer_name'][:35]:<35} {stat['median_days_to_fill']:>12.1f} {stat['sample_size']:>8}")
+        print(f"{stat['canonical_name'][:35]:<35} {stat['median_days_to_fill']:>12.1f} {stat['sample_size']:>8}")
 
     if len(employer_stats) > 15:
         print(f"... and {len(employer_stats) - 15} more employers")
@@ -157,15 +160,15 @@ def compute_employer_fill_stats(dry_run: bool = False):
             try:
                 supabase.table("employer_fill_stats") \
                     .upsert({
-                        'employer_name': stat['employer_name'],
+                        'canonical_name': stat['canonical_name'],
                         'median_days_to_fill': stat['median_days_to_fill'],
                         'sample_size': stat['sample_size'],
                         'computed_at': datetime.now().isoformat()
-                    }, on_conflict='employer_name') \
+                    }, on_conflict='canonical_name') \
                     .execute()
                 upserted += 1
             except Exception as e:
-                print(f"   [ERROR] Failed to upsert {stat['employer_name']}: {e}")
+                print(f"   [ERROR] Failed to upsert {stat['canonical_name']}: {e}")
                 errors += 1
 
         print(f"[OK] Upserted: {upserted}, Errors: {errors}")
@@ -207,12 +210,14 @@ def verify_stats():
 
         print(f"\nTop 20 employers by sample size:")
         print("-" * 70)
-        print(f"{'Employer':<35} {'Median Days':>12} {'Sample':>8} {'Computed':<15}")
+        print(f"{'Canonical Name':<35} {'Median Days':>12} {'Sample':>8} {'Computed':<15}")
         print("-" * 70)
 
         for row in result.data:
             computed = row['computed_at'][:10] if row['computed_at'] else 'N/A'
-            print(f"{row['employer_name'][:35]:<35} {row['median_days_to_fill']:>12.1f} {row['sample_size']:>8} {computed:<15}")
+            # Handle both old (employer_name) and new (canonical_name) column names
+            name = row.get('canonical_name') or row.get('employer_name', 'unknown')
+            print(f"{name[:35]:<35} {row['median_days_to_fill']:>12.1f} {row['sample_size']:>8} {computed:<15}")
 
         # Get total count
         count_result = supabase.table("employer_fill_stats") \
