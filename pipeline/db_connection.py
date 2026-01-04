@@ -241,7 +241,6 @@ def insert_enriched_job(
     seniority: Optional[str] = None,
     experience_range: Optional[str] = None,
     employer_department: Optional[str] = None,
-    employer_size: Optional[str] = None,
     is_agency: Optional[bool] = None,
     agency_confidence: Optional[str] = None,
     currency: Optional[str] = None,
@@ -320,7 +319,6 @@ def insert_enriched_job(
         # Employer (stored as canonical lowercase for FK to employer_metadata)
         "employer_name": employer_name_canonical,
         "employer_department": employer_department,
-        "employer_size": employer_size,
         "is_agency": is_agency,
         "agency_confidence": agency_confidence,
 
@@ -369,7 +367,6 @@ def insert_enriched_job(
 
     # Validate/normalize constrained fields before insert
     VALID_CURRENCIES = {'usd', 'gbp', 'cad', 'eur', 'sgd'}
-    VALID_EMPLOYER_SIZES = {'startup', 'scaleup', 'enterprise'}
     VALID_WORKING_ARRANGEMENTS = {'onsite', 'hybrid', 'remote', 'flexible', 'unknown'}
 
     if data.get('currency'):
@@ -378,13 +375,6 @@ def insert_enriched_job(
             data['currency'] = currency_lower
         else:
             data['currency'] = None
-
-    if data.get('employer_size'):
-        size_lower = data['employer_size'].lower()
-        if size_lower in VALID_EMPLOYER_SIZES:
-            data['employer_size'] = size_lower
-        else:
-            data['employer_size'] = None  # LLM returned invalid value (e.g., prompt text)
 
     if data.get('working_arrangement'):
         wa_lower = data['working_arrangement'].lower()

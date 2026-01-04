@@ -216,6 +216,7 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 → **out_of_scope** - Classify as 'out_of_scope' ONLY if:
   - Title is clearly NOT product, data, or delivery (e.g., "Software Engineer", "Marketing Manager", "Sales Rep")
   - Title contains: "Product Marketing", "Product Designer", "Product Support" (these are NOT PM roles)
+  - Title contains: "Product Engineer" or "Platform Engineer" (these are SOFTWARE ENGINEERING roles, not PM roles)
 
 # SENIORITY CLASSIFICATION RULES
 
@@ -260,8 +261,7 @@ Return JSON with this EXACT structure:
 
 {{
   "employer": {{
-    "department": "product|data|delivery|null (only if explicitly stated)",
-    "company_size_estimate": "startup|scaleup|enterprise|null (infer from context if clear)"
+    "department": "product|data|delivery|null (only if explicitly stated)"
   }},
   "role": {{
     "job_subfamily": "string from subfamilies above (required - choose the most specific match, or 'out_of_scope' if none fit)",
