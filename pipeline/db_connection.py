@@ -299,19 +299,22 @@ def insert_enriched_job(
     
     if not employer_name:
         raise ValueError(f"Missing employer_name for job ID: {raw_job_id}")
-    
+
     if not title_display:
         raise ValueError(f"Missing title_display for job ID: {raw_job_id}")
-    
+
+    # Normalize employer_name to lowercase for FK constraint
+    employer_name_canonical = employer_name.lower().strip()
+
     # Generate deduplication hash
-    job_hash = generate_job_hash(employer_name, title_display, city_code)
-    
+    job_hash = generate_job_hash(employer_name_canonical, title_display, city_code)
+
     data = {
         "raw_job_id": raw_job_id,
         "job_hash": job_hash,
 
-        # Employer
-        "employer_name": employer_name,
+        # Employer (stored as canonical lowercase for FK to employer_metadata)
+        "employer_name": employer_name_canonical,
         "employer_department": employer_department,
         "employer_size": employer_size,
         "is_agency": is_agency,

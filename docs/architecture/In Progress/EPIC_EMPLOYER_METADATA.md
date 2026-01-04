@@ -28,12 +28,16 @@ This epic was accelerated due to Ashby/Lever jobs missing working arrangement da
 |-----------|--------|-------|
 | Migration `018_create_employer_metadata.sql` | [DONE] | Table created in Supabase |
 | Migration `019_rename_employer_fill_stats_column.sql` | [DONE] | Renamed employer_name -> canonical_name |
-| Migration `020_create_jobs_with_employer_context_view.sql` | [TODO] | View for API with display_name JOIN |
-| `db_connection.py` functions | [DONE] | Cache + lookup + upsert |
+| Migration `020_create_jobs_with_employer_context_view.sql` | [DONE] | View for API with display_name JOIN |
+| Migration `021_add_employer_name_fk.sql` | [TODO] | FK constraint on enriched_jobs.employer_name |
+| Migration `022_simplify_view_joins.sql` | [TODO] | Remove LOWER() from JOINs |
+| `db_connection.py` functions | [DONE] | Cache + lookup + upsert + lowercase normalization |
 | `seed_employer_metadata.py` utility | [DONE] | Seeds from config files (source of truth) |
 | `employer_stats.py` updated | [DONE] | Uses canonical_name (lowercase) |
 | `fetch_jobs.py` fallback logic | [DONE] | 5 locations updated |
-| Run seed script | [DONE] | 1,455 employers, 327 from config |
+| Run seed script | [DONE] | 5,586 employers (expanded from Adzuna data) |
+| Agency cleanup | [DONE] | 1,995 agency jobs deleted from enriched_jobs |
+| employer_name normalization | [DONE] | All values now lowercase canonical |
 | Set known company arrangements | [TODO] | Harvey AI, Intercom, etc. |
 | Update Job Feed API to use view | [TODO] | portfolio-site changes |
 
@@ -78,14 +82,16 @@ CREATE TABLE employer_metadata (
                               | working_arrangement_source |
                               +----------------------------+
                                         ^
-                                        | JOIN lower(employer_name)
+                                        | FK: employer_name -> canonical_name
+                                        | (employer_name is now lowercase canonical)
                                         |
 enriched_jobs                           |           employer_fill_stats
 +------------------+                    |           +----------------------------+
 | employer_name    |--------------------+---------->| canonical_name (PK)        |
-| title_display    |                                | median_days_to_fill        |
-| job_family       |                                | sample_size                |
-| employer_size    | (deprecated)                   +----------------------------+
+| (lowercase, FK)  |                                | median_days_to_fill        |
+| title_display    |                                | sample_size                |
+| job_family       |                                +----------------------------+
+| employer_size    | (deprecated - use em.employer_size)
 | working_arr...   |
 +------------------+
         |
@@ -94,14 +100,19 @@ enriched_jobs                           |           employer_fill_stats
 jobs_with_employer_context (VIEW)
 +----------------------------------+
 | employer_name (= display_name)   | <-- Proper casing for UI
-| employer_name_raw                | <-- Original for debugging
-| employer_canonical               | <-- For JOINs
+| employer_name_raw                | <-- Canonical (lowercase)
+| employer_canonical               | <-- For JOINs (same as employer_name_raw)
 | employer_median_days_to_fill     | <-- From employer_fill_stats
 | days_open                        | <-- Computed
 | fill_time_ratio                  | <-- Computed
 | ... all enriched_jobs fields ... |
 +----------------------------------+
 ```
+
+**Data Flow:**
+1. Pipeline stores `employer_name` as lowercase canonical (FK enforced)
+2. `display_name` in `employer_metadata` provides proper casing
+3. View exposes `employer_name` with proper display casing for UI
 
 ## Files Created/Modified
 
@@ -110,10 +121,12 @@ jobs_with_employer_context (VIEW)
 | `migrations/018_create_employer_metadata.sql` | Created | Table schema |
 | `migrations/019_rename_employer_fill_stats_column.sql` | Created | Rename employer_name -> canonical_name |
 | `migrations/020_create_jobs_with_employer_context_view.sql` | Created | View with display_name JOIN |
-| `pipeline/db_connection.py` | Modified | Added `get_employer_metadata()`, `get_working_arrangement_fallback()`, `upsert_employer_metadata()` |
+| `migrations/021_add_employer_name_fk.sql` | Created | FK constraint on employer_name |
+| `migrations/022_simplify_view_joins.sql` | Created | Remove LOWER() from JOINs |
+| `pipeline/db_connection.py` | Modified | Added employer functions + lowercase normalization in `insert_enriched_job()` |
 | `pipeline/utilities/seed_employer_metadata.py` | Modified | Seeds from config files (source of truth) |
 | `pipeline/employer_stats.py` | Modified | Uses canonical_name (lowercase) |
-| `pipeline/fetch_jobs.py` | Modified | Fallback logic at 5 locations (Greenhouse, Adzuna, Lever, Ashby, generic store) |
+| `pipeline/fetch_jobs.py` | Modified | Fallback logic + `ensure_employer_metadata()` calls |
 
 ## Usage
 
@@ -214,7 +227,13 @@ The view automatically:
 
 ---
 
-**Document Version:** 4.0
+**Document Version:** 5.0
 **Last Updated:** 2026-01-04
-**Previous Version:** 3.0 (2026-01-04) - working_arrangement_default implementation
-**Changes in v4.0:** Added display_name source priority, employer_fill_stats canonical_name rename, jobs_with_employer_context view
+**Previous Version:** 4.0 (2026-01-04) - display_name source priority, view
+**Changes in v5.0:**
+- Added FK constraint from enriched_jobs.employer_name to employer_metadata.canonical_name
+- Normalized all employer_name values to lowercase canonical
+- Deleted 1,995 agency jobs from enriched_jobs (is_agency=true or blacklisted)
+- Added 4,131 employers to employer_metadata (from Adzuna data)
+- Updated db_connection.py to store lowercase employer_name
+- Created migrations 021 (FK) and 022 (simplified view JOINs)
