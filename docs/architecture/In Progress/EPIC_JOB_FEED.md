@@ -1,11 +1,13 @@
 # Epic: Curated Job Feed
 
 **Epic ID:** EPIC-008
-**Version:** 1.2
+**Version:** 1.3
 **Created:** 2025-12-27
-**Updated:** 2026-01-03
+**Updated:** 2026-01-04
 **Owner:** Rich
 **Status:** In Progress (Phase 2 API Integration Complete)
+
+**Dependency:** EPIC_EMPLOYER_METADATA (migrations 018-022)
 
 ---
 
@@ -15,7 +17,8 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Database Migrations** | [DONE] | 010, 012, 013, 014, 015, 016 executed on Supabase |
+| **Database Migrations** | [DONE] | 010-022 executed on Supabase |
+| **Employer Metadata** | [DONE] | FK on employer_name, `jobs_with_employer_context` view |
 | `employer_fill_stats` table | [DONE] | Stores median fill times per employer |
 | `enriched_jobs.summary` column | [DONE] | AI-generated role summaries (inline, migration 013) |
 | `url_status` column | [DONE] | Expanded: active, 404, soft_404, blocked, unverifiable, error (migration 016) |
@@ -70,6 +73,8 @@
 | **Exclusive group routing** | Each job in exactly one group; priority: Remote > Fresh > Top Comp > Still Hiring > Scaling |
 | **Post-filter for country-scoped remote** | PostgREST can't do multi-key JSONB in OR; filter in application layer |
 | **Context fetch on expand** | Summary + fit signals fetched lazily to reduce initial payload |
+| **Query view not table** | API queries `jobs_with_employer_context` view for proper display_name casing |
+| **Working arrangement fallback** | Classifier > ATS flag > employer_metadata.working_arrangement_default > 'unknown' |
 
 ### Test Results (2025-12-30)
 

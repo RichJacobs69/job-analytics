@@ -1,6 +1,6 @@
 # Database Schema Updates
 
-**Last Updated:** January 1, 2026
+**Last Updated:** January 4, 2026
 **Status:** All migrations complete and verified
 
 This document tracks all database schema changes for the job-analytics platform.
@@ -13,7 +13,8 @@ This document tracks all database schema changes for the job-analytics platform.
 2. [Migration 2: Title and Company Fields (raw_jobs)](#migration-2-title-and-company-fields-raw_jobs)
 3. [Migrations 014-015: URL Validation Timestamps](#migrations-014-015-url-validation-timestamps)
 4. [Migration 016: URL Status Expansion](#migration-016-url-status-expansion)
-5. [Current Schema Reference](#current-schema-reference)
+5. [Migrations 017-022: Employer Metadata System](#migrations-017-022-employer-metadata-system)
+6. [Current Schema Reference](#current-schema-reference)
 
 ---
 
@@ -247,6 +248,159 @@ Initial full validation of 2,548 ATS jobs:
 
 ---
 
+## Migrations 017-022: Employer Metadata System
+
+**Date:** January 3-4, 2026
+**Purpose:** Create employer metadata infrastructure with FK constraint for referential integrity
+**Status:** Complete
+
+### Summary
+
+This series of migrations creates a centralized employer metadata system that:
+1. Stores canonical employer information (display names, sizes, working arrangements)
+2. Enforces referential integrity via FK constraint on enriched_jobs.employer_name
+3. Provides a view layer for API queries with proper display names
+
+### Migration 017: Add HTTP 410 Status
+
+**File:** `migrations/017_add_410_url_status.sql`
+
+Added HTTP 410 (Gone) as a terminal URL status for permanently removed job postings.
+
+```sql
+ALTER TABLE enriched_jobs DROP CONSTRAINT IF EXISTS valid_url_status;
+ALTER TABLE enriched_jobs ADD CONSTRAINT valid_url_status
+CHECK (url_status IN ('active', '404', '410', 'soft_404', 'blocked', 'unverifiable', 'error', 'redirect', 'unknown'));
+```
+
+### Migration 018: Create employer_metadata Table
+
+**File:** `migrations/018_create_employer_metadata.sql`
+
+Created the `employer_metadata` table as the single source of truth for employer information.
+
+```sql
+CREATE TABLE employer_metadata (
+    id SERIAL PRIMARY KEY,
+    canonical_name TEXT NOT NULL UNIQUE,      -- Lowercase normalized (PK for JOINs)
+    aliases TEXT[] DEFAULT '{}',              -- Name variations
+    display_name TEXT NOT NULL,               -- Proper casing for UI
+    employer_size TEXT CHECK (employer_size IN ('startup', 'scaleup', 'enterprise')),
+    working_arrangement_default TEXT CHECK (
+        working_arrangement_default IN ('hybrid', 'remote', 'onsite', 'flexible')
+    ),
+    working_arrangement_source TEXT CHECK (
+        working_arrangement_source IN ('manual', 'inferred', 'scraped')
+    ),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Migration 019: Rename employer_fill_stats Column
+
+**File:** `migrations/019_rename_employer_fill_stats_column.sql`
+
+Renamed `employer_name` to `canonical_name` in `employer_fill_stats` for consistency.
+
+### Migration 020: Create jobs_with_employer_context View
+
+**File:** `migrations/020_create_jobs_with_employer_context_view.sql`
+
+Created view that JOINs enriched_jobs with employer_metadata and employer_fill_stats.
+
+```sql
+CREATE VIEW jobs_with_employer_context AS
+SELECT
+    ej.*,
+    ej.employer_name AS employer_name_raw,
+    COALESCE(em.display_name, ej.employer_name) AS employer_name,
+    em.canonical_name AS employer_canonical,
+    COALESCE(em.employer_size, ej.employer_size) AS employer_size,
+    em.working_arrangement_default,
+    efs.median_days_to_fill AS employer_median_days_to_fill,
+    (CURRENT_DATE - ej.posted_date) AS days_open,
+    -- fill_time_ratio computed field
+FROM enriched_jobs ej
+LEFT JOIN employer_metadata em ON ej.employer_name = em.canonical_name
+LEFT JOIN employer_fill_stats efs ON ej.employer_name = efs.canonical_name;
+```
+
+### Migration 021: Add FK Constraint on employer_name
+
+**File:** `migrations/021_add_employer_name_fk.sql`
+
+Added foreign key constraint to enforce referential integrity.
+
+**Prerequisites applied before migration:**
+- Deleted 1,995 agency jobs (is_agency=true or blacklisted employers)
+- Added 4,131 employers to employer_metadata (from Adzuna data)
+- Normalized all employer_name values to lowercase
+
+```sql
+ALTER TABLE enriched_jobs
+ADD CONSTRAINT fk_enriched_jobs_employer
+FOREIGN KEY (employer_name)
+REFERENCES employer_metadata (canonical_name)
+ON UPDATE CASCADE
+ON DELETE RESTRICT;
+
+CREATE INDEX IF NOT EXISTS idx_enriched_jobs_employer_name
+ON enriched_jobs (employer_name);
+```
+
+**Impact:**
+- enriched_jobs.employer_name is now **always lowercase canonical**
+- Every job must reference a valid employer in employer_metadata
+- Cannot delete employers with existing jobs (RESTRICT)
+- Employer name changes cascade to jobs (CASCADE)
+
+### Migration 022: Simplify View JOINs
+
+**File:** `migrations/022_simplify_view_joins.sql`
+
+Updated view to use direct JOINs (removed LOWER() calls since employer_name is now canonical).
+
+```sql
+-- Before (migration 020):
+LEFT JOIN employer_metadata em ON LOWER(ej.employer_name) = em.canonical_name
+
+-- After (migration 022):
+LEFT JOIN employer_metadata em ON ej.employer_name = em.canonical_name
+```
+
+### Data Migration Summary
+
+| Action | Count |
+|--------|-------|
+| Agency jobs deleted | 1,995 |
+| Employers added to metadata | 4,131 |
+| employer_name values normalized | 3,293 |
+| Total employers in metadata | 5,586 |
+| FK coverage | 100% |
+
+### Code Changes
+
+**Modified:** `pipeline/db_connection.py`
+- `insert_enriched_job()` now normalizes employer_name to lowercase
+- Added `ensure_employer_metadata()` function
+- Added `get_employer_metadata()` with caching
+- Added `get_working_arrangement_fallback()` function
+
+**Modified:** `pipeline/fetch_jobs.py`
+- Calls `ensure_employer_metadata()` after job inserts
+- Working arrangement fallback at 5 ATS processor locations
+
+### Benefits
+
+- Single source of truth for employer information
+- Proper display names (e.g., "Figma" not "figma")
+- Working arrangement fallback for jobs classified as 'unknown'
+- Referential integrity prevents orphan jobs
+- Simplified JOINs improve query performance
+
+---
+
 ## Current Schema Reference
 
 ### `raw_jobs` Table
@@ -281,7 +435,7 @@ Initial full validation of 2,548 ATS jobs:
 | id | bigint | NO | Primary key |
 | raw_job_id | bigint | NO | Foreign key to raw_jobs |
 | job_hash | text | NO | Deduplication hash (UNIQUE) |
-| employer_name | text | NO | Classified company name |
+| employer_name | text | NO | Canonical employer name (lowercase, FK to employer_metadata) |
 | title_display | text | NO | Original job title from posting |
 | job_family | text | NO | 'product', 'data', 'out_of_scope' |
 | job_subfamily | text | YES | Specific role type |
@@ -455,6 +609,12 @@ No migrations currently planned. Future schema changes will be documented here.
 | 010-013 | Dec 27-31, 2025 | Job feed infrastructure (employer_fill_stats, summary, url_status) |
 | 014-015 | Dec 31, 2025 | URL validation timestamps |
 | 016 | Jan 1, 2026 | URL status expansion (soft_404, default 'active') |
+| 017 | Jan 3, 2026 | Add HTTP 410 status for permanently removed jobs |
+| 018 | Jan 4, 2026 | Create employer_metadata table |
+| 019 | Jan 4, 2026 | Rename employer_fill_stats.employer_name to canonical_name |
+| 020 | Jan 4, 2026 | Create jobs_with_employer_context view |
+| 021 | Jan 4, 2026 | FK constraint on enriched_jobs.employer_name |
+| 022 | Jan 4, 2026 | Simplify view JOINs (remove LOWER()) |
 
 ---
 

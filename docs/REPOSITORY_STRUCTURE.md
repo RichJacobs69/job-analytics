@@ -133,7 +133,9 @@ migrations/
 ├── 017_add_410_url_status.sql             # Add HTTP 410 (Gone) status
 ├── 018_create_employer_metadata.sql       # Employer metadata table (canonical names)
 ├── 019_rename_employer_fill_stats_column.sql # Rename employer_name to canonical_name
-└── 020_create_jobs_with_employer_context_view.sql # View with display_name JOIN
+├── 020_create_jobs_with_employer_context_view.sql # View with display_name JOIN
+├── 021_add_employer_name_fk.sql           # FK constraint on enriched_jobs.employer_name
+└── 022_simplify_view_joins.sql            # Remove LOWER() from view JOINs
 ```
 
 ### 6. **`docs/` Directory** (Documentation)

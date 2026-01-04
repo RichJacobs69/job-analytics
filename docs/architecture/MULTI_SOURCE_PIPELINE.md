@@ -49,11 +49,22 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
     db_connection.py (Supabase PostgreSQL)
         |- raw_jobs table (original postings + source)
         |- enriched_jobs table (classified + summary)
+        |      employer_name is FK to employer_metadata.canonical_name
+        |      (lowercase canonical, display via view)
+        |- employer_metadata table (source of truth for employers)
+        |      canonical_name, display_name, working_arrangement_default
+        |- employer_fill_stats table (median days to fill)
+               |
+               v
+    jobs_with_employer_context (VIEW)
+        |- JOINs enriched_jobs + employer_metadata + employer_fill_stats
+        |- employer_name = display_name (proper casing for UI)
+        |- days_open, fill_time_ratio (computed)
                |
                v
     Analytics Layer (Next.js API Routes)
         |- richjacobs.me/projects/hiring-market
-        |- Dashboard + Job Feed
+        |- Dashboard + Job Feed (queries view, not raw tables)
 ```
 
 ---
@@ -63,6 +74,7 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
 | Aspect | Adzuna API | Greenhouse Scraper | Lever API | Ashby API |
 |--------|------------|-------------------|-----------|-----------|
 | **Coverage** | 1,500+ jobs/month | 400+ companies | 120+ companies | 70+ companies |
+| **Employers in metadata** | 5,586 total (all sources combined, FK enforced) | | | |
 | **Description Length** | 100-200 chars | 9,000-15,000+ chars | 5,000-15,000+ chars | 5,000-15,000+ chars |
 | **Content Sections** | Basic summary only | Full posting | Full posting | Full posting |
 | **Technology** | REST API | Browser (Playwright) | Public JSON API | Public JSON API |
@@ -583,5 +595,5 @@ The multi-source architecture provides:
 
 ---
 
-**Last Updated:** 2025-12-31
-**Changes:** Added Ashby as fourth source, inline summary generation in classifier, updated company counts
+**Last Updated:** 2026-01-04
+**Changes:** Added employer_metadata system with FK constraint, jobs_with_employer_context view, 5,586 employers

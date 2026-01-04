@@ -29,8 +29,8 @@ This epic was accelerated due to Ashby/Lever jobs missing working arrangement da
 | Migration `018_create_employer_metadata.sql` | [DONE] | Table created in Supabase |
 | Migration `019_rename_employer_fill_stats_column.sql` | [DONE] | Renamed employer_name -> canonical_name |
 | Migration `020_create_jobs_with_employer_context_view.sql` | [DONE] | View for API with display_name JOIN |
-| Migration `021_add_employer_name_fk.sql` | [TODO] | FK constraint on enriched_jobs.employer_name |
-| Migration `022_simplify_view_joins.sql` | [TODO] | Remove LOWER() from JOINs |
+| Migration `021_add_employer_name_fk.sql` | [DONE] | FK constraint on enriched_jobs.employer_name |
+| Migration `022_simplify_view_joins.sql` | [DONE] | Remove LOWER() from JOINs |
 | `db_connection.py` functions | [DONE] | Cache + lookup + upsert + lowercase normalization |
 | `seed_employer_metadata.py` utility | [DONE] | Seeds from config files (source of truth) |
 | `employer_stats.py` updated | [DONE] | Uses canonical_name (lowercase) |
