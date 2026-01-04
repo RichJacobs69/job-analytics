@@ -15,7 +15,6 @@ data:
 
 product:
   - core_pm
-  - product_manager
   - growth_pm
   - platform_pm
   - technical_pm  # Technical Product Manager (strategy-focused)

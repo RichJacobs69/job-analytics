@@ -56,7 +56,14 @@
       "Bash(findstr:*)",
       "Bash(cat:*)",
       "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\pip.exe\" install pytest --quiet)",
-      "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Cursor Projects\\\\job-analytics\\\\tests\\\\test_inline_summary.py\" -v --tb=short)"
+      "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Cursor Projects\\\\job-analytics\\\\tests\\\\test_inline_summary.py\" -v --tb=short)",
+      "Bash(git reset:*)",
+      "Bash(start chrome:*)",
+      "Skill(ux-designer)",
+      "WebFetch(domain:app.welcometothejungle.com)",
+      "WebFetch(domain:www.welcometothejungle.com)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

@@ -1357,6 +1357,15 @@
     },
     "Turing": {
       "slug": "turing"
+    },
+    "Rightmove": {
+      "slug": "rightmovecareers"
+    },
+    "Sofi": {
+      "slug": "sofi"
+    },
+    "Grey": {
+      "slug": "greylondon"
     }
   }
 }

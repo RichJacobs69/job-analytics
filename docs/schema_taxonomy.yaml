@@ -547,6 +547,14 @@ classification_guidance:
       - "If AI Engineer role is primarily: API integration, prompt engineering without model work, backend development → out_of_scope"
       - "If ML Engineer role involves LLMs, RAG, embeddings, fine-tuning → ml_engineer (legitimate ML work)"
 
+    product_engineer_disambiguation:
+      - "CRITICAL: 'Product Engineer' is a SOFTWARE ENGINEERING role, NOT a Product Manager role"
+      - "'Product Engineer' = Software Engineer who builds user-facing product features → out_of_scope"
+      - "'Platform Engineer' = Software Engineer who builds internal platforms → out_of_scope"
+      - "'Product Manager' = Strategy, roadmap, user experience owner → product family"
+      - "The word 'Product' in 'Product Engineer' refers to what they BUILD, not what they MANAGE"
+      - "Even 'Staff Product Engineer, AI' is engineering - they code, not manage products"
+
     research_applied_scientist_routing:
       - "CRITICAL: Research Scientist and Applied Scientist titles are ALWAYS data family roles, never out_of_scope"
       - "Applied Scientist → research_scientist_ml (applied ML research, model development, algorithm design)"
