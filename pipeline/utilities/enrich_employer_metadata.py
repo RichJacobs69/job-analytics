@@ -131,6 +131,7 @@ VALID_INDUSTRIES = [
     "hr_tech",
     "martech",
     "professional_services",
+    "productivity",
     "hardware",
     "other"
 ]
@@ -153,6 +154,7 @@ INDUSTRY_DESCRIPTIONS = """
 - hr_tech: HR software, payroll, workforce management, recruiting platforms
 - martech: Marketing automation, analytics, CRM, customer data platforms
 - professional_services: Consulting, staffing, recruiting, legal tech, accounting, agencies
+- productivity: Work management, team collaboration, scheduling, business productivity tools (NOT developer tools)
 - hardware: Hardware products, robotics, semiconductors, IoT devices
 - other: Diversified or industries not fitting other categories
 """

@@ -363,7 +363,7 @@ data_ml:
 
 **System of Record:** `docs/schema_taxonomy.yaml` (see `enums.employer_industry`)
 
-### Employer Industry (18 Domain-Focused Categories)
+### Employer Industry (20 Domain-Focused Categories)
 
 **Design Decision:** These are industry VERTICALS, not business models. "B2B SaaS" was intentionally excluded - it's a business model that spans multiple industries. A company like Stripe is `fintech` even though it sells B2B SaaS.
 
@@ -385,6 +385,7 @@ data_ml:
 | `hr_tech` | HR Tech | Rippling, Gusto, Deel |
 | `martech` | Marketing Tech | Braze, Amplitude, HubSpot |
 | `professional_services` | Professional Services | Deloitte, Accenture |
+| `productivity` | Productivity & Collaboration | Notion, Asana, Airtable, Calendly |
 | `hardware` | Hardware & Robotics | Apple, Gecko Robotics |
 | `other` | Other | Catch-all |
 

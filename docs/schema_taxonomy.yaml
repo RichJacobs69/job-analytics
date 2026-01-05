@@ -1,12 +1,12 @@
 # Job Market Intelligence Platform - Taxonomy Schema
-# Version: 1.6.0
-# Last Updated: 2026-01-04
+# Version: 1.7.0
+# Last Updated: 2026-01-05
 # Purpose: Define classification taxonomy for job postings in Product, Data, and Delivery roles
-# Changes from v1.5.0: Added employer_industry taxonomy (18 domain-focused categories)
+# Changes from v1.6.0: Added productivity category (20 employer_industry categories)
 
 metadata:
-  version: 1.6.0
-  last_updated: "2026-01-04"
+  version: 1.7.0
+  last_updated: "2026-01-05"
   scope: ["Product", "Data", "Delivery"]
   markets: ["London", "New York", "Denver", "San Francisco", "Singapore"]
 
@@ -326,7 +326,7 @@ enums:
     - {code: scaleup, label: "Scale-up (51-500)", description: "Growth stage company, 51-500 employees, Series A-C"}
     - {code: enterprise, label: "Enterprise (500+)", description: "Large corporation, 500+ employees, established company"}
 
-  # Employer industry (19 domain-focused categories)
+  # Employer industry (20 domain-focused categories)
   # Design decision: These are industry VERTICALS, not business models.
   # "B2B SaaS" was intentionally excluded - it's a business model that spans multiple industries.
   # A company like Stripe is "fintech" (not "b2b_saas") even though it sells B2B SaaS.
@@ -432,6 +432,13 @@ enums:
       description: "Consulting, legal tech, accounting tech, business services"
       signals: ["consulting", "legal", "accounting", "advisory", "professional services"]
       examples: ["Deloitte", "Accenture", "PwC", "EY"]
+
+    - code: productivity
+      label: "Productivity & Collaboration"
+      description: "Work management, team collaboration, scheduling, and business productivity tools"
+      signals: ["productivity", "workspace", "collaboration", "project management", "scheduling", "team management"]
+      anti_signals: ["developer", "code", "deploy", "CI/CD"]
+      examples: ["Notion", "Asana", "Airtable", "Calendly", "Monday.com", "Smartsheet", "ClickUp"]
 
     - code: hardware
       label: "Hardware & Robotics"

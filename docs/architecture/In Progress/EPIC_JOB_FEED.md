@@ -179,17 +179,47 @@ As a job seeker, I want to see contextual information about each job so that I c
 - Expandable job card reveals: Role summary (2-3 sentences, AI-generated from description), Company context (size estimate, industry if available), Key skills mentioned, Salary range (if available), "Days open" indicator
 - Context loads on expand (not on initial page load)
 
-**US-003a: Understand Why This Job Was Recommended**  
-As a job seeker, I want to see explicit reasoning for why each job was shown to me so that I trust the recommendations and understand the matching logic.
+**US-003a: Understand Why This Job Stands Out**
+As a job seeker, I want to see data-driven insights about each job so that I can make informed decisions based on signals I couldn't easily compute myself.
 
 **Acceptance Criteria:**
-- Each expanded card includes a "Why this might be a fit" section
-- Reasoning is specific and data-driven, not generic (e.g., "Open 18 days — avg for Analytics Engineer roles is 12 days" not "Good opportunity")
-- Reasoning references user's stated preferences explicitly (e.g., "Hybrid matches your preference")
-- At least 2-3 fit signals shown per job
+- Each expanded card includes an "Insights" section
+- Signals are non-obvious and data-driven (e.g., "Open 18 days — avg is 12")
+- Signals do NOT restate filter criteria (no "Hybrid matches your filter")
+- Insights are SECONDARY to group membership (don't repeat the group's primary signal)
+- 1-3 insights shown per job (graceful degradation if data unavailable)
+- Empty section is acceptable if no secondary insights available
 
-**US-004: Browse Jobs by Intent**  
+**Design Decision:** Groups communicate the PRIMARY signal (why this job is in "Fresh Matches"). Insights show SECONDARY signals (a fresh job might also have top compensation). This avoids redundancy.
+
+**Sub-Stories (Insight Signals):**
+
+| Story | Signal | Display | Data Source | Effort |
+|-------|--------|---------|-------------|--------|
+| US-003a-1 | Freshness | "Posted 2 days ago" | `days_open` | Done |
+| US-003a-2 | Longevity | "Open 18 days — avg for Monzo is 12" | `employer_median_days_to_fill` | Done |
+| US-003a-5 | Experience | "3-5 years experience" | `experience_range` | Low |
+| US-003a-8 | Salary Transparency | "Salary disclosed (uncommon for London)" | `salary_max`, `city_code` | Low |
+| US-003a-9 | Track Clarity | "Individual Contributor" or "People Management" | `track` | Low |
+| US-003a-3 | Company Activity | "4 similar roles at Monzo" | COUNT aggregation | Medium |
+| US-003a-4 | Salary Percentile | "Top 25% for Data Scientist in London" | Percentile calc | Medium |
+| US-003a-7 | Skills Summary | "8 skills: Languages (3), Cloud (2), Tools (3)" | `skills` JSONB | Low (FE) |
+
+**Exclusion Rules (avoid redundancy with groups):**
+- If job is in Fresh Matches group → don't show Freshness insight
+- If job is in Still Hiring group → don't show Longevity insight
+- If job is in Scaling Teams group → don't show Company Activity insight
+- If job is in Top Compensation group → don't show Salary Percentile insight
+
+**Phase 1 (Ship with existing data):** US-003a-1, US-003a-2, US-003a-5, US-003a-8, US-003a-9
+**Phase 2 (Requires computation):** US-003a-3, US-003a-4, US-003a-7
+
+---
+
+**US-004: Browse Jobs by Intent**
 As a job seeker, I want to see jobs organised by different signals (freshness, longevity, company activity, compensation, remote) so that I can prioritise based on what matters to me.
+
+**Note:** Group membership IS the primary insight. The "Insights" section (US-003a) shows secondary signals only.
 
 **Acceptance Criteria:**
 - Feed organised into 5 distinct groups: Fresh Matches, Still Hiring, Scaling Teams, Top Compensation (US only), Remote Friendly
