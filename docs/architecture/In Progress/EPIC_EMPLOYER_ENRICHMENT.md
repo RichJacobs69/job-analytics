@@ -1,10 +1,10 @@
 # Epic: Employer Metadata Enrichment
 
-**Status:** Phase 1 In Progress
+**Status:** Phase 2 Complete - Ready for Full Run
 **Priority:** Medium
 **Complexity:** Moderate
 **Created:** 2026-01-04
-**Last Updated:** 2026-01-04
+**Last Updated:** 2026-01-05
 
 ## Implementation Progress
 
@@ -13,59 +13,107 @@
 | Migration 025 (add columns) | [DONE] | industry, website, headquarters, etc. |
 | Migration 025b (update view) | [DONE] | View includes employer_industry |
 | Migration 025c (add financial_services) | [DONE] | 19th category for traditional banks |
-| classify_employer_industry.py | [DONE] | LLM batch classifier ready |
-| Dry-run test (100 employers) | [DONE] | Classifications validated |
-| Run classifier for all employers | [TODO] | ~5,500 employers pending |
-| Career page scraper | [TODO] | Phase 2 |
+| classify_employer_industry.py | [DEPRECATED] | Merged into enrich_employer_metadata.py |
+| enrich_employer_metadata.py | [DONE] | Combined scraping + LLM enrichment |
+| Rule-based pre-classification | [DONE] | Staffing, VC, banks auto-classified |
+| Anti-bias prompt rules | [DONE] | Fixes ai_ml over-classification (see docs/temp/INDUSTRY_CLASSIFIER_ANALYSIS.md) |
+| Dry-run validation | [DONE] | Tested with OpenAI, Figma, Stripe |
+| Run enrichment for all employers | [TODO] | ~690 ATS employers pending |
 | Manual curation export/import | [TODO] | Phase 3 |
+
+## Quick Start
+
+```bash
+# Dry run (preview)
+python -m pipeline.utilities.enrich_employer_metadata --dry-run --limit 10
+
+# Full run for all ATS employers
+python -m pipeline.utilities.enrich_employer_metadata --apply
+
+# Re-enrich specific employer
+python -m pipeline.utilities.enrich_employer_metadata --employer stripe --apply --force
+
+# Use higher quality model
+python -m pipeline.utilities.enrich_employer_metadata --model pro --apply
+```
 
 ## Problem Statement
 
-The `employer_metadata` table currently stores only basic attributes (`canonical_name`, `display_name`, `employer_size`, `working_arrangement_default`). Job seekers would benefit from richer employer context including:
+Job seekers need richer employer context to make informed decisions:
 
-1. **Industry Classification** - Filter jobs by sector (fintech, healthtech, AI/ML, etc.)
-2. **Working Arrangement** - Know company remote/hybrid/onsite policy before applying
-3. **Company Context** - Website, description, headquarters, logo
-4. **Funding/Stage** - Understand company maturity (startup vs enterprise)
+| Need | Status | Notes |
+|------|--------|-------|
+| Industry Classification | [DONE] | 19-category taxonomy via LLM |
+| Working Arrangement | [DONE] | Extracted from career pages via LLM |
+| Company Context | [DONE] | Website, description, HQ, logo |
+| Funding/Stage | [NOT IN SCOPE] | Requires paid APIs |
 
 ### Constraints
 
-- **Data freshness required** - Cannot rely on aged sources for attributes that change (working arrangement, funding)
 - **Free sources only** - No budget for paid APIs (Crunchbase, Clearbit, etc.)
-- **Scale** - Must classify ~5,500+ employers (600 ATS + 4,900 Adzuna)
+- **Scale** - ~690 ATS employers (primary focus) + ~4,900 Adzuna employers (future)
+- **Bias fix** - Must NOT use job titles for classification (causes ai_ml over-classification)
 
 ---
 
-## Solution: Extended Employer Metadata
+## Current Schema (employer_metadata)
 
-### New Schema Columns
+### Columns That Exist NOW
+
+| Column | Type | Populated By | Status |
+|--------|------|--------------|--------|
+| `id` | SERIAL | auto | - |
+| `canonical_name` | TEXT | seed script | [DONE] |
+| `display_name` | TEXT | seed script | [DONE] |
+| `employer_size` | TEXT | manual | partial |
+| `working_arrangement_default` | TEXT | enrich script (LLM) | [DONE] |
+| `working_arrangement_source` | TEXT | enrich script | [DONE] |
+| `website` | TEXT | enrich script (LLM) | [DONE] |
+| `logo_url` | TEXT | enrich script (scraped) | [DONE] |
+| `description` | TEXT | enrich script (LLM) | [DONE] |
+| `industry` | TEXT | enrich script (LLM) | [DONE] |
+| `headquarters_city` | TEXT | enrich script (LLM) | [DONE] |
+| `headquarters_country` | TEXT | enrich script (LLM) | [DONE] |
+| `ownership_type` | TEXT | enrich script (LLM) | [DONE] |
+| `parent_company` | TEXT | enrich script (LLM) | [DONE] |
+| `founding_year` | INTEGER | enrich script (LLM) | [DONE] |
+| `enrichment_source` | TEXT | enrich script | [DONE] |
+| `enrichment_date` | DATE | enrich script | [DONE] |
+| `created_at` | TIMESTAMPTZ | auto | - |
+| `updated_at` | TIMESTAMPTZ | trigger | - |
+
+### What enrich_employer_metadata.py Does
+
+**Scrapes from career pages:**
+- `logo_url` - from og:image meta tag
+
+**Generates via LLM (Gemini):**
+- `industry` - 19-category taxonomy with anti-bias rules
+- `website` - company's actual domain (NOT the ATS URL)
+- `careers_url` - company's careers page (logged, not stored in DB)
+- `description` - 1-2 paragraph rich narrative
+- `working_arrangement_default` - remote/hybrid/onsite/flexible
+- `headquarters_city`, `headquarters_country` - from LLM knowledge
+- `ownership_type`, `parent_company` - from LLM knowledge
+- `founding_year` - from LLM knowledge
+
+**Sets automatically:**
+- `enrichment_source` = 'scraped'
+- `enrichment_date` = today
+- `working_arrangement_source` = 'scraped' (respects manual > scraped > inferred)
+
+**Note:** The ATS career page URL (e.g., job-boards.greenhouse.io/stripe) is passed to the LLM as context, but the LLM infers the company's actual website (e.g., stripe.com) and careers page (e.g., jobs.stripe.com) from its knowledge.
+
+### Columns NOT YET Added (Future)
 
 ```sql
--- Identity
-website TEXT                         -- Primary domain (e.g., stripe.com)
-logo_url TEXT                        -- Company logo URL
-description TEXT                     -- Brief company description (1-2 sentences)
-
--- Classification
-industry TEXT                        -- 19-category taxonomy (see below)
-industry_source TEXT                 -- manual | inferred | scraped
-
--- Organization
-headquarters_city TEXT               -- e.g., "San Francisco"
-headquarters_country TEXT            -- e.g., "US"
-ownership_type TEXT                  -- private | public | subsidiary | acquired
-parent_company TEXT                  -- If subsidiary/acquired
-founding_year INTEGER                -- Year founded
-
--- Funding (optional, for private companies)
-funding_stage TEXT                   -- seed | series_a | series_b | series_c | growth | public
+-- Funding (requires paid API like Crunchbase)
+funding_stage TEXT                   -- seed | series_a | series_b | ... | public
 total_funding_usd BIGINT             -- Total funding raised
 last_funding_date DATE               -- Most recent funding round
-
--- Metadata
-enrichment_source TEXT               -- manual | inferred | scraped
-enrichment_date DATE                 -- When data was last enriched
 ```
+
+These would require paid data sources and are out of scope for now.
 
 ---
 
@@ -99,63 +147,60 @@ Domain-focused verticals, not business models. "B2B SaaS" was intentionally excl
 
 ## Data Sources
 
-### Tier 1: Free Sources (In Scope)
+### Currently Used (enrich_employer_metadata.py)
 
 | Source | Data Points | Method |
 |--------|-------------|--------|
-| **LLM (Gemini)** | industry classification | Batch process company name + job descriptions |
-| **Career Pages** | working_arrangement, description, logo | Scrape during ATS fetch |
-| **Company Website** | website, meta description | Derive from career page URL |
-| **Job Data** | industry signals, tech stack | Infer from existing job descriptions |
+| **Career Pages** | logo_url | Scrape og:image meta tag |
+| **Career Page Text** | working_arrangement signals | Passed to LLM for extraction |
+| **LLM (Gemini)** | industry, website, careers_url, description, HQ, ownership, founding_year | Company name + ATS URL + career page text |
 
-### Tier 2: Paid APIs (Not in Scope)
+**Key Changes:**
+- Industry is classified using career page text, NOT job titles (fixes ai_ml over-classification)
+- Website is LLM-inferred (e.g., "stripe.com"), NOT scraped from ATS URL (which would give "greenhouse.io")
+- Careers URL is also LLM-inferred (e.g., "jobs.stripe.com") for companies with custom career pages
+
+### Not Used (Paid APIs)
 
 | Source | Data Points | Notes |
 |--------|-------------|-------|
-| Crunchbase | funding, industry, HQ, founding_year | $49-199/mo, API is enterprise tier |
+| Crunchbase | funding, industry, HQ | $49-199/mo, API is enterprise tier |
 | Clearbit/Breeze | firmographics, logo | Requires HubSpot, ~$0.10/record |
 | BuiltWith | tech_stack | $295/mo+ |
-
-### Tier 3: Deprecated APIs (Not in Scope)
-
-| Source | Data Points | Notes |
-|--------|-------------|-------|
-| LinkedIn | employee_count, growth | API deprecated 2019, scraping only |
-| Glassdoor | ratings, reviews | API deprecated 2021, scraping only |
+| LinkedIn | employee_count | API deprecated, scraping only |
+| Glassdoor | ratings, reviews | API deprecated |
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Schema + Industry Classification
+### Phase 1: Schema [DONE]
 
 | Task | File | Description |
 |------|------|-------------|
 | Migration | `migrations/025_extend_employer_metadata.sql` | Add new columns to employer_metadata |
 | View Update | `migrations/025b_update_view.sql` | Add industry to jobs_with_employer_context |
-| Industry Classifier | `pipeline/utilities/classify_employer_industry.py` | Batch LLM classification for all ~5,500 employers |
-| Taxonomy Update | `docs/schema_taxonomy.yaml` | Add industry enum |
+| Financial Services | `migrations/025c_add_financial_services_industry.sql` | 19th category for traditional banks |
 
-**LLM Classification Approach:**
-- Input: company name + 3 sample job titles/descriptions
-- Output: industry from 18-category taxonomy
-- Cost: ~$15-25 for 5,500 employers (using Gemini)
-- Batch with rate limiting
-
-### Phase 2: Career Page Scraping
+### Phase 2: Combined Enrichment [DONE]
 
 | Task | File | Description |
 |------|------|-------------|
-| Career Scraper | `pipeline/utilities/scrape_career_pages.py` | Extract working_arrangement, description, logo |
+| Unified Enricher | `pipeline/utilities/enrich_employer_metadata.py` | Combined scraping + LLM enrichment |
+| Old Classifier | `pipeline/utilities/classify_employer_industry.py` | [DEPRECATED] - merged into above |
 
-**Working Arrangement Signals:**
-```python
-HYBRID_SIGNALS = ["hybrid", "days in office", "days a week", "flexible"]
-REMOTE_SIGNALS = ["fully remote", "remote-first", "work from anywhere", "distributed"]
-ONSITE_SIGNALS = ["on-site", "in-office", "in-person required"]
-```
+**Enrichment Approach (fixes ai_ml over-classification):**
+- Input: company name + website + career page text (NOT job titles)
+- Rule-based pre-classification for staffing/VC/banks
+- Anti-bias rules in LLM prompt
+- Output: industry, description, working_arrangement, HQ, ownership, founding_year
+- Cost: ~$20-50 for 690 ATS employers (using Gemini Flash)
 
-### Phase 3: Manual Curation
+**Working Arrangement Detection:**
+- Extracted by LLM from career page text
+- Source priority: manual > scraped > inferred
+
+### Phase 3: Manual Curation [TODO]
 
 | Task | File | Description |
 |------|------|-------------|
@@ -165,7 +210,7 @@ ONSITE_SIGNALS = ["on-site", "in-office", "in-person required"]
 **Focus on:**
 - Employers with highest job counts
 - Low-confidence LLM classifications
-- Missing working_arrangement after scraping
+- Missing working_arrangement after enrichment
 
 ---
 
@@ -225,17 +270,17 @@ WHERE industry = 'fintech'
 
 ---
 
-## Files to Create/Modify
+## Files Created/Modified
 
-| File | Action | Priority |
-|------|--------|----------|
-| `migrations/025_extend_employer_metadata.sql` | CREATE | P1 |
-| `migrations/025b_update_view.sql` | CREATE | P1 |
-| `pipeline/utilities/classify_employer_industry.py` | CREATE | P1 |
-| `pipeline/utilities/scrape_career_pages.py` | CREATE | P2 |
-| `pipeline/utilities/export_for_curation.py` | CREATE | P3 |
-| `docs/schema_taxonomy.yaml` | MODIFY | P1 |
-| `.claude/skills/taxonomy-architect/taxonomy-architect-skill.md` | MODIFY | P1 |
+| File | Status | Notes |
+|------|--------|-------|
+| `migrations/025_extend_employer_metadata.sql` | [DONE] | Schema extension |
+| `migrations/025b_update_view.sql` | [DONE] | View update |
+| `migrations/025c_add_financial_services_industry.sql` | [DONE] | 19th category |
+| `pipeline/utilities/enrich_employer_metadata.py` | [DONE] | Main enrichment script |
+| `pipeline/utilities/classify_employer_industry.py` | [DEPRECATED] | Merged into above |
+| `pipeline/utilities/export_for_curation.py` | [TODO] | Phase 3 |
+| `docs/temp/INDUSTRY_CLASSIFIER_ANALYSIS.md` | [DONE] | Root cause analysis |
 
 ---
 
@@ -248,5 +293,5 @@ WHERE industry = 'fintech'
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-01-04
+**Document Version:** 2.0
+**Last Updated:** 2026-01-05

@@ -1,0 +1,404 @@
+{
+  "adzuna": {
+    "Capital One": {
+      "canonical": "capital one",
+      "job_count": 348
+    },
+    "Deloitte": {
+      "canonical": "deloitte",
+      "job_count": 258
+    },
+    "Google": {
+      "canonical": "google",
+      "job_count": 248
+    },
+    "Oracle": {
+      "canonical": "oracle",
+      "job_count": 224
+    },
+    "Amazon": {
+      "canonical": "amazon",
+      "job_count": 190
+    },
+    "JPMorgan Chase": {
+      "canonical": "jpmorgan chase",
+      "job_count": 136
+    },
+    "JPMorgan Chase Bank, N.A.": {
+      "canonical": "jpmorgan chase bank, n.a.",
+      "job_count": 132
+    },
+    "JPMorganchase": {
+      "canonical": "jpmorganchase",
+      "job_count": 122
+    },
+    "Uber": {
+      "canonical": "uber",
+      "job_count": 111
+    },
+    "Meta": {
+      "canonical": "meta",
+      "job_count": 99
+    },
+    "EY": {
+      "canonical": "ey",
+      "job_count": 69
+    },
+    "American Express": {
+      "canonical": "american express",
+      "job_count": 63
+    },
+    "PwC": {
+      "canonical": "pwc",
+      "job_count": 62
+    },
+    "Lockheed Martin": {
+      "canonical": "lockheed martin",
+      "job_count": 58
+    },
+    "Salesforce": {
+      "canonical": "salesforce",
+      "job_count": 55
+    },
+    "Bloomberg": {
+      "canonical": "bloomberg",
+      "job_count": 52
+    },
+    "Accenture": {
+      "canonical": "accenture",
+      "job_count": 50
+    },
+    "USAA": {
+      "canonical": "usaa",
+      "job_count": 50
+    },
+    "Rippling": {
+      "canonical": "rippling",
+      "job_count": 50
+    },
+    "Maritime And Port Authority Of Singapore": {
+      "canonical": "maritime and port authority of singapore",
+      "job_count": 49
+    },
+    "Cognizant": {
+      "canonical": "cognizant",
+      "job_count": 49
+    },
+    "CVS Health": {
+      "canonical": "cvs health",
+      "job_count": 48
+    },
+    "Visa": {
+      "canonical": "visa",
+      "job_count": 47
+    },
+    "Humana": {
+      "canonical": "humana",
+      "job_count": 42
+    },
+    "Mastercard": {
+      "canonical": "mastercard",
+      "job_count": 42
+    },
+    "Citigroup": {
+      "canonical": "citigroup",
+      "job_count": 38
+    },
+    "Capgemini": {
+      "canonical": "capgemini",
+      "job_count": 35
+    },
+    "Maximus": {
+      "canonical": "maximus",
+      "job_count": 33
+    },
+    "Turner & Townsend": {
+      "canonical": "turner & townsend",
+      "job_count": 33
+    },
+    "Cbre": {
+      "canonical": "cbre",
+      "job_count": 29
+    },
+    "IBM": {
+      "canonical": "ibm",
+      "job_count": 29
+    },
+    "NBC Universal": {
+      "canonical": "nbc universal",
+      "job_count": 29
+    },
+    "Cisco": {
+      "canonical": "cisco",
+      "job_count": 29
+    },
+    "Scale AI": {
+      "canonical": "scale ai",
+      "job_count": 27
+    },
+    "Microsoft Corporation": {
+      "canonical": "microsoft corporation",
+      "job_count": 26
+    },
+    "Blackrock": {
+      "canonical": "blackrock",
+      "job_count": 26
+    },
+    "Ibotta": {
+      "canonical": "ibotta",
+      "job_count": 26
+    },
+    "NBCuniversal": {
+      "canonical": "nbcuniversal",
+      "job_count": 26
+    },
+    "Cardinal Health": {
+      "canonical": "cardinal health",
+      "job_count": 26
+    },
+    "Crusoe": {
+      "canonical": "crusoe",
+      "job_count": 26
+    },
+    "Warner Bros. Discovery": {
+      "canonical": "warner bros. discovery",
+      "job_count": 25
+    },
+    "BNY Mellon": {
+      "canonical": "bny mellon",
+      "job_count": 25
+    },
+    "Unity Technologies": {
+      "canonical": "unity technologies",
+      "job_count": 25
+    },
+    "S&P Global": {
+      "canonical": "s&p global",
+      "job_count": 25
+    },
+    "OpenAI": {
+      "canonical": "openai",
+      "job_count": 25
+    },
+    "Nanyang Technological University": {
+      "canonical": "nanyang technological university",
+      "job_count": 24
+    },
+    "Northrop Grumman": {
+      "canonical": "northrop grumman",
+      "job_count": 24
+    },
+    "U.S. Bank": {
+      "canonical": "u.s. bank",
+      "job_count": 24
+    },
+    "DigitalOcean": {
+      "canonical": "digitalocean",
+      "job_count": 24
+    },
+    "Echostar": {
+      "canonical": "echostar",
+      "job_count": 23
+    },
+    "Coinbase": {
+      "canonical": "coinbase",
+      "job_count": 23
+    },
+    "JPMorgan Chase & Co.": {
+      "canonical": "jpmorgan chase & co.",
+      "job_count": 23
+    },
+    "Bjak": {
+      "canonical": "bjak",
+      "job_count": 22
+    },
+    "London Stock Exchange Group": {
+      "canonical": "london stock exchange group",
+      "job_count": 22
+    },
+    "Trimble": {
+      "canonical": "trimble",
+      "job_count": 21
+    },
+    "OKX": {
+      "canonical": "okx",
+      "job_count": 21
+    },
+    "Lumen": {
+      "canonical": "lumen",
+      "job_count": 21
+    },
+    "The Walt Disney Company": {
+      "canonical": "the walt disney company",
+      "job_count": 21
+    },
+    "Highmark Health": {
+      "canonical": "highmark health",
+      "job_count": 20
+    },
+    "SoFi": {
+      "canonical": "sofi",
+      "job_count": 20
+    },
+    "Samsara": {
+      "canonical": "samsara",
+      "job_count": 20
+    },
+    "Cloudflare": {
+      "canonical": "cloudflare",
+      "job_count": 20
+    },
+    "DoorDash": {
+      "canonical": "doordash",
+      "job_count": 19
+    },
+    "Autodesk": {
+      "canonical": "autodesk",
+      "job_count": 19
+    },
+    "Amazon Web Services, Inc..": {
+      "canonical": "amazon web services, inc.",
+      "job_count": 19
+    },
+    "Pfizer": {
+      "canonical": "pfizer",
+      "job_count": 19
+    },
+    "Okta": {
+      "canonical": "okta",
+      "job_count": 19
+    },
+    "Mufg": {
+      "canonical": "mufg",
+      "job_count": 18
+    },
+    "Atlassian": {
+      "canonical": "atlassian",
+      "job_count": 18
+    },
+    "Ncs": {
+      "canonical": "ncs",
+      "job_count": 18
+    },
+    "Relx Inc.": {
+      "canonical": "relx inc",
+      "job_count": 18
+    },
+    "Jll": {
+      "canonical": "jll",
+      "job_count": 18
+    },
+    "Guidehouse": {
+      "canonical": "guidehouse",
+      "job_count": 17
+    },
+    "Dell Technologies": {
+      "canonical": "dell technologies",
+      "job_count": 17
+    },
+    "Spotify": {
+      "canonical": "spotify",
+      "job_count": 17
+    },
+    "Dell": {
+      "canonical": "dell",
+      "job_count": 17
+    },
+    "Harvey": {
+      "canonical": "harvey",
+      "job_count": 17
+    },
+    "Waymo": {
+      "canonical": "waymo",
+      "job_count": 17
+    },
+    "Outlier AI": {
+      "canonical": "outlier ai",
+      "job_count": 17
+    },
+    "Salesforce.Com, Inc..": {
+      "canonical": "salesforce.com, inc.",
+      "job_count": 17
+    },
+    "Adobe": {
+      "canonical": "adobe",
+      "job_count": 17
+    },
+    "AIrwallex": {
+      "canonical": "airwallex",
+      "job_count": 16
+    },
+    "NTT Data": {
+      "canonical": "ntt data",
+      "job_count": 16
+    },
+    "Salesforce, Inc..": {
+      "canonical": "salesforce, inc.",
+      "job_count": 16
+    },
+    "Instacart": {
+      "canonical": "instacart",
+      "job_count": 16
+    },
+    "United Overseas Bank": {
+      "canonical": "united overseas bank",
+      "job_count": 16
+    },
+    "Gusto": {
+      "canonical": "gusto",
+      "job_count": 16
+    },
+    "Datadog": {
+      "canonical": "datadog",
+      "job_count": 15
+    },
+    "Wise": {
+      "canonical": "wise",
+      "job_count": 15
+    },
+    "Caterpillar, Inc..": {
+      "canonical": "caterpillar, inc.",
+      "job_count": 15
+    },
+    "Mercor": {
+      "canonical": "mercor",
+      "job_count": 15
+    },
+    "RTX": {
+      "canonical": "rtx",
+      "job_count": 15
+    },
+    "Pearson": {
+      "canonical": "pearson",
+      "job_count": 15
+    },
+    "Plaid": {
+      "canonical": "plaid",
+      "job_count": 15
+    },
+    "BAE Systems": {
+      "canonical": "bae systems",
+      "job_count": 15
+    },
+    "Anthropic": {
+      "canonical": "anthropic",
+      "job_count": 15
+    },
+    "Akkodis": {
+      "canonical": "akkodis",
+      "job_count": 15
+    },
+    "Guardian Life": {
+      "canonical": "guardian life",
+      "job_count": 15
+    },
+    "Jacobs": {
+      "canonical": "jacobs",
+      "job_count": 15
+    },
+    "Databricks": {
+      "canonical": "databricks",
+      "job_count": 15
+    }
+  }
+}

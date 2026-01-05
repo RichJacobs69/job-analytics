@@ -1,4 +1,24 @@
 """
+[DEPRECATED] Employer Industry Classifier
+==========================================
+This module has been deprecated and merged into enrich_employer_metadata.py
+
+Use instead:
+    python -m pipeline.utilities.enrich_employer_metadata --apply
+
+The new enrichment script:
+- Uses career page text instead of job titles (fixes ai_ml over-classification)
+- Combines industry classification with other metadata enrichment
+- Includes rule-based pre-classification for staffing/VC/banks
+- Adds anti-bias rules in the LLM prompt
+
+Deprecation date: 2026-01-05
+See: docs/temp/INDUSTRY_CLASSIFIER_ANALYSIS.md for why this was deprecated
+
+---
+
+[ORIGINAL DOCSTRING - kept for reference]
+
 Employer Industry Classifier
 =============================
 Classifies employers into industry categories using LLM inference.
