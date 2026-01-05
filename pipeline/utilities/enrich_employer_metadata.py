@@ -561,7 +561,7 @@ def call_gemini_enrichment(
                     website = None
             cleaned['website'] = website
 
-            # Careers URL (for logging, not stored in DB currently)
+            # Careers URL - direct link to company careers/jobs page
             cleaned['careers_url'] = result.get('careers_url')
 
             # Description (required)
@@ -784,7 +784,7 @@ def update_employer_metadata(
     try:
         # Get current record to check source priorities
         current = supabase.table("employer_metadata").select(
-            "working_arrangement_source, logo_url, website, description"
+            "working_arrangement_source, logo_url, website, careers_url, description"
         ).eq("canonical_name", canonical_name).single().execute()
 
         if not current.data:
@@ -808,6 +808,10 @@ def update_employer_metadata(
             # Website - from LLM inference (not scraped ATS URL)
             if llm_enrichment.get('website') and not current.data.get('website'):
                 updates['website'] = llm_enrichment['website']
+
+            # Careers URL - direct link to careers/jobs page
+            if llm_enrichment.get('careers_url') and not current.data.get('careers_url'):
+                updates['careers_url'] = llm_enrichment['careers_url']
 
             # Description - always update if we have one
             if llm_enrichment.get('description'):
