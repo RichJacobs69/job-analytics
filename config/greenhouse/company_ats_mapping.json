@@ -1101,9 +1101,6 @@
     "Thunes": {
       "slug": "thunes"
     },
-    "At-Bay": {
-      "slug": "atbay"
-    },
     "Moveworks": {
       "slug": "moveworks"
     },
@@ -1131,9 +1128,6 @@
     "Stability AI": {
       "slug": "stabilityai",
       "url_type": "embed"
-    },
-    "10Pearlsuk": {
-      "slug": "10pearlsuk"
     },
     "139": {
       "slug": "139"
@@ -1164,9 +1158,6 @@
     },
     "Apolloio": {
       "slug": "apolloio"
-    },
-    "Arceeai": {
-      "slug": "arceeai"
     },
     "Axios": {
       "slug": "axios"
