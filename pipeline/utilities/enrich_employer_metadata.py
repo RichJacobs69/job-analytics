@@ -526,6 +526,16 @@ def call_gemini_enrichment(
             response = model.generate_content(prompt)
             result = json.loads(response.text)
 
+            # Handle case where Gemini returns array instead of object
+            if isinstance(result, list):
+                if len(result) > 0 and isinstance(result[0], dict):
+                    result = result[0]  # Extract first element
+                else:
+                    raise ValueError(f"Unexpected array response: {result}")
+
+            if not isinstance(result, dict):
+                raise ValueError(f"Expected dict, got {type(result).__name__}")
+
             # Validate and clean response
             cleaned = {}
 
