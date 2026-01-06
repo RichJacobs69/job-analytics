@@ -1350,7 +1350,8 @@
       "slug": "turing"
     },
     "Rightmove": {
-      "slug": "rightmovecareers"
+      "slug": "rightmovecareers",
+      "url_type": "eu"
     },
     "Sofi": {
       "slug": "sofi"
