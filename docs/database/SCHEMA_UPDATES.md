@@ -654,6 +654,13 @@ No migrations currently planned. Future schema changes will be documented here.
 | 021 | Jan 4, 2026 | FK constraint on enriched_jobs.employer_name |
 | 022 | Jan 4, 2026 | Simplify view JOINs (remove LOWER()) |
 | 023 | Jan 4, 2026 | Drop unused aliases column from employer_metadata |
+| 024 | Jan 5, 2026 | Drop employer_size from enriched_jobs (moved to employer_metadata) |
+| 025 | Jan 5, 2026 | Extend employer_metadata with industry, website, description, HQ, ownership |
+| 025b | Jan 5, 2026 | Update view to expose employer_industry |
+| 025c | Jan 5, 2026 | Add financial_services industry + parent_company to view |
+| 026 | Jan 5, 2026 | Standardize headquarters fields (city, state, country) |
+| 027 | Jan 5, 2026 | Add productivity industry category |
+| 028 | Jan 5, 2026 | Add careers_url column to employer_metadata |
 
 ---
 

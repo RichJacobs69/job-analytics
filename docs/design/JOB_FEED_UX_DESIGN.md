@@ -64,20 +64,22 @@
 +------------------------------------------------------------------------+
 | LEFT (flex-1)                       | CENTER (max-w-280)  | RIGHT       |
 | Title (lg, semibold, white)         | [Skill] [Skill]     | [Details v] |
-| [Logo] Company . London . Hybrid    | [Skill] [Skill] +N  | [Apply]     |
+| Company . London . Hybrid           | [Skill] [Skill] +N  | [Apply]     |
 | Posted 2d ago . GBP90-120k [FinTech]|                     |             |
 +------------------------------------------------------------------------+
-    ^                             ^
-  24px avatar              Muted industry badge
-  (rounded-full)           at END of row 3
+                                  ^
+                            Muted industry badge
+                            at END of row 3
 ```
+
+**Note:** Logo removed from collapsed view (cropping issues with wide banners). Full logo now shown in expanded "About Company" section.
 
 **Mobile Layout:**
 
 ```
 +----------------------------------+
 | Title                   [v][Apply]|
-| [Logo] Company . London . Hybrid |
+| Company . London . Hybrid        |
 | 2d ago . GBP90k [FinTech]        |
 |----------------------------------|
 | [Skill] [Skill] [Skill] [Skill]  |
@@ -120,7 +122,7 @@
 
 ```
 +------------------------------------------------------------------------+
-| [Collapsed header - logo, title, company, location, salary, industry]  |
+| [Collapsed header - title, company, location, salary, industry]        |
 | [Collapse button only - no Apply]                                      |
 |------------------------------------------------------------------------|
 | ABOUT THIS ROLE (2/3)              |  SKILLS (1/3)                     |
@@ -128,10 +130,10 @@
 |                                    |  [Experimentation] [A/B Testing]  |
 |------------------------------------------------------------------------|
 | INSIGHTS                                                               |
-| [check] Posted 1 day ago   [check] 4 similar roles   [check] Top 25%  |
+| [Posted today] [3-5 years experience] [People Management]              |
 |------------------------------------------------------------------------|
-| ABOUT STRIPE                                                           |
-| [FinTech] [Public] | San Francisco, US | 12 open roles                |
+| ABOUT STRIPE                                           [LOGO on right] |
+| [Public] [Enterprise] | San Francisco, US | 12 open roles             |
 |                                                                        |
 | Stripe is a financial infrastructure platform for the internet...      |
 | [Show more]                                                            |
@@ -139,6 +141,8 @@
 | [Stripe careers]                              [Apply to this role]     |
 +------------------------------------------------------------------------+
 ```
+
+**Logo Placement:** Full company logo (not cropped) displayed in top-right of "About Company" section with white background container for visibility on dark UI.
 
 **Section Order:**
 1. About This Role + Skills (2-column grid)
@@ -168,13 +172,14 @@
 
 | Missing Data | Fallback |
 |--------------|----------|
-| No logo | Show company initial in circle (in header) |
+| No logo | Hide logo element (no fallback needed in About Company section) |
 | No industry | Hide badge (don't show "Other") |
 | No description | Hide entire company section |
 | No HQ | Omit from metadata line |
 | No ownership type | Hide badge |
 | No employer_size | Hide badge |
 | No parent_company | Hide badge (most companies don't have one) |
+| No careers_url | Fall back to website URL |
 | No open roles count | Omit from metadata line |
 
 ### JobFeedGroup
@@ -208,15 +213,16 @@
 
 ```
 +------------------------------------------------------------------------------------------------------+
-| [City v] | [Industry v] | [Data] [Product] [Delivery] [+ Roles v] | [Jr] [Mid] [Sr] [Staff+] | [Has Salary] | Reset (n)
+| [City v] | [Industry v] | [Roles v] | [Jr] [Mid] [Sr] [Staff+] | [Has Salary] | Reset (n)
 +------------------------------------------------------------------------------------------------------+
-              ^
-        NEW: Industry dropdown (19 options)
+              ^                ^
+        Industry dropdown   Grouped roles dropdown
+        (19 options)        (families + subfamilies)
 ```
 
-**Industry Filter (NEW):**
+**Industry Filter:**
 
-Position: After City dropdown, before Job Family pills.
+Position: After City dropdown, before Roles dropdown.
 
 ```
 +----------------------------------+
@@ -275,21 +281,32 @@ Data (9 roles)           Product (6 roles)       Delivery (4 roles)
 +- product_analytics
 ```
 
-**"+ Roles" Dropdown:**
+**Roles Dropdown (Grouped by Family):**
+
+Replaces the previous "Family pills + Roles dropdown" pattern. Now a single grouped dropdown with multi-select:
 
 ```
 +----------------------------------+
-| DATA                             |
-| [Data Analyst] [Data Engineer]   |
-| [Analytics Engineer] ...         |
-|                                  |
-| PRODUCT                          |
-| [Product Manager] [Core PM] ...  |
-|                                  |
-| DELIVERY                         |
-| [Delivery Manager] ...           |
+| DATA                   [All] btn |  <- "Select all" toggles entire family
+|   [Data Analyst]                 |
+|   [Data Engineer]                |
+|   [Analytics Engineer] ...       |
+|----------------------------------|
+| PRODUCT                [All] btn |
+|   [Product Manager]              |
+|   [Core PM] ...                  |
+|----------------------------------|
+| DELIVERY               [All] btn |
+|   [Delivery Manager] ...         |
 +----------------------------------+
 ```
+
+**Behavior:**
+- Multi-select within dropdown (not single select like Industry)
+- "Select all" button per family selects all subfamilies
+- When family selected, individual subfamily chips are disabled
+- Clear selection returns to showing all roles
+- URL param: `?subfamilies=data_analyst,data_engineer` or `?families=data`
 
 **Mobile (Collapsed -> Bottom Sheet):**
 

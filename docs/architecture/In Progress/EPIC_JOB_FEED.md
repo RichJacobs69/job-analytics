@@ -1,9 +1,9 @@
 # Epic: Curated Job Feed
 
 **Epic ID:** EPIC-008
-**Version:** 1.3
+**Version:** 1.4
 **Created:** 2025-12-27
-**Updated:** 2026-01-04
+**Updated:** 2026-01-05
 **Owner:** Rich
 **Status:** In Progress (Phase 2 API Integration Complete)
 
@@ -37,7 +37,7 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Job feed page (`/projects/hiring-market/jobs`) | [DONE] | Live API data, stacked groups |
-| Filter bar component | [DONE] | Family pills + roles dropdown, US-only salary toggle |
+| Filter bar component | [DONE] | Industry dropdown + grouped Roles dropdown, US-only salary toggle |
 | Job card component | [DONE] | 3-column layout, muted skills, Details text |
 | Expandable card with context | [DONE] | Fetches summary + fit signals on expand |
 | API integration | [DONE] | Connected to live /feed endpoint with filter params |
@@ -65,7 +65,7 @@
 | **REST not GraphQL** | 2 endpoints don't justify new tooling/patterns |
 | **localStorage + URL params** | No auth needed, shareable URLs |
 | **Greenhouse + Lever + Ashby sources** | All three provide direct ATS links; Ashby has best salary data |
-| **Family pills + roles dropdown** | 19 subfamilies too many for flat pills; hierarchy scales |
+| **Industry dropdown + grouped Roles dropdown** | 19 industries grouped by category; 19 subfamilies nested under families |
 | **US-only salary filter** | Only NY, CO, CA have transparency laws; honest about data limits |
 | **Muted skill badges** | Prevents rage clicks; skills are display-only, not filters |
 | **Single column stacked groups** | Users scan sequentially; 2-column caused confusion |

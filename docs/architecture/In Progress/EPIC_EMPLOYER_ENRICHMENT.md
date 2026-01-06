@@ -13,10 +13,13 @@
 | Migration 025 (add columns) | [DONE] | industry, website, headquarters, etc. |
 | Migration 025b (update view) | [DONE] | View includes employer_industry |
 | Migration 025c (add financial_services) | [DONE] | 19th category for traditional banks |
+| Migration 026 (standardize HQ) | [DONE] | Separate city/state/country fields |
+| Migration 027 (productivity industry) | [DONE] | 20th category for productivity tools |
+| Migration 028 (careers_url) | [DONE] | Direct link to company careers page |
 | classify_employer_industry.py | [DEPRECATED] | Merged into enrich_employer_metadata.py |
 | enrich_employer_metadata.py | [DONE] | Combined scraping + LLM enrichment |
 | Rule-based pre-classification | [DONE] | Staffing, VC, banks auto-classified |
-| Anti-bias prompt rules | [DONE] | Fixes ai_ml over-classification (see docs/temp/INDUSTRY_CLASSIFIER_ANALYSIS.md) |
+| Anti-bias prompt rules | [DONE] | Fixes ai_ml over-classification (see docs/archive/INDUSTRY_CLASSIFIER_ANALYSIS.md) |
 | Dry-run validation | [DONE] | Tested with OpenAI, Figma, Stripe |
 | Run enrichment for all employers | [TODO] | ~690 ATS employers pending |
 | Manual curation export/import | [TODO] | Phase 3 |
@@ -69,6 +72,7 @@ Job seekers need richer employer context to make informed decisions:
 | `working_arrangement_default` | TEXT | enrich script (LLM) | [DONE] |
 | `working_arrangement_source` | TEXT | enrich script | [DONE] |
 | `website` | TEXT | enrich script (LLM) | [DONE] |
+| `careers_url` | TEXT | enrich script (LLM) | [DONE] |
 | `logo_url` | TEXT | enrich script (scraped) | [DONE] |
 | `description` | TEXT | enrich script (LLM) | [DONE] |
 | `industry` | TEXT | enrich script (LLM) | [DONE] |
@@ -88,9 +92,9 @@ Job seekers need richer employer context to make informed decisions:
 - `logo_url` - from og:image meta tag
 
 **Generates via LLM (Gemini):**
-- `industry` - 19-category taxonomy with anti-bias rules
+- `industry` - 20-category taxonomy with anti-bias rules
 - `website` - company's actual domain (NOT the ATS URL)
-- `careers_url` - company's careers page (logged, not stored in DB)
+- `careers_url` - direct link to company careers page (e.g., stripe.com/jobs)
 - `description` - 1-2 paragraph rich narrative
 - `working_arrangement_default` - remote/hybrid/onsite/flexible
 - `headquarters_city`, `headquarters_country` - from LLM knowledge
