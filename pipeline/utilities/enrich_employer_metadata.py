@@ -100,13 +100,17 @@ ATS_URL_TEMPLATES = {
     'ashby': {
         'default': 'https://jobs.ashbyhq.com/{slug}',
     },
+    'workable': {
+        'default': 'https://apply.workable.com/{slug}',
+    },
 }
 
 CONFIG_PATHS = {
     'greenhouse': 'config/greenhouse/company_ats_mapping.json',
     'lever': 'config/lever/company_mapping.json',
     'ashby': 'config/ashby/company_mapping.json',
-    'adzuna': 'config/adzuna/top_employers.json',
+    'workable': 'config/workable/company_mapping.json',
+    'adzuna': 'config/adzuna/all_employers.json',
 }
 
 # ============================================
@@ -307,7 +311,7 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
     For Adzuna sources, slug will be None (no career page URL available).
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'adzuna']
 
     repo_root = Path(__file__).parent.parent.parent
     companies = []
@@ -376,7 +380,7 @@ def build_career_page_url(slug: str, ats_source: str, url_type: str = None, inst
     elif ats_source == 'lever':
         template_key = instance or 'global'
         template = templates.get(template_key, templates.get('global'))
-    else:  # ashby
+    else:  # ashby, workable
         template = templates.get('default')
 
     return template.format(slug=slug) if template else None
@@ -868,7 +872,7 @@ def enrich_employer_metadata(
     Main enrichment function.
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'adzuna']
 
     print("=" * 70)
     print("EMPLOYER METADATA ENRICHMENT")
