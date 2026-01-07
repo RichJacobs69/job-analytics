@@ -356,7 +356,8 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
                     url_type = 'standard'
                     instance = 'global'
 
-                canonical_name = slug.lower().replace('-', '').replace('_', '')
+                # Use display_name lowercased as canonical_name (matches job ingestion)
+                canonical_name = display_name.lower()
 
                 companies.append({
                     'canonical_name': canonical_name,
