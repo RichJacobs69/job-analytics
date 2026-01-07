@@ -1,10 +1,10 @@
 # Epic: Employer Metadata Enrichment
 
-**Status:** Phase 2 Complete - Ready for Full Run
+**Status:** Complete
 **Priority:** Medium
 **Complexity:** Moderate
 **Created:** 2026-01-04
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-07
 
 ## Implementation Progress
 
@@ -21,8 +21,8 @@
 | Rule-based pre-classification | [DONE] | Staffing, VC, banks auto-classified |
 | Anti-bias prompt rules | [DONE] | Fixes ai_ml over-classification (see docs/archive/INDUSTRY_CLASSIFIER_ANALYSIS.md) |
 | Dry-run validation | [DONE] | Tested with OpenAI, Figma, Stripe |
-| Run enrichment for all employers | [TODO] | ~690 ATS employers pending |
-| Manual curation export/import | [TODO] | Phase 3 |
+| Run enrichment for all employers | [DONE] | ~690 ATS employers enriched |
+| Manual curation (top 100 Adzuna) | [DONE] | Top 100 Adzuna employers categorized |
 
 ## Quick Start
 
@@ -204,17 +204,14 @@ Domain-focused verticals, not business models. "B2B SaaS" was intentionally excl
 - Extracted by LLM from career page text
 - Source priority: manual > scraped > inferred
 
-### Phase 3: Manual Curation [TODO]
+### Phase 3: Manual Curation [DONE]
 
 | Task | File | Description |
 |------|------|-------------|
-| Export Script | `pipeline/utilities/export_for_curation.py` | Generate CSV of top 100 employers |
-| Import Script | Same file | Validate and upload curated data |
+| Top 100 Adzuna Employers | Manual | Categorized top 100 Adzuna employers |
 
-**Focus on:**
-- Employers with highest job counts
-- Low-confidence LLM classifications
-- Missing working_arrangement after enrichment
+**Completed:**
+- Top 100 Adzuna employers by job count manually categorized
 
 ---
 
@@ -283,7 +280,7 @@ WHERE industry = 'fintech'
 | `migrations/025c_add_financial_services_industry.sql` | [DONE] | 19th category |
 | `pipeline/utilities/enrich_employer_metadata.py` | [DONE] | Main enrichment script |
 | `pipeline/utilities/classify_employer_industry.py` | [DEPRECATED] | Merged into above |
-| `pipeline/utilities/export_for_curation.py` | [TODO] | Phase 3 |
+| `pipeline/utilities/export_for_curation.py` | [NOT NEEDED] | Manual curation done directly |
 | `docs/temp/INDUSTRY_CLASSIFIER_ANALYSIS.md` | [DONE] | Root cause analysis |
 
 ---
@@ -297,5 +294,5 @@ WHERE industry = 'fintech'
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** 2026-01-05
+**Document Version:** 2.1
+**Last Updated:** 2026-01-07

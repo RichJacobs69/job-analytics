@@ -32,7 +32,7 @@ Before starting any task, check if it matches a skill in `.claude/skills/`. If i
 
 ## Project Overview
 
-LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings. Ingests from Adzuna API + Greenhouse/Lever/Ashby scrapers, classifies via Gemini 2.5 Flash, stores in Supabase PostgreSQL.
+LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings. Ingests from Adzuna API + Greenhouse/Lever/Ashby/Workable scrapers, classifies via Gemini 2.5 Flash, stores in Supabase PostgreSQL.
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
@@ -49,8 +49,9 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 python wrappers/fetch_jobs.py --sources greenhouse           # Greenhouse only
 python wrappers/fetch_jobs.py --sources lever                # Lever only
 python wrappers/fetch_jobs.py --sources ashby                # Ashby only (best salary data)
+python wrappers/fetch_jobs.py --sources workable             # Workable only (workplace_type)
 python wrappers/fetch_jobs.py lon 100 --sources adzuna       # Adzuna only
-python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby  # All sources
+python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable  # All sources
 
 # With resume capability
 python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
@@ -94,7 +95,7 @@ SUPABASE_KEY=<key>
 ## Architecture
 
 ```
-Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby Scrapers
+Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby/Workable Scrapers
                 │                    │
                 v                    v
          unified_job_ingester.py (merge & dedupe)
@@ -162,6 +163,7 @@ job-analytics/
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
 | `scrapers/ashby/ashby_fetcher.py` | Ashby API client (structured compensation) |
+| `scrapers/workable/workable_fetcher.py` | Workable API client (workplace_type, salary) |
 
 ## Config Structure
 
@@ -177,6 +179,10 @@ config/
 │   └── location_patterns.yaml
 ├── ashby/
 │   ├── company_mapping.json        # 69 companies
+│   ├── title_patterns.yaml
+│   └── location_patterns.yaml
+├── workable/
+│   ├── company_mapping.json        # Workable companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── location_mapping.yaml           # Master location config
@@ -227,6 +233,7 @@ Located in `.github/workflows/`:
 - `scrape-adzuna.yml` - Wed 7AM UTC (5 cities, weekly)
 - `scrape-lever.yml` - Mon/Wed/Fri 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
+- `scrape-workable.yml` - Wed/Sat 6PM UTC (evening slot)
 - `refresh-derived-tables.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
 
 ## Key References

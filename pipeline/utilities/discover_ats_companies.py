@@ -94,6 +94,17 @@ ATS_CONFIG = {
             'https://api.ashbyhq.com/posting-api/job-board/{slug}',
         ],
     },
+    'workable': {
+        'slug_patterns': [
+            r'apply\.workable\.com/([a-zA-Z0-9_-]+)',
+        ],
+        'search_query': 'site:apply.workable.com',
+        'config_path': Path('config/workable/company_mapping.json'),
+        'config_key': 'workable',
+        'validate_urls': [
+            'https://www.workable.com/api/accounts/{slug}',
+        ],
+    },
 }
 
 # Role queries by job family (from schema_taxonomy.yaml)
@@ -189,7 +200,7 @@ def extract_slugs(urls: List[str], platform: str) -> Set[str]:
     return slugs
 
 
-def validate_slug(slug: str, platform: str, timeout: int = 10) -> bool:
+def validate_slug(slug: str, platform: str, timeout: int = 10, delay: float = 2.0) -> bool:
     """Check if a slug is valid on the ATS platform."""
     headers = {'User-Agent': 'job-analytics-bot/1.0'}
 
@@ -201,6 +212,9 @@ def validate_slug(slug: str, platform: str, timeout: int = 10) -> bool:
                 response = requests.get(url, headers=headers, timeout=timeout)
                 if response.status_code == 200:
                     return True
+                if response.status_code == 429:
+                    # Rate limited - wait and signal to caller
+                    return None  # Distinct from False (invalid)
             else:
                 response = requests.head(url, headers=headers, timeout=timeout, allow_redirects=True)
                 if response.status_code == 200:
@@ -290,7 +304,8 @@ def discover(
     platform: str,
     family: Optional[str] = None,
     validate: bool = True,
-    output_file: Optional[str] = None
+    output_file: Optional[str] = None,
+    validate_delay: float = 2.0
 ) -> Dict:
     """
     Main discovery flow:
@@ -362,18 +377,30 @@ def discover(
         print("No new companies found.")
         return {'discovered': len(all_slugs), 'validated': 0, 'added': 0}
 
-    # Validate
+    # Validate with rate limit handling
     valid_slugs = set()
     if validate:
-        print(f"\nValidating {len(new_slugs)} slugs...")
+        print(f"\nValidating {len(new_slugs)} slugs ({validate_delay}s delay between requests)...")
+        rate_limited = False
         for slug in sorted(new_slugs):
             is_valid = validate_slug(slug, platform)
+
+            if is_valid is None:  # Rate limited
+                print(f"  [RATE] {slug}: Rate limited - stopping validation")
+                print(f"  Tip: Use --no-validate and validate later, or wait and retry")
+                rate_limited = True
+                break
+
             status = "[OK]" if is_valid else "[XX]"
             print(f"  {status} {slug}")
             if is_valid:
                 valid_slugs.add(slug)
-            time.sleep(0.5)
-        print(f"\nValid: {len(valid_slugs)} / {len(new_slugs)}")
+            time.sleep(validate_delay)
+
+        if rate_limited:
+            print(f"\nValid before rate limit: {len(valid_slugs)}")
+        else:
+            print(f"\nValid: {len(valid_slugs)} / {len(new_slugs)}")
     else:
         valid_slugs = new_slugs
         print("(Skipping validation)")
@@ -415,7 +442,7 @@ def main():
 
     parser.add_argument(
         'platform',
-        choices=['greenhouse', 'lever', 'ashby', 'all'],
+        choices=['greenhouse', 'lever', 'ashby', 'workable', 'all'],
         help='ATS platform to discover (or "all" for all platforms)'
     )
 
@@ -434,14 +461,21 @@ def main():
     parser.add_argument(
         '--no-validate',
         action='store_true',
-        help='Skip slug validation (faster but may include invalid)'
+        help='Skip slug validation (faster but may include invalid). Recommended for Workable due to aggressive rate limits.'
+    )
+
+    parser.add_argument(
+        '--validate-delay',
+        type=float,
+        default=2.0,
+        help='Seconds between validation requests (default: 2.0). Increase for rate-limited APIs.'
     )
 
     args = parser.parse_args()
 
     # Determine platforms to run
     if args.platform == 'all':
-        platforms = ['greenhouse', 'lever', 'ashby']
+        platforms = ['greenhouse', 'lever', 'ashby', 'workable']
     else:
         platforms = [args.platform]
 
@@ -452,7 +486,8 @@ def main():
             platform=platform,
             family=args.family,
             validate=not args.no_validate,
-            output_file=args.output
+            output_file=args.output,
+            validate_delay=args.validate_delay
         )
         all_stats['discovered'] += stats['discovered']
         all_stats['validated'] += stats['validated']

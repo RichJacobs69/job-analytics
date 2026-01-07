@@ -42,6 +42,8 @@ class DataSource(Enum):
     ADZUNA = "adzuna"
     GREENHOUSE = "greenhouse"
     LEVER = "lever"
+    ASHBY = "ashby"
+    WORKABLE = "workable"
     HYBRID = "hybrid"  # When Adzuna job data + Greenhouse description
 
 
