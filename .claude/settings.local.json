@@ -63,7 +63,19 @@
       "WebFetch(domain:app.welcometothejungle.com)",
       "WebFetch(domain:www.welcometothejungle.com)",
       "mcp__ide__getDiagnostics",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git restore:*)",
+      "Bash(curl:*)",
+      "Skill(data-analyst)",
+      "mcp__ide__executeCode",
+      "Bash(del \"C:\\\\Cursor Projects\\\\job-analytics\\\\temp_nyc_analysis.py\")",
+      "Bash(\"C:\\\\Cursor Projects\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Cursor Projects\\\\job-analytics\\\\tests\\\\test_workable_fetcher.py\" -v --tb=short)",
+      "WebFetch(domain:apply.workable.com)",
+      "Bash(taskkill:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(cmd /c \"where gh\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Programs\\\\*gh*.exe 2>nul | head -5\")",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

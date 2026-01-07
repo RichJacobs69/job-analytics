@@ -36,21 +36,21 @@ job_family_labels:
 
 | # | Section | Purpose | Data Requirements |
 |---|---------|---------|-------------------|
-| 1 | Executive Summary | Hook with headline stats | Basic counts |
-| 1b | Data Quality Signal | Agency-filtered trust badge | is_agency, agency_confidence |
-| 2 | Key Takeaways: Job Seekers | Actionable candidate insights | All sections |
-| 3 | Key Takeaways: Hiring Managers | Strategic talent insights | All sections |
-| 4 | Top Employers | Market fragmentation | employer.name |
-| 5 | Industry Distribution | Sector breakdown | LLM-inferred from employers |
-| 6 | Employer Size | Startup vs enterprise mix | company_size_estimate |
-| 7 | Role Specialization | Subfamily breakdown | job_subfamily |
-| 8 | Seniority Distribution | Career level demand | seniority |
-| 9 | IC vs Management | Track split | track |
-| 10 | Working Arrangement | Remote/hybrid/onsite | working_arrangement |
-| 11 | Compensation | Salary benchmarks | salary data (US cities only) |
-| 12 | Skills Demand | Capability expectations | skills (full descriptions only) |
-| 13 | Contextual Metrics | Derived insights | Calculated from above |
-| 14 | About / Methodology | Credibility + CTA | Static |
+| 1 | Key Findings | Verbose summary with headline + narrative + bullets | All sections |
+| 2 | Key Takeaways by Persona | Actionable insights for job seekers and hiring managers | All sections |
+| 3 | Industry Distribution | Sector breakdown | employer_metadata.industry |
+| 4 | Company Maturity | Young/growth/mature split | employer_metadata.founding_year |
+| 5 | Ownership Type | Public vs private hiring | employer_metadata.ownership_type |
+| 6 | Employer Size | Startup vs enterprise mix | employer_metadata.employer_size |
+| 7 | Top Employers | Market fragmentation | employer.name |
+| 8 | Role Specialization | Subfamily breakdown | job_subfamily |
+| 9 | Seniority Distribution | Career level demand | seniority |
+| 10 | IC vs Management | Track split | track |
+| 11 | Working Arrangement | Remote/hybrid/onsite | working_arrangement + employer_metadata fallback |
+| 12 | Compensation | Salary benchmarks (overall + by subfamily) | salary data (US cities only) |
+| 13 | Skills Demand | Capability expectations | skills (full descriptions only) |
+| 14 | Market Metrics | Derived contextual insights | Calculated from above |
+| 15 | Methodology | Credibility + CTA | Static |
 
 **Location-specific rules:**
 - **London (lon)**: Skip compensation section entirely (no UK pay transparency laws)
@@ -64,242 +64,214 @@ job_family_labels:
 
 ## Report Structure
 
-### 1. Cover / Executive Summary
+### 1. Key Findings
 
-**Purpose:** Hook the reader with 3-4 headline findings. This is what people see on LinkedIn before clicking "see more."
+**Purpose:** Lead with a comprehensive narrative that synthesizes the most important insights. This is the "so what" of the entire report, delivered upfront.
 
-**Required fields:**
-- `job_family` (display label)
-- `location.city_code` (display label)
-- `period_label`
-- `total_jobs` (count of jobs in report)
+**Structure:**
+1. **Opening paragraph** - 2-3 sentences that capture the market's defining characteristics
+2. **Key findings bullets** - 4-5 specific, number-backed insights that support the narrative
+3. **Note on data coverage** - Brief mention of sample size and agency exclusion
 
-**Content blocks:**
+**Tone:** Verbose and analytical. Don't just list facts - explain what they mean and why they matter. Use comparative context (vs other markets, vs expectations).
 
-#### Headline Stat (Required)
-The single most interesting finding. Pick the most surprising or actionable insight.
+**Example:**
 
+```markdown
+## Key Findings
+
+San Francisco's data market in December 2025 is unmistakably the AI capital of the United States. Nearly four in ten open roles are for ML Engineers - almost double the concentration seen in New York or Denver. This isn't just about job titles: the city's employer base tells the same story, with AI/ML companies and autonomous vehicle firms together accounting for a quarter of all hiring activity. The compensation reflects this specialization, with Research Scientists commanding median salaries around $250K and ML Engineers at $188K.
+
+What makes SF distinctive isn't just the AI focus - it's the company profile. Over half of hiring comes from growth-stage companies (6-15 years old), the Waymo and Roblox generation that offers meaningful equity upside without early-stage risk. But this maturity comes at a cost for newcomers: the 18:1 senior-to-junior ratio is the most competitive among US markets, making SF a difficult entry point for early-career candidates.
+
+- **ML Engineering dominance:** 38% of all roles - nearly double NYC (24%) and Denver (20%)
+- **AI epicenter:** AI/ML industry (15%) and Mobility (10%) together drive a quarter of hiring
+- **Premium compensation:** Research Scientist ML median $250K; ML Engineer $188K
+- **Growth-stage market:** 51% of jobs at companies 6-15 years old
+- **Competitive entry:** 18:1 senior-to-junior ratio, the highest among US markets
+
+*Based on over 1,100 direct employer postings from 500+ companies. Recruitment agency listings excluded.*
 ```
-Example: "Technical and AI-focused PM positions now account for almost 1/3 of all openings."
-```
-
-#### Key Findings (3-4 bullets)
-Short, specific, number-backed claims.
-
-```
-Example:
-- 80% of roles are Individual Contributor positions
-- Senior-level openings account for almost ½ of all demand  
-- Technical and AI/ML roles comprise 30%
-```
-
-**Generation logic:**
-- Calculate subfamily distribution → surface any category >25% as notable
-- Calculate seniority distribution → highlight dominant tier
-- Calculate track split (IC vs management) → note if skewed >70% either way
-- Compare to previous period if available → call out significant shifts (±5pp)
 
 ---
 
-### 1b. Data Quality Signal
+### 2. Key Takeaways by Persona
 
-**Purpose:** Differentiate from noisy job boards by highlighting direct employer postings. Job seekers hate agency spam—this is a trust signal.
+**Purpose:** Translate the findings into actionable advice for the two primary audiences.
 
-**Required fields:**
-- `employer.is_agency`
-- `employer.agency_confidence`
-
-**Content block:**
-
-```
-Example:
-"This report includes X direct employer postings. Y agency listings (Z%) were identified and excluded from analysis."
-```
-
-Or as a badge/callout:
-```
-✓ Agency-filtered: 94% direct employer roles
-```
-
-**Display options:**
-1. **Badge format** (recommended for Gamma): Single line with checkmark, shown prominently
-2. **Detailed format**: Full sentence with counts, used in methodology section
-
-**Metrics to surface:**
-- `direct_employer_count`: Jobs where is_agency = false
-- `agency_count`: Jobs where is_agency = true
-- `agency_rate`: agency_count / total_jobs (before filtering)
-- `direct_employer_rate`: 1 - agency_rate
-
-**Filtering logic:**
-- High confidence agencies (is_agency = true, agency_confidence = high): Always exclude
-- Medium confidence agencies: Exclude by default, flag count
-- Low confidence: Include but monitor
-
-**Why this matters:**
-- Agencies often post duplicate/stale roles
-- Agency postings obscure actual employer demand
-- Direct postings = higher signal for market analysis
-- Differentiates your reports from Indeed/LinkedIn noise
-
----
-
-### 2. Key Takeaways by Audience
-
-**Purpose:** Immediately answer "what does this mean for me?" for both primary audiences. Front-load the value—don't make readers dig.
-
-#### For Job Seekers (3-4 bullets)
+#### Key Takeaways: Job Seekers (4-5 bullets)
 
 Actionable insights for candidates. Focus on:
 - Where to focus search (hot subfamilies, growing employers)
 - Realistic expectations (seniority distribution, entry difficulty)
 - Differentiators (skills in demand, underserved niches)
 - Flexibility options (remote availability, startup vs enterprise)
-
-```
-Example:
-- Target Technical and AI/ML PM roles—nearly 1/3 of openings, likely less competition per role than Core PM
-- Senior-level experience is table stakes; 80% of roles require 3+ years
-- SQL and Python fluency are baseline expectations—lack of these will filter you out early
-- Remote-only candidates face a constrained market (13% of roles)—consider hybrid flexibility
-```
+- Compensation context
 
 **Tone:** Direct, realistic, no false optimism. Job seekers appreciate honesty over cheerleading.
 
-#### For Hiring Managers & Recruiters (3-4 bullets)
-
-Strategic insights for talent acquisition. Focus on:
-- Competitive positioning (how crowded is your niche)
-- Compensation benchmarking (where disclosed)
-- Talent pool signals (what candidates expect)
-- Market timing (hiring velocity, seasonal patterns)
-
 ```
 Example:
-- You're competing with Figma, JPMorgan, and Capital One for PM talent—differentiate on mission or flexibility
-- The market is fragmented (top 15 employers = 15%)—strong employer brand matters less than role clarity
-- 80% of roles are IC track—if you're hiring managers, you have less competition but a thinner candidate pool
-- Candidates expect hybrid as default (52%)—onsite-only policies may limit your funnel
+1. **ML Engineering is THE path** - 38% of roles are ML Engineer. If you're pivoting to data in SF, ML skills maximize your options.
+2. **Entry is brutal** - The 18:1 senior-to-junior ratio is the highest among US markets. Consider Denver (6:1) or NYC (10:1) for entry-level opportunities.
+3. **Research Scientists are premium** - $250K median. If you have the PhD, SF pays top dollar for ML research talent.
+4. **Growth-stage sweet spot** - Over half of jobs are at companies 6-15 years old. Equity upside with operational stability.
+5. **AV companies are hiring aggressively** - Waymo and Zoox are among the top employers. Autonomous vehicles remain data-intensive.
 ```
+
+#### Key Takeaways: Hiring Managers (3-4 bullets)
+
+Strategic insights for talent acquisition. Focus on:
+- Competitive positioning (who you're competing against)
+- Compensation benchmarking (what the market pays)
+- Talent pool signals (what candidates expect)
 
 **Tone:** Strategic, benchmark-oriented. Help them understand the competitive landscape.
 
-**Generation logic:**
-- Pull 2 insights from market composition (employer concentration, size distribution)
-- Pull 2 insights from role structure (seniority, track, subfamily)
-- Pull 1-2 insights from candidate expectations (arrangement, skills, comp where available)
-- Frame each for the specific audience's decision-making context
+```
+Example:
+1. **Competing with Waymo and OpenAI** - The top employers are AV and AI leaders. Differentiate on mission, not just compensation.
+2. **Candidates expect equity** - Private companies (20%) slightly outnumber public (19%). Equity compensation is table stakes.
+3. **Staff+ is expensive** - ML Engineer median $188K, Research Scientist $250K. Budget for SF premiums.
+4. **Startup talent is available** - 24% of jobs are at startups (vs 11% in NYC). Candidates comfortable with startup environments.
+```
 
 ---
 
-### 4. Market Composition: Top Employers
-
-**Purpose:** Show market fragmentation and identify major hiring players.
-
-**Required fields:**
-- `employer.name`
-- Count of jobs per employer
-
-**Thresholds:**
-- Show top 10-15 employers
-- Only include employers with ≥2 jobs
-- If top 15 employers represent <20% of market, note "highly fragmented"
-
-**Content blocks:**
-
-#### Concentration metric
-```
-Example: "The market is highly fragmented, with the top 15 employers representing almost 15% of the total market."
-```
-
-#### Employer groupings (Optional)
-If natural clusters emerge (e.g., Finance vs Tech), group them. Otherwise, single ranked list.
-
-```
-Example groupings:
-- Design & Tech Giants: Figma (14), Google (4), Microsoft (4)
-- Finance & Fintech: JPMorgan Chase (12), Capital One (9)
-```
-
-**Sparse data rule:**
-- If <50 total jobs, reduce to top 5 employers
-- If top employer has >20% of all jobs, call this out explicitly
-
----
-
-### 5. Industry Distribution
+### 3. Industry Distribution
 
 **Purpose:** Show which sectors are driving hiring demand. Helps candidates target industries and hiring managers understand competitive landscape.
 
-**Data source:** LLM-inferred from employer names. No structured industry field required.
+**Data source:** `employer_metadata.industry` - use structured industry codes, NOT LLM inference.
 
-**Classification approach:**
-```
-Prompt: "Given this list of company names hiring for [job_family] roles, 
-group them into 5-8 industry clusters. For each company, assign ONE 
-primary industry. Return industry name, company list, and job count."
+**Industry code reference:**
 
-Example industries:
-- Fintech & Financial Services
-- Enterprise SaaS
-- Consumer Tech / B2C
-- E-commerce & Retail
-- Healthcare & Biotech
-- Media & Entertainment
-- Infrastructure & Dev Tools
-- Agency / Consultancy
-```
+| Code | Display Label |
+|------|---------------|
+| `ai_ml` | AI & Machine Learning |
+| `data_infra` | Data Infrastructure |
+| `fintech` | Fintech |
+| `financial_services` | Financial Services |
+| `healthtech` | Healthcare & Biotech |
+| `consumer` | Consumer Tech |
+| `ecommerce` | E-commerce & Retail |
+| `professional_services` | Professional Services |
+| `mobility` | Mobility & Transportation |
+| `martech` | Marketing Technology |
+| `cybersecurity` | Cybersecurity |
+| `hr_tech` | HR Technology |
+| `proptech` | Property Technology |
+| `devtools` | Developer Tools |
+| `edtech` | Education Technology |
+| `climate` | Climate & Sustainability |
+| `crypto` | Crypto & Web3 |
+| `productivity` | Productivity Software |
+| `other` | Other |
 
 **Content blocks:**
 
-#### Industry breakdown (percentage of roles)
+#### Industry breakdown (percentage of roles with industry data)
 ```
 Example:
-- Non-Fintech: 86%
-- Fintech/Financial Services: 14%
-```
-
-Or more granular:
-```
-- Enterprise SaaS: 28%
-- Fintech & Banking: 22%
-- Consumer Tech: 18%
-- E-commerce: 12%
-- Healthcare: 8%
-- Other: 12%
-```
-
-#### Industry sub-segments (where meaningful)
-For large categories, break down further:
-
-```
-Fintech & Financial Services (14%):
-- Traditional Banks: JPMorgan Chase, BNY Mellon, Citigroup
-- Payment Processors: Capital One, Visa, Mastercard
-- Neobanks: Wise, Monzo
-- Crypto: Coinbase, Kraken
+- AI & Machine Learning: 15%
+- Mobility & Transportation: 12%
+- Consumer Tech: 10%
+- Fintech: 6%
+- Data Infrastructure: 5%
+- Other industries: 52%
 ```
 
 #### Interpretation
 ```
-Example: "The 'London = Fintech' stereotype has some truth—but SaaS, marketing tech, and general technology account for the majority of PM hiring."
+Example: "AI/ML companies account for 15% of data hiring, reflecting SF's position as the global AI epicenter. The 12% mobility share is driven by autonomous vehicle companies (Waymo, Zoox)."
 ```
 
 **Sparse data rules:**
-- If any industry cluster has <5 jobs, merge into "Other"
-- Limit to 6-8 industries max for readability
-- Always show "Other" category to avoid false precision
+- If any industry has <5 jobs, merge into "Other"
+- Limit to top 8-10 industries + "Other" for readability
+- Always note coverage: "Industry data available for X% of jobs"
+- If coverage <30%, add caveat about limited industry visibility
 
 **Generation logic:**
-1. Extract unique employer names from dataset
-2. Send to LLM with classification prompt
-3. Aggregate job counts by assigned industry
-4. Calculate percentages and rank
-5. Identify sub-segments for top 2-3 industries
+1. Join enriched_jobs with employer_metadata on normalized employer name
+2. Aggregate job counts by industry code
+3. Calculate percentages of total jobs with industry data
+4. Report coverage rate
 
 ---
 
-### 6. Employer Size Distribution
+### 5. Company Maturity
+
+**Purpose:** Show whether hiring is concentrated at early-stage startups, growth companies, or mature enterprises. Helps candidates understand risk/reward tradeoffs.
+
+**Data source:** `employer_metadata.founding_year` - calculate company age as (current_year - founding_year).
+
+**Maturity categories:**
+
+| Category | Age Range | Characteristics |
+|----------|-----------|-----------------|
+| Young | <=5 years | Founded 2020+, early-stage, higher risk/reward |
+| Growth | 6-15 years | Founded 2010-2019, scale-up phase, Series B+ typically |
+| Mature | >15 years | Founded pre-2010, established enterprises |
+
+**Content blocks:**
+
+#### Maturity distribution
+```
+Example:
+- Young (<=5 yrs): 12%
+- Growth (6-15 yrs): 51%
+- Mature (>15 yrs): 37%
+```
+
+#### Interpretation
+```
+Example: "SF's data market skews toward growth-stage companies (51%), reflecting the city's concentration of well-funded scale-ups. Denver's 76% mature company share indicates a more enterprise-dominated market."
+```
+
+**Sparse data rules:**
+- Only publish if founding_year data available for >=20% of jobs
+- Always note coverage: "Based on X jobs with company founding data"
+
+---
+
+### 6. Ownership Type
+
+**Purpose:** Show public vs private company hiring patterns. Helps candidates understand equity compensation context and company stability.
+
+**Data source:** `employer_metadata.ownership_type`
+
+**Ownership categories:**
+
+| Type | Description |
+|------|-------------|
+| `private` | VC-backed or bootstrapped |
+| `public` | Listed companies (NYSE, NASDAQ, etc.) |
+| `subsidiary` | Division of larger company |
+| `acquired` | Recently acquired |
+
+**Content blocks:**
+
+#### Ownership distribution
+```
+Example:
+- Private: 26%
+- Public: 19%
+- Subsidiary: 9%
+```
+
+#### Interpretation
+```
+Example: "Private companies account for 26% of hiring, suggesting candidates should understand equity compensation structures. The 19% public company share offers more salary transparency but typically less equity upside."
+```
+
+**Sparse data rules:**
+- Only publish if ownership data available for >=15% of jobs
+- Combine subsidiary + acquired if either has <10 jobs
+
+---
+
+### 7. Employer Size Distribution
 
 **Purpose:** Signal whether the market skews toward stability (enterprise) or growth (startup).
 
@@ -329,7 +301,50 @@ Example: "London offers more stability-focused PM roles than pure startup ecosys
 
 ---
 
-### 7. Role Specialization (Subfamily Breakdown)
+### 8. Top Employers
+
+**Purpose:** Show market fragmentation and identify major hiring players.
+
+**Required fields:**
+- `employer.name`
+- Count of jobs per employer
+
+**Thresholds:**
+- Show top 10-15 employers
+- Only include employers with >=2 jobs
+- If top 15 employers represent <20% of market, note "highly fragmented"
+
+**Content blocks:**
+
+#### Employer table
+```
+Example:
+| Employer | Jobs |
+|----------|------|
+| Waymo | 48 |
+| Roblox | 35 |
+| Block | 32 |
+```
+
+#### Employer groupings (Optional)
+If natural clusters emerge (e.g., Finance vs Tech vs AV), group them.
+
+```
+Example groupings:
+- AV Cluster: Waymo (48), Zoox (29)
+- Finance & Fintech: Capital One (28), Block (32)
+```
+
+#### Market interpretation
+Explain what the employer mix reveals about the market.
+
+**Sparse data rule:**
+- If <50 total jobs, reduce to top 5 employers
+- If top employer has >20% of all jobs, call this out explicitly
+
+---
+
+### 9. Role Specialization (Subfamily Breakdown)
 
 **Purpose:** Show which subspecialties dominate and which are emerging.
 
@@ -382,7 +397,7 @@ Example: "While Core PM roles dominate, technical specialisation is the clear gr
 
 ---
 
-### 8. Seniority Distribution (Career Level Demand)
+### 10. Seniority Distribution (Career Level Demand)
 
 **Purpose:** Help candidates understand where the demand is and realistic entry points.
 
@@ -412,7 +427,7 @@ Example: "The London market values experience with almost 80% of roles requiring
 
 ---
 
-### 9. IC vs Management Track
+### 11. IC vs Management Track
 
 **Purpose:** Show career path options available in the market.
 
@@ -440,16 +455,22 @@ Example: "There are leadership opportunities in Finance—Capital One, JPMorgan 
 
 ---
 
-### 10. Working Arrangement Breakdown
+### 12. Working Arrangement Breakdown
 
 **Purpose:** Critical filter for many job seekers post-COVID.
 
 **Required fields:**
-- `location.working_arrangement` (onsite | hybrid | remote | flexible | unknown)
+- `enriched_jobs.working_arrangement` (primary)
+- `employer_metadata.working_arrangement_default` (secondary fallback for unknown)
+
+**Two-layer approach:**
+1. Use job-level arrangement as primary signal
+2. Use employer default from metadata as secondary signal for jobs with "unknown" arrangement
+3. Report both "job-level known" and "effective" (with employer fallback) metrics
 
 **Content blocks:**
 
-#### Percentage breakdown
+#### Job-level arrangement (primary)
 ```
 - Hybrid: 48%
 - Onsite: 30%
@@ -458,20 +479,27 @@ Example: "There are leadership opportunities in Finance—Capital One, JPMorgan 
 - Unknown: 2%
 ```
 
+#### Effective flexibility (with employer default fallback)
+```
+Of X jobs with unknown arrangement, Y (Z%) could be inferred from employer defaults:
+- Effective known arrangement: 65% (vs 48% job-level only)
+```
+
 Note: "Flexible" means employer offers choice (remote OR hybrid OR onsite). Report as distinct category.
 
 #### Interpretation
 ```
-Example: "Hybrid dominates, but fully remote roles remain scarce—candidates prioritizing remote work face a constrained market."
+Example: "Hybrid dominates the known arrangements, but 75% of postings don't specify. Using employer-level defaults as a secondary signal, effective remote availability rises to 12%."
 ```
 
 **Sparse data rule:**
-- If working_arrangement is null for >30% of jobs, add caveat: "Working arrangement specified in X% of postings."
+- If working_arrangement is null/unknown for >30% of jobs, add caveat: "Working arrangement specified in X% of postings."
+- Report how many unknowns could be filled from employer_metadata
 - If remote <10 jobs, report count not percentage
 
 ---
 
-### 11. Compensation Insights (US Cities Only: NYC, Denver, San Francisco)
+### 13. Compensation Insights (US Cities Only: NYC, Denver, San Francisco)
 
 **Purpose:** Provide salary benchmarking where data permits.
 
@@ -504,12 +532,22 @@ Example:
 - Senior-to-Mid premium: +27%
 ```
 
-#### Salary by subfamily (if sufficient data)
+#### Salary by subfamily (REQUIRED for Data reports)
 ```
 Example:
-- Data Engineer median: $160,000
-- Data Scientist median: $175,000
-- ML Engineer median: $195,000
+| Subfamily | Median | Sample |
+|-----------|--------|--------|
+| ML Engineer | $195,000 | n=150 |
+| Data Scientist | $175,000 | n=120 |
+| Data Engineer | $160,000 | n=140 |
+| Analytics Engineer | $155,000 | n=45 |
+| Data Analyst | $130,000 | n=100 |
+| Product Analytics | $145,000 | n=50 |
+```
+
+**Subfamily premium calculation:**
+```
+ML Engineer premium vs Data Analyst: +50% ($195K vs $130K)
 ```
 
 #### Histogram buckets (for visualization)
@@ -536,7 +574,7 @@ Salary distribution:
 
 ---
 
-### 12. Skills Demand
+### 14. Skills Demand
 
 **Purpose:** Surface trending skills and capability expectations.
 
@@ -616,7 +654,7 @@ Distinguishing skills by role type:
 
 ---
 
-### 13. Market Context & Comparative Metrics
+### 15. Market Context & Comparative Metrics
 
 **Purpose:** Add analytical depth with derived metrics that contextualize findings. These help readers understand not just "what" but "how significant."
 
@@ -745,38 +783,43 @@ Example comparisons:
 
 ---
 
-### 14. About / Methodology / CTA
+### 15. Methodology
 
-**Purpose:** Build credibility and drive engagement.
+**Purpose:** Build credibility and provide transparency about data collection.
 
 **Content blocks:**
 
-#### About the author (static)
-```
-Hey there! I'm Rich—I specialise in data product management and have spent 8 years building technical products. I created this job market intelligence platform to help candidates, recruiters, and employers understand what's really happening in hiring.
-```
-
 #### Methodology (semi-static)
 ```
-This report analyzes [X] direct employer job postings for [Job Family] roles in [Location] during [Period].
+This report analyzes direct employer job postings for [Job Family] roles in [Location] during [Period].
 
-Data sources: Aggregated from major job boards and company applicant tracking systems.
+Data collection:
+- Over [X] roles from [Y]+ employers aggregated from multiple sources
+- Recruitment agency postings identified and excluded
+- Jobs deduplicated across sources to avoid double-counting
 
-Data quality measures:
-- Agency filtering: Recruitment agency postings are identified and excluded using company name patterns, job description signals, and confidence scoring. [Y] agency listings ([Z]%) were removed from this analysis.
-- Deduplication: Jobs reposted within 30 days are consolidated to avoid double-counting.
-- Classification: Roles are classified using an LLM-powered taxonomy covering subfamily, seniority, skills, and working arrangement.
+Classification:
+- Roles classified using an LLM-powered taxonomy
+- Subfamily, seniority, skills, and working arrangement extracted
+- Employer metadata enriched from company databases
 
 Limitations:
-- Some roles posted exclusively on company career sites may not be captured.
-- Skills analysis is limited to roles with full job descriptions available.
-- Salary data is only available for US markets with pay transparency laws.
+- Not a complete census of the market - some roles may not be captured
+- Skills analysis limited to roles with full job descriptions
+- Salary data only available for US markets with pay transparency laws
 ```
 
-#### Links
-- LinkedIn: rjacobsuk
-- Website: richjacobs.me
-- Email: rich@richjacobs.me
+**Do not:**
+- Quote specific data source names or percentages (e.g., "Adzuna 68%, Greenhouse 32%")
+- Quote exact agency filtering counts
+- Use precise job counts in methodology (use approximations)
+
+#### About & Links
+```
+This report was created by Rich Jacobs, a data product manager focused on hiring market intelligence.
+
+LinkedIn: rjacobsuk | Website: richjacobs.me
+```
 
 ---
 
@@ -784,15 +827,14 @@ Limitations:
 
 ```yaml
 section_rules:
-  data_quality_signal:
+  key_findings:
     min_jobs: 30
-    required_fields: [is_agency]
-    fallback: "Show total job count without agency breakdown if is_agency field unavailable"
-    
+    fallback: "Generate with heavy caveats about limited sample"
+
   key_takeaways:
     min_jobs: 30
     fallback: "Generate with heavy caveats about limited sample"
-    
+
   top_employers:
     min_jobs: 30
     fallback: "Skip section"
@@ -872,6 +914,153 @@ Use these when thresholds aren't met:
 
 ---
 
+## Data Presentation Guidelines
+
+### Use Percentages, Not Counts
+
+**Key principle:** We cannot claim complete market coverage. Percentage shares are meaningful; absolute job counts can mislead readers into thinking this is the entire market.
+
+**Rules:**
+- **Never show job counts in tables or charts** - use % share only
+- **Show aggregate totals once** (e.g., "over 1,100 jobs from 500+ employers") for sample size context in Key Findings
+- **Round to whole numbers** - 18.1% becomes 18%, 17.8:1 becomes 18:1
+- **Use approximate language for aggregates** - "over 1,100" not "1,119", "500+ employers" not "516"
+
+**Example - Good:**
+```
+| Subfamily | % of Roles |
+|-----------|------------|
+| ML Engineer | 38% |
+| Data Scientist | 22% |
+| Data Engineer | 18% |
+```
+
+**Example - Avoid (counts exposed):**
+```
+| Subfamily | Jobs | % |
+|-----------|------|---|
+| ML Engineer | 426 | 38% |
+| Data Scientist | 243 | 22% |
+```
+
+### Commentary Style
+
+**Be verbose and interpretive.** Don't just present data - explain what it means.
+
+**Example - Too sparse:**
+```
+ML Engineer (38%) is the most common role.
+```
+
+**Example - Good (verbose):**
+```
+ML Engineering dominates the SF data market in a way that's unique among US cities. At 38% of all roles, it's nearly double the concentration seen in NYC (24%) or Denver (20%). This reflects the city's position as the global center for AI research and development, where even traditional companies are building ML-first products. For job seekers, this concentration means ML skills aren't just valuable - they're the primary path to maximizing opportunity in this market.
+```
+
+### Rounding Rules
+
+| Type | Rule | Example |
+|------|------|---------|
+| Percentages | Whole numbers | 18.6% → 19% |
+| Ratios | One decimal max, prefer whole | 17.8:1 → 18:1 |
+| Salaries | Round to nearest $1K | $177,438 → $177,000 |
+| Aggregates | Use approximations | 1,119 → "over 1,100" |
+
+---
+
+## Chart Type Recommendations
+
+**Add a markdown note after each table indicating the recommended chart type for visualization.**
+
+**Format:** `*Chart: [chart type]*`
+
+**Chart type guide by data type:**
+
+| Data Pattern | Recommended Chart | Example Use |
+|--------------|-------------------|-------------|
+| Part-to-whole (single dimension) | Donut | Industry distribution, Track split (IC vs Mgmt) |
+| Categorical comparison | Horizontal Bar | Top employers, Subfamily distribution |
+| Ranked/ordered list | Horizontal Bar | Skills demand, Seniority distribution |
+| Multi-dimensional breakdown | Stacked Bar | Seniority by subfamily, Arrangement by company size |
+| Range/spread data | Stacked Bar | Salary ranges (25th/median/75th percentiles) |
+| Time series | Line | Month-over-month trends |
+| Salary overall distribution | Histogram | Salary distribution by $20K buckets |
+| Two metrics comparison | Grouped Bar | Remote rate by company size |
+
+### Salary Distribution Visualization
+
+**For the overall compensation distribution, use a histogram with salary buckets.**
+
+Salary data is typically right-skewed (not normally distributed), so a bell curve is not appropriate. Instead:
+
+1. **Create $20K buckets** from the minimum to maximum observed
+2. **Show % of roles** in each bucket (not counts)
+3. **Annotate the median** with a vertical line or marker
+
+**Example table for histogram:**
+```
+| Salary Range | % of Roles |
+|--------------|------------|
+| $80-100K | 5% |
+| $100-120K | 12% |
+| $120-140K | 18% |
+| $140-160K | 22% |
+| $160-180K | 20% |
+| $180-200K | 13% |
+| $200-220K | 6% |
+| $220K+ | 4% |
+
+*Chart: Histogram with median marker at $177K*
+```
+
+**When to use Stacked Bar vs Horizontal Bar:**
+
+| Table Type | Chart | Rationale |
+|------------|-------|-----------|
+| Salary by Seniority | Stacked bar (25th/median/75th) | Shows salary range spread, not just median |
+| Salary by Subfamily | Stacked bar (25th/median/75th) | Highlights compensation variance by role |
+| Single-dimension rankings | Horizontal bar | Simple comparison (skills, employers) |
+| Part-to-whole (<5 categories) | Donut | Clean visualization of composition |
+
+**Example usage in reports:**
+
+```markdown
+| Subfamily | Jobs | % |
+|-----------|------|---|
+| ML Engineer | 426 | 38% |
+| Data Scientist | 243 | 22% |
+| Data Engineer | 202 | 18% |
+
+*Chart: Horizontal bar*
+```
+
+```markdown
+| Track | Jobs | % |
+|-------|------|---|
+| IC | 1,037 | 93% |
+| Management | 76 | 7% |
+
+*Chart: Donut*
+```
+
+```markdown
+| Level | 25th | Median | 75th | Sample |
+|-------|------|--------|------|--------|
+| Junior | $95,000 | $117,000 | $140,000 | n=37 |
+| Senior | $155,000 | $178,000 | $210,000 | n=466 |
+| Staff+ | $190,000 | $218,000 | $250,000 | n=166 |
+
+*Chart: Stacked bar (25th/median/75th percentiles)*
+```
+
+**Stacked bar examples:**
+- Salary ranges by seniority (show 25th/median/75th as stacked segments)
+- Salary ranges by subfamily (show 25th/median/75th as stacked segments)
+- Seniority breakdown by role type (if cross-tabulated)
+- Working arrangement by company size (if cross-tabulated)
+
+---
+
 ## Output Format for gamma.app
 
 Gamma works best with:
@@ -882,6 +1071,7 @@ Gamma works best with:
 - **Data tables for every stat** — Gamma visualizes tables into charts; don't just quote numbers in prose
 - **Round percentages to whole numbers** — No one cares about 20.9% vs 21%; use "21%"
 - **Double-check the year** — Use the current year from today's date; do not default to prior years
+- **Use % shares** — Always show percentage of analyzed jobs, not raw counts alone
 
 **Recommended structure for Gamma import:**
 1. Each H2 section becomes a slide
@@ -889,6 +1079,245 @@ Gamma works best with:
 3. Keep body text under 50 words per slide
 4. Include data tables with all comparative/contextual stats
 5. Let Gamma generate charts from your table data
+
+---
+
+## Web Visualization Design Standards (React/Next.js)
+
+When generating reports for the portfolio site web visualization, follow these design standards established in the SF December 2025 prototype.
+
+### Layout Principles
+
+**Two-column layout for donut charts:**
+- Chart + legend on left column
+- Narrative interpretation on right column
+- Maximizes horizontal real estate
+- Legend items displayed horizontally (single line with flex-wrap)
+
+**Card-based sections:**
+- Dark background: `#1a1a1a`
+- Border: `gray-800`
+- Rounded corners: `rounded-xl`
+- Padding: `p-6`
+
+### Chart Component Library
+
+| Component | Use Case | Key Props |
+|-----------|----------|-----------|
+| `HorizontalBarChart` | Rankings, distributions | `data`, `valueLabel`, `valueSuffix`, `height` |
+| `DonutChart` | Part-to-whole (2-5 categories) | `data`, `centerValue`, `centerLabel`, `narrative` |
+| `RangeBarChart` | Salary ranges (25th/median/75th) | `data` with `p25`, `median`, `p75`, `sample` |
+
+**Note:** Salary histogram is not used - the salary by role breakdown provides more granular and relevant compensation data.
+
+### Donut Chart with Narrative
+
+When a donut chart has an interpretation, use the two-column layout:
+
+```tsx
+<DonutChart
+  data={companyMaturity.data}
+  centerValue="51%"
+  centerLabel="Growth Stage"
+  size={200}
+  narrative={companyMaturity.interpretation}  // Enables two-column layout
+/>
+```
+
+### Range Bar Chart for Salary Data
+
+Show salary spread with 25th-75th percentile range and median marker:
+
+```tsx
+<RangeBarChart
+  data={compensation.bySeniority}  // Array with p25, median, p75, sample
+  height={220}
+/>
+```
+
+### Market Metrics - Grouped Cards
+
+Organize market metrics into four logical groups in a 2x2 grid:
+
+1. **Market Structure** - Jobs per employer, Top 5 concentration, Specialization index
+2. **Accessibility** - Senior-to-Junior ratio (highlighted in red), Entry accessibility, Management opportunity
+3. **Flexibility** - Remote availability, Flexibility score
+4. **Data Quality** - Salary disclosure, Industry coverage, Full descriptions
+
+### List Formatting - Use Numbered Lists Only
+
+**Adopt uniform numbering throughout reports. Do not mix bullets and numbers.**
+
+Use section-based numbering with decimal notation:
+
+```
+1. Key Findings
+   1.1. AI epicenter: AI/ML industry (15%) combined with Mobility (10%)...
+   1.2. ML Engineer dominance: 38% of all roles...
+   1.3. Premium compensation: Research Scientist ML $250K median...
+
+2. Key Takeaways: Job Seekers
+   2.1. ML Engineering is THE career path in SF...
+   2.2. Entry-level is exceptionally competitive...
+   2.3. Research Scientists command premium compensation...
+
+3. Key Takeaways: Hiring Managers
+   3.1. You're competing with Waymo and OpenAI for talent...
+   3.2. Private equity compensation is expected...
+```
+
+**Rules:**
+- Top-level sections use whole numbers (1, 2, 3...)
+- Items within sections use decimal notation (1.1, 1.2, 2.1, 2.2...)
+- Nested items use additional decimals if needed (1.1.1, 1.1.2...)
+- Never use bullet points (-) for lists in reports
+- Methodology section lists are the exception - use bullets for data collection, classification, limitations
+
+### Color Palette
+
+| Purpose | Color | Tailwind Class |
+|---------|-------|----------------|
+| Primary accent | Lime | `text-lime-400`, `bg-lime-400` |
+| Secondary accent | Emerald | `text-emerald-400` |
+| Warning/highlight | Red | `text-red-400` |
+| Text primary | White | `text-white` |
+| Text secondary | Gray 300 | `text-gray-300` |
+| Text muted | Gray 400-500 | `text-gray-400`, `text-gray-500` |
+| Background | Near black | `bg-[#0a0a0a]` |
+| Card background | Dark gray | `bg-[#1a1a1a]` |
+
+### Section Separators
+
+Use horizontal rules between major sections:
+
+```tsx
+<hr className="border-gray-800 my-12" />
+```
+
+### Data File Structure (JSON)
+
+Reports should have a companion JSON file with this structure:
+
+```json
+{
+  "meta": { "city", "period", "totalJobs", "uniqueEmployers", "summary" },
+  "keyFindings": { "narrative": [], "bullets": [] },
+  "takeaways": { "jobSeekers": [], "hiringManagers": [] },
+  "industryDistribution": { "coverage", "data": [], "interpretation" },
+  "companyMaturity": { "coverage", "data": [], "interpretation" },
+  "ownershipType": { "coverage", "data": [], "interpretation" },
+  "employerSize": { "coverage", "data": [], "interpretation" },
+  "topEmployers": { "data": [], "interpretation" },
+  "roleSpecialization": { "data": [], "interpretation" },
+  "seniorityDistribution": { "data": [], "seniorToJuniorRatio", "entryAccessibilityRate", "interpretation" },
+  "icVsManagement": { "data": [], "interpretation" },
+  "workingArrangement": { "analysis": {}, "data": [], "interpretation" },
+  "compensation": {
+    "coverage",
+    "overall": { "percentile25", "median", "percentile75", "iqr" },
+    "bySeniority": [],
+    "byRole": []
+  },
+  "skillsDemand": { "coverage", "data": [], "interpretation" },
+  "marketMetrics": {
+    "marketStructure": [],
+    "accessibility": [],
+    "flexibility": [],
+    "dataQuality": []
+  },
+  "marketContext": [],
+  "methodology": { "description", "dataCollection": [], "classification": [], "limitations": [] },
+  "about": { "author", "bio", "linkedin", "website" }
+}
+```
+
+### Required Sections (in order)
+
+1. Header (title, period)
+2. Key Findings (narrative paragraphs + bullets + data note)
+3. Key Takeaways: Job Seekers
+4. Key Takeaways: Hiring Managers
+5. Industry Distribution (horizontal bar)
+6. Company Maturity (donut with narrative)
+7. Ownership Type (donut with narrative)
+8. Employer Size (donut with narrative)
+9. Top Employers (horizontal bar)
+10. Role Specialization (horizontal bar)
+11. Seniority Distribution (horizontal bar + ratio metrics)
+12. IC vs Management (donut with narrative)
+13. Working Arrangement (metrics grid + donut with narrative)
+14. Compensation (stats grid + range bars by seniority and role)
+15. Skills Demand (horizontal bar)
+16. Market Metrics (4-card grid)
+17. Market Context (numbered list)
+18. Methodology (description + bulleted lists)
+19. About (author card with links)
+20. Footer
+
+---
+
+## Adding New Reports to the Portfolio Site
+
+The portfolio site uses a dynamic routing system. To add a new report:
+
+### Step 1: Create the JSON Data File
+
+Create a new JSON file in the portfolio site:
+
+```
+portfolio-site/content/reports/{city}-data-{month}-{year}.json
+```
+
+**Example:** `nyc-data-december-2025.json`
+
+The file must follow the schema defined in the "Data File Structure (JSON)" section above.
+
+### Step 2: Deploy
+
+That's it. The dynamic route system will:
+1. Automatically detect the new JSON file at build time
+2. Generate a static page at `/writing/reports/{slug}`
+3. Add it to the reports index page at `/writing/reports`
+
+### URL Structure
+
+```
+/writing/reports                      # Index page listing all reports
+/writing/reports/sf-data-december-2025   # Individual report page
+/writing/reports/nyc-data-december-2025  # Another report
+```
+
+### File Locations (Portfolio Site)
+
+```
+portfolio-site/
+├── content/reports/
+│   ├── sf-data-december-2025.json    # Report data files
+│   ├── nyc-data-december-2025.json
+│   └── denver-data-december-2025.json
+├── lib/
+│   └── reportData.ts                  # Data loader utility
+├── app/writing/reports/
+│   ├── page.tsx                       # Index page
+│   └── [slug]/
+│       ├── page.tsx                   # Dynamic route handler
+│       └── ReportContent.tsx          # Shared report component
+└── components/charts/                 # Reusable chart components
+```
+
+### Naming Convention
+
+Use lowercase with hyphens:
+- `{city}-data-{month}-{year}.json`
+- Examples: `sf-data-december-2025.json`, `nyc-data-january-2026.json`
+
+### Validation
+
+Before deploying, validate your JSON:
+1. Ensure all required fields are present (see schema)
+2. Check that arrays have data (empty arrays will render empty charts)
+3. Verify percentage values are whole numbers (not decimals)
+4. Confirm salary values are in dollars (not thousands)
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Epic ID:** EPIC-009
 **Created:** 2026-01-03
-**Status:** Implementation Complete - Awaiting Pipeline Test (rate limited)
+**Status:** Complete
 **Last Updated:** 2026-01-07
 
 ---
@@ -127,12 +127,20 @@ python -c "from scrapers.workable.workable_fetcher import check_company_exists; 
 
 ---
 
-## Next Steps
+## Completion Summary
 
-1. [DONE] Use `company-curator` skill to discover Workable companies (54 added via Google CSE)
-2. [DONE] Populate `config/workable/company_mapping.json`
-3. [TODO] Run full pipeline test (rate limited - wait ~15 min, then run: `python wrappers/fetch_jobs.py --sources workable`)
-4. [TODO] Move epic to Done after successful pipeline test
+| Milestone | Status |
+|-----------|--------|
+| Company discovery (54 via Google CSE) | [DONE] |
+| Pipeline test via GHA | [DONE] - 135 jobs ingested |
+| Employer enrichment | [DONE] - 41/41 employers classified |
+| canonical_name fix | [DONE] - Aligned with db_connection.py pattern |
+
+**Final Stats:**
+- 54 companies in config
+- 135 jobs in enriched_jobs
+- 41 distinct employers
+- 100% industry classification coverage
 
 ---
 
@@ -148,6 +156,7 @@ python -c "from scrapers.workable.workable_fetcher import check_company_exists; 
 | `pipeline/fetch_jobs.py` | Modified (+400 lines) |
 | `pipeline/unified_job_ingester.py` | Modified (DataSource enum) |
 | `pipeline/utilities/discover_ats_companies.py` | Modified (added Workable) |
+| `pipeline/utilities/enrich_employer_metadata.py` | Modified (added Workable + canonical_name fix) |
 | `.github/workflows/scrape-workable.yml` | Created |
 | `tests/test_workable_fetcher.py` | Created |
 | `CLAUDE.md` | Modified |
