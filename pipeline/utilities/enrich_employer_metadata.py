@@ -334,9 +334,10 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
 
         for display_name, info in source_data.items():
             if source == 'adzuna':
-                # Adzuna config format: {"canonical": "...", "job_count": N}
+                # Adzuna config format: {"display_name": {"canonical": "...", "job_count": N}}
                 # No career page URL - LLM-only enrichment
-                canonical_name = info.get('canonical', display_name.lower())
+                # Use display_name.lower() to match how seed_employer_metadata creates entries
+                canonical_name = display_name.lower()
                 companies.append({
                     'canonical_name': canonical_name,
                     'display_name': display_name,
