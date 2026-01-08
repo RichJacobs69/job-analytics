@@ -64,6 +64,182 @@ job_family_labels:
 
 ---
 
+## Tone & Voice Guidelines
+
+These principles apply to ALL narrative content across reports. Consistency in voice builds credibility and reader trust.
+
+### Core Principles
+
+| Principle | Do | Don't |
+|-----------|----|----- |
+| **Analytical over promotional** | "The 18:1 ratio indicates fierce competition" | "Exciting opportunities await!" |
+| **Specific over vague** | "25% of roles require <3 years experience" | "Entry is competitive" |
+| **Honest over optimistic** | "Entry is brutal - consider other markets first" | "Opportunities exist for everyone" |
+| **Contextual over absolute** | "38% ML - nearly double NYC's 24%" | "38% of roles are ML" |
+| **Actionable over descriptive** | "Target the modern data stack: dbt, Snowflake, Airflow" | "Various tools are in demand" |
+
+### Section-Specific Tone
+
+| Section | Tone | Rationale |
+|---------|------|-----------|
+| **Key Findings** | Verbose and analytical | Establish credibility through depth; explain "so what" not just "what" |
+| **Job Seeker Takeaways** | Direct, realistic, no false optimism | Job seekers appreciate honesty over cheerleading |
+| **Hiring Manager Takeaways** | Strategic, benchmark-oriented | Help them understand competitive positioning |
+| **Interpretations** | Concise but insightful | One strong observation > three weak ones |
+| **Market Context** | Factual with external grounding | Cite sources; connect data to real-world factors |
+
+### Voice Characteristics
+
+**Be verbose and interpretive.** Don't just present data - explain what it means and why it matters.
+
+**Too sparse:**
+> ML Engineer (38%) is the most common role.
+
+**Good:**
+> ML Engineering dominates the SF data market in a way that's unique among US cities. At 38% of all roles, it's nearly double the concentration seen in NYC (24%) or Denver (20%). This reflects the city's position as the global center for AI research and development. For job seekers, ML skills aren't just valuable - they're the primary path to maximizing opportunity in this market.
+
+### Language Standards
+
+| Pattern | Use | Avoid |
+|---------|-----|-------|
+| Comparisons | "nearly double", "3x more likely", "outpaces" | "more than", "higher than" (too weak) |
+| Certainty | "indicates", "suggests", "reflects" | "proves", "definitely", "always" |
+| Numbers | "1 in 4 roles", "four in ten", "a quarter" | Overuse of raw percentages |
+| Hedging | "With 61% coverage, this likely understates..." | Pretending sparse data is definitive |
+| Emphasis | "THE path", "exceptionally competitive", "remarkable" | Excessive superlatives |
+
+### Phrases to Use
+
+- "This reflects..." / "This signals..."
+- "The takeaway is clear:"
+- "What makes [X] distinctive..."
+- "For candidates, this means..."
+- "Candidates should recognize that..."
+- "The data suggests..."
+- "Notably, ..." / "Importantly, ..."
+
+### Phrases to Avoid
+
+- "Exciting opportunities" (promotional)
+- "Great news for job seekers" (cheerleading)
+- "As you can see" (filler)
+- "It's worth noting that" (weak hedging)
+- "Interestingly" (overused)
+- "In conclusion" (unnecessary)
+- Any emoji usage
+
+### Verbs: Neutral Over Emotional
+
+Use neutral, factual verbs. Avoid dramatic or emotional language that implies judgment.
+
+| Avoid (emotional) | Use instead (neutral) |
+|-------------------|----------------------|
+| dominates, dominating | leads, accounts for, represents |
+| crushing, brutal | competitive, challenging |
+| exploding, surging | growing, increasing |
+| plummeting, collapsing | declining, decreasing |
+| thriving, booming | strong, robust |
+| struggling | facing headwinds, contracting |
+| commanding | holding, representing |
+| emerging as | becoming, now represents |
+
+**Example:**
+- Avoid: "ML Engineering dominates the market"
+- Use: "ML Engineering leads at 25%" or "ML Engineering accounts for 25% of roles"
+
+The data speaks for itself - emotional verbs suggest we're selling a narrative rather than presenting facts.
+
+### Balancing Honesty with Helpfulness
+
+Reports should be **realistic without being discouraging**. Frame challenges as information, not obstacles.
+
+**Too negative:**
+> Entry-level candidates have almost no chance in this market.
+
+**Balanced:**
+> The 18:1 senior-to-junior ratio makes SF the most competitive US market for entry. Early-career candidates should consider building experience in Denver (6:1) or NYC (10:1) before targeting SF roles.
+
+The goal is empowering readers with actionable intelligence, not demoralizing them or giving false hope.
+
+---
+
+## CRITICAL: Market Climate Research (Pre-Generation Requirement)
+
+**Before generating any report, you MUST research the current hiring climate to ensure takeaways reflect market reality.**
+
+Our job posting data shows *what* is being hired. External sources tell us *whether* hiring is healthy, frozen, or contracting. Without this context, our advice may be dangerously out of touch.
+
+### Required Research Sources
+
+Query these sources before writing Key Takeaways:
+
+| Source | What It Tells Us | Search Query |
+|--------|------------------|--------------|
+| [Indeed Hiring Lab](https://www.hiringlab.org/) | Job posting volume trends, hiring freeze indicators | `site:hiringlab.org tech hiring [current year]` |
+| [Crunchbase News](https://news.crunchbase.com/) | Layoff counts, funding trends, VC activity | `site:news.crunchbase.com layoffs [current year]` |
+| [TechCrunch Layoffs](https://techcrunch.com/) | Running tally of tech layoffs | `site:techcrunch.com tech layoffs [current year] list` |
+| [Bureau of Labor Statistics](https://www.bls.gov/) | Official employment statistics | `site:bls.gov data scientist employment` |
+| [World Economic Forum](https://www.weforum.org/) | AI impact on jobs, future of work | `site:weforum.org AI jobs [current year]` |
+| [LinkedIn Economic Graph](https://economicgraph.linkedin.com/) | Hiring rate trends, skills demand | `site:linkedin.com hiring trends [job_family] [current year]` |
+
+### Key Questions to Answer
+
+Before writing takeaways, establish:
+
+1. **Is hiring expanding or contracting?**
+   - How do current job posting volumes compare to 12 months ago?
+   - Are there active hiring freezes in the sector?
+   - What is the current layoff rate?
+
+2. **Who has leverage - candidates or employers?**
+   - In a hiring freeze, employers have leverage (more candidates per role)
+   - In a boom, candidates have leverage (multiple offers, negotiating power)
+   - This determines salary negotiation advice
+
+3. **How is AI affecting this job family?**
+   - Which tasks are being automated?
+   - Are role definitions changing?
+   - Are traditional roles shrinking while new roles emerge?
+
+4. **What is the funding environment?**
+   - Is VC funding flowing or frozen?
+   - Which sectors are receiving investment?
+   - How does this affect startup vs enterprise hiring?
+
+### How This Affects Takeaways
+
+| Market Condition | Job Seeker Advice | Hiring Manager Advice |
+|------------------|-------------------|----------------------|
+| **Hiring freeze / layoffs** | Be realistic about competition (laid-off workers are applying). Salary negotiation power is limited. Consider stability over upside. | You have more leverage. Median offers may suffice. Speed is less critical - candidates have fewer options. |
+| **Hiring boom** | Negotiate aggressively. Multiple offers are possible. Target 75th percentile. | Budget for 75th percentile or lose candidates. Speed is critical. |
+| **AI disruption** | Traditional roles are shrinking. Emphasize AI-augmented skills. The role you're hired for may not exist in 2 years. | Consider how AI will change this role. Hire for adaptability, not just current skills. |
+| **VC freeze (non-AI)** | Startup equity is riskier. Prefer companies with runway. | Compete on stability, not equity promises. |
+| **AI funding boom** | AI companies are hiring while others freeze. Distinguish between AI and non-AI employers. | If you're not an AI company, you're competing differently. |
+
+### Citation Requirement
+
+Every Key Takeaway that references market conditions must cite a source:
+
+**Good:**
+> "The 21:1 senior-to-junior ratio makes SF the hardest US market for entry. Combined with a tech hiring freeze now in its third year ([Indeed Hiring Lab, July 2025](https://www.hiringlab.org/)), early-career candidates should build experience elsewhere first."
+
+**Bad:**
+> "Entry is competitive" (no context, no source)
+
+### Market Climate Summary Block
+
+Add a brief climate summary at the start of Key Takeaways sections:
+
+```markdown
+## Key Takeaways: Job Seekers
+
+**Market climate (January 2026):** Tech hiring remains in a holding pattern, with job listings down 35% from pre-pandemic levels ([Indeed](https://www.hiringlab.org/)). AI roles are the exception, with AI companies capturing 50% of all VC funding ([Crunchbase](https://news.crunchbase.com/)). Employers have more leverage than in 2021-2022; salary negotiation power is limited for non-AI roles.
+
+2.1. **First takeaway...**
+```
+
+---
+
 ## Report Structure
 
 ### 1. Key Findings
@@ -464,31 +640,49 @@ Example: "There are leadership opportunities in Finance—Capital One, JPMorgan 
 **Required fields:**
 - `enriched_jobs.working_arrangement` (onsite | hybrid | remote | flexible | unknown)
 
-**Internal logic (not exposed in report):**
+**Internal logic (NOT exposed in report):**
 - Job-level arrangement is the primary source
 - For jobs with "unknown" arrangement, use `employer_metadata.working_arrangement_default` as fallback
-- Report final aggregated figures only - don't expose the two-layer logic
+- **Report final aggregated figures only** - do NOT expose the two-layer data quality methodology
+- Readers don't need to know about "job-level known" vs "employer defaults" - just show the effective distribution
 
 **Content blocks:**
 
-#### Arrangement distribution
+#### Coverage note (subtitle)
+Show simple coverage: "X% of roles with known working arrangement"
+
+#### Arrangement distribution (donut chart)
 ```
-- Hybrid: 48%
-- Onsite: 30%
-- Remote: 12%
-- Flexible: 8%
+- Remote: 44%
+- Hybrid: 23%
+- Onsite: 24%
+- Flexible: 9%
 ```
 
 Note: "Flexible" means employer offers choice (remote OR hybrid OR onsite). Report as distinct category.
 
 #### Interpretation
 ```
-Example: "Hybrid working has become the default in London's data market, with two-thirds of disclosed arrangements offering a mix of office and remote work. Only 19% of roles require full onsite presence."
+Example: "Remote work leads at 44%, reflecting the competitive talent market where companies must offer flexibility to attract top ML talent. Onsite (24%) and hybrid (23%) are nearly equal, while the 9% flexible rate indicates companies that offer genuine employee choice."
 ```
 
 **Sparse data rule:**
-- If working_arrangement is null/unknown for >30% of jobs, add caveat: "Working arrangement specified in X% of postings."
+- If working_arrangement is null/unknown for >30% of jobs, add caveat in interpretation
 - If remote <10 jobs, report count not percentage
+
+**JSON schema (simplified):**
+```json
+"workingArrangement": {
+  "coverage": "67% of roles with known working arrangement",
+  "data": [
+    { "label": "Remote", "value": 44 },
+    { "label": "Onsite", "value": 24 },
+    { "label": "Hybrid", "value": 23 },
+    { "label": "Flexible", "value": 9 }
+  ],
+  "interpretation": "Remote work leads at 44%..."
+}
+```
 
 ---
 
@@ -811,13 +1005,27 @@ employer_metadata_coverage:
 - Quote exact agency filtering counts
 - Use precise job counts in methodology (use approximations)
 
+#### Data Coverage (display in Methodology)
+
+Data coverage metrics should be displayed in a 4-column grid within the Methodology section:
+
+```json
+"dataQuality": [
+  { "label": "Seniority coverage", "value": "85%", "description": "Roles with seniority level classified" },
+  { "label": "Arrangement coverage", "value": "56%", "description": "Roles with working arrangement known" },
+  { "label": "Skills coverage", "value": "84%", "description": "Roles with skills extracted from description" },
+  { "label": "Employer metadata", "value": "77%", "description": "Roles with enriched company data" }
+]
+```
+
 #### About & Links
 ```
 This report was created by Rich Jacobs, a data product manager focused on hiring market intelligence.
-
-Links: LinkedIn (rjacobsuk) | Website (richjacobs.me)
-
 Want the data? Contact rich@richjacobs.me
+
+Links (on separate lines with emojis):
+- [link emoji] linkedin.com/in/rjacobsuk
+- [globe emoji] richjacobs.me
 ```
 
 ---
@@ -1134,14 +1342,21 @@ Show salary spread with 25th-75th percentile range and median marker:
 />
 ```
 
-### Market Metrics - Grouped Cards
+### Market Metrics - Row-Based Layout
 
-Organize market metrics into four logical groups in a 2x2 grid:
+Organize market metrics into three rows, each with metrics displayed in 3 columns:
 
-1. **Market Structure** - Jobs per employer, Top 5 concentration, Specialization index
+1. **Market Structure** - Jobs per employer, Top 5 concentration, Top 15 concentration
 2. **Accessibility** - Senior-to-Junior ratio (highlighted in red), Entry accessibility, Management opportunity
-3. **Flexibility** - Remote availability, Flexibility score
-4. **Data Quality** - Salary disclosure, Industry coverage, Full descriptions
+3. **Flexibility** - Remote availability, Flexibility rate
+
+**Note:** Data Quality metrics belong in the Methodology section, not Market Metrics.
+
+Each metric should have:
+- `label`: Metric name (e.g., "Jobs per employer")
+- `value`: The value (e.g., "2.3" or "12%")
+- `benchmark`: Interpretive label (e.g., "Moderate concentration")
+- `description`: One-line explanation (e.g., "Average open roles per hiring company")
 
 ### List Formatting - Use Numbered Lists Only
 
@@ -1195,40 +1410,77 @@ Use horizontal rules between major sections:
 
 ### Data File Structure (JSON)
 
+**IMPORTANT: JSON Output Location**
+
+JSON files MUST be saved to the portfolio-site repository, NOT to job-analytics:
+
+```
+C:\Cursor Projects\portfolio-site\content\reports\{city}-data-{month}-{year}.json
+```
+
+Example filenames:
+- `london-data-december-2025.json`
+- `nyc-data-december-2025.json`
+- `denver-data-december-2025.json`
+- `sf-data-december-2025.json`
+
+The markdown reports stay in `job-analytics/docs/reports/`, but the JSON goes to portfolio-site.
+
+---
+
 Reports should have a companion JSON file with this structure:
 
 ```json
 {
-  "meta": { "city", "period", "totalJobs", "uniqueEmployers", "summary" },
-  "keyFindings": { "narrative": [], "bullets": [] },
-  "takeaways": { "jobSeekers": [], "hiringManagers": [] },
-  "industryDistribution": { "coverage", "data": [], "interpretation" },
-  "companyMaturity": { "coverage", "data": [], "interpretation" },
-  "ownershipType": { "coverage", "data": [], "interpretation" },
-  "employerSize": { "coverage", "data": [], "interpretation" },
-  "topEmployers": { "data": [], "interpretation" },
-  "roleSpecialization": { "data": [], "interpretation" },
-  "seniorityDistribution": { "data": [], "seniorToJuniorRatio", "entryAccessibilityRate", "interpretation" },
-  "icVsManagement": { "data": [], "interpretation" },
-  "workingArrangement": { "analysis": {}, "data": [], "interpretation" },
+  "meta": { "city", "cityCode", "period", "jobFamily", "totalJobs", "uniqueEmployers", "summary" },
+  "keyFindings": { "narrative": [], "bullets": [{ "title": "...", "text": "..." }], "dataNote": "..." },
+  "takeaways": {
+    "jobSeekers": [{ "title": "...", "text": "..." }],
+    "hiringManagers": [{ "title": "...", "text": "..." }]
+  },
+  "industryDistribution": { "coverage": "X% of roles with industry data", "data": [{ "label": "...", "value": N }], "interpretation": "..." },
+  "companyMaturity": { "coverage": "X% of roles with company age data", "data": [], "interpretation": "..." },
+  "ownershipType": { "coverage": "X% of roles with ownership data", "data": [], "interpretation": "..." },
+  "employerSize": { "coverage": "X% of roles with company size data", "data": [], "interpretation": "..." },
+  "topEmployers": { "data": [{ "label": "...", "value": N }], "interpretation": "..." },
+  "roleSpecialization": { "data": [], "interpretation": "..." },
+  "seniorityDistribution": { "data": [], "seniorToJuniorRatio": N, "entryAccessibilityRate": N, "interpretation": "..." },
+  "icVsManagement": { "data": [], "interpretation": "..." },
+  "workingArrangement": {
+    "coverage": "X% of roles with known working arrangement",
+    "data": [{ "label": "Remote", "value": 44 }],
+    "interpretation": "..."
+  },
   "compensation": {
-    "coverage",
-    "overall": { "percentile25", "median", "percentile75", "iqr" },
-    "bySeniority": [],
-    "byRole": []
+    "coverage": "X% of roles with disclosed salary ranges",
+    "overall": { "percentile25": N, "median": N, "percentile75": N, "iqr": N } | null,
+    "bySeniority": [{ "label": "Senior", "p25": N, "median": N, "p75": N, "sample": N }],
+    "byRole": [{ "label": "ML Engineer", "p25": N, "median": N, "p75": N, "sample": N }],
+    "insights": [{ "label": "...", "text": "..." }]
   },
-  "skillsDemand": { "coverage", "data": [], "interpretation" },
+  "skillsDemand": { "coverage": "X% of roles with skills data", "data": [], "skillPairs": [{ "skills": "Python + SQL", "value": N }], "interpretation": "..." },
   "marketMetrics": {
-    "marketStructure": [],
-    "accessibility": [],
-    "flexibility": [],
-    "dataQuality": []
+    "marketStructure": [{ "label": "...", "value": "...", "benchmark": "...", "description": "..." }],
+    "accessibility": [{ "label": "...", "value": "...", "benchmark": "...", "description": "...", "highlight": true }],
+    "flexibility": [{ "label": "...", "value": "...", "benchmark": "...", "description": "..." }]
   },
-  "marketContext": [],
-  "methodology": { "description", "dataCollection": [], "classification": [], "limitations": [] },
-  "about": { "author", "bio", "linkedin", "website" }
+  "marketContext": [{ "title": "...", "description": "..." }],
+  "methodology": { "description": "...", "dataCollection": [], "classification": [], "limitations": [], "dataQuality": [{ "label": "...", "value": "X%", "description": "..." }] },
+  "about": { "author": "...", "bio": "...", "linkedin": "rjacobsuk", "website": "richjacobs.me", "contact": "..." }
 }
 ```
+
+**Key format rules:**
+- All `coverage` fields must be descriptive strings (e.g., "76% of roles with industry data"), not bare numbers
+- All chart data arrays use `{ "label": "...", "value": N }` format where value is a rounded integer percentage
+- `keyFindings.bullets` use `{ "title": "...", "text": "..." }` format (NOT plain strings)
+- `takeaways` items use `{ "title": "...", "text": "..." }` format
+- `marketContext` items use `{ "title": "...", "description": "..." }` format
+- `marketMetrics` items use `{ "label", "value", "benchmark", "description" }` format
+- `dataQuality` lives under `methodology` and displays in Methodology section
+- `seniorToJuniorRatio` and `entryAccessibilityRate` are numbers (not strings)
+- `compensation.overall` is null for non-US markets (London, Singapore)
+- `about.linkedin` and `about.website` should be short handles (e.g., "rjacobsuk", "richjacobs.me"), NOT full URLs
 
 ### Required Sections (in order)
 
@@ -1244,13 +1496,13 @@ Reports should have a companion JSON file with this structure:
 10. Role Specialization (horizontal bar)
 11. Seniority Distribution (horizontal bar + ratio metrics)
 12. IC vs Management (donut with narrative)
-13. Working Arrangement (metrics grid + donut with narrative)
-14. Compensation (stats grid + range bars by seniority and role)
+13. Working Arrangement (coverage subtitle + donut with narrative)
+14. Compensation (stats grid + range bars by seniority and role) - US cities only
 15. Skills Demand (horizontal bar)
-16. Market Metrics (4-card grid)
-17. Market Context (numbered list)
-18. Methodology (description + bulleted lists)
-19. About (author card with links)
+16. Market Metrics (3-row layout: Market Structure, Accessibility, Flexibility)
+17. Market Context (numbered list with title + description)
+18. Methodology (description + bulleted lists + Data Coverage grid)
+19. About (author bio with email CTA + emoji links)
 20. Footer
 
 ---
@@ -1317,6 +1569,33 @@ Before deploying, validate your JSON:
 2. Check that arrays have data (empty arrays will render empty charts)
 3. Verify percentage values are whole numbers (not decimals)
 4. Confirm salary values are in dollars (not thousands)
+
+---
+
+## Generating Portfolio Reports via CLI
+
+Use `report_generator.py` to generate portfolio-ready JSON directly:
+
+```bash
+# Generate SF report and save to portfolio-site
+python pipeline/report_generator.py --city sfo --family data --start 2025-12-01 --end 2025-12-31 --output portfolio --save "C:\Cursor Projects\portfolio-site\content\reports\sf-data-december-2025.json"
+
+# Generate London report
+python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31 --output portfolio --save "C:\Cursor Projects\portfolio-site\content\reports\london-data-december-2025.json"
+
+# Preview without saving (outputs to console)
+python pipeline/report_generator.py --city nyc --family data --start 2025-12-01 --end 2025-12-31 --output portfolio
+```
+
+**Output formats:**
+- `--output portfolio` - Website-ready JSON with placeholders for narrative content
+- `--output json` - Raw data format (for debugging/analysis)
+- `--output summary` - Console summary (default)
+
+**After generation:**
+1. Open the JSON file
+2. Replace all `[PLACEHOLDER]` markers with actual narrative content
+3. Verify the report renders correctly on localhost
 
 ---
 
