@@ -1,9 +1,10 @@
 """
-Job classification using LLM (Gemini 2.5 Flash-Lite or Claude 3.5 Haiku)
+Job classification using LLM (Gemini 3 Flash or Claude 3.5 Haiku)
 UPDATED: Added Gemini support with 88% cost reduction
 UPDATED: Removed agency detection from LLM prompt (handled by Python pattern matching)
 UPDATED: LLM no longer classifies job_family - it's auto-derived from job_subfamily via strict mapping
 UPDATED: Sanitize string "null" values to Python None for database compatibility
+UPDATED: Upgraded to Gemini 3 Flash for better classification accuracy (fixes Product Engineer misclassifications)
 """
 import os
 import json
@@ -57,14 +58,31 @@ elif LLM_PROVIDER == "gemini":
     if not GOOGLE_API_KEY:
         raise ValueError("Missing GOOGLE_API_KEY in .env file")
     genai.configure(api_key=GOOGLE_API_KEY)
+
+    # Model configurations with fallback support
+    GEMINI_MODELS = {
+        "primary": "gemini-3-flash-preview",    # Best accuracy
+        "fallback": "gemini-2.5-flash",         # Stable fallback
+    }
+
+    _gemini_generation_config = {
+        "temperature": 0.1,
+        "max_output_tokens": 8000,
+        "response_mime_type": "application/json"
+    }
+
     gemini_model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash-lite",
-        generation_config={
-            "temperature": 0.1,
-            "max_output_tokens": 6000,  # Increased buffer for skill-heavy jobs
-            "response_mime_type": "application/json"
-        }
+        model_name=GEMINI_MODELS["primary"],
+        generation_config=_gemini_generation_config
     )
+
+    gemini_fallback_model = genai.GenerativeModel(
+        model_name=GEMINI_MODELS["fallback"],
+        generation_config=_gemini_generation_config
+    )
+
+    # Track fallbacks for reporting
+    _model_fallback_count = 0
 
 else:
     raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}. Use 'gemini' or 'claude'")
@@ -405,7 +423,7 @@ def adapt_prompt_for_gemini(prompt: str) -> str:
 
 def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """
-    Classify a job posting using Gemini 2.0 Flash.
+    Classify a job posting using Gemini 3 Flash.
 
     88% cheaper and 3.4x faster than Claude Haiku.
     Uses Years-First seniority logic for normalized cross-company analytics.
@@ -415,7 +433,7 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
 
     if verbose:
         print("\n" + "="*60)
-        print("SENDING PROMPT TO GEMINI 2.0 FLASH")
+        print("SENDING PROMPT TO GEMINI 3 FLASH")
         print("="*60)
         print(prompt[:500] + "...\n")
 
@@ -534,25 +552,42 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
     except json.JSONDecodeError as e:
         print(f"[ERROR] Failed to parse Gemini response as JSON: {e}")
         print(f"Raw response: {response_text if 'response_text' in locals() else 'N/A'}")
+        # Try to extract job_subfamily from partial JSON (truncated responses)
+        import re
+        if 'response_text' in locals():
+            match = re.search(r'"job_subfamily":\s*"([^"]+)"', response_text)
+            if match:
+                subfamily = match.group(1)
+                print(f"[INFO] Recovered job_subfamily from partial JSON: {subfamily}")
+                # Return minimal result with recovered subfamily
+                return {
+                    'role': {'job_subfamily': subfamily},
+                    '_partial': True,
+                    '_cost_data': cost_data if 'cost_data' in locals() else None
+                }
         raise
     except Exception as e:
         print(f"[ERROR] Gemini classification failed: {e}")
         raise
 
 
-def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structured_input: dict = None, max_retries: int = 2) -> Dict:
+def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structured_input: dict = None, max_retries: int = 2, _use_fallback: bool = False) -> Dict:
     """
     Wrapper around classify_job_with_gemini that retries if summary is missing.
+    Falls back to gemini-2.5-flash if gemini-3-flash-preview fails.
 
     Args:
         job_text: Job posting text
         verbose: Enable verbose logging
         structured_input: Structured fields from API
         max_retries: Maximum attempts (default 2 = 1 initial + 1 retry)
+        _use_fallback: Internal flag to use fallback model
 
     Returns:
         Classification result with summary (or best attempt)
     """
+    global _model_fallback_count
+
     total_cost_data = {
         'input_tokens': 0,
         'output_tokens': 0,
@@ -564,10 +599,28 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
         'attempts': 0
     }
 
+    # Select model based on fallback flag
+    model = gemini_fallback_model if _use_fallback else gemini_model
+    model_name = GEMINI_MODELS["fallback"] if _use_fallback else GEMINI_MODELS["primary"]
+
     for attempt in range(max_retries):
         total_cost_data['attempts'] += 1
 
-        result = classify_job_with_gemini(job_text, verbose=verbose, structured_input=structured_input)
+        try:
+            result = _classify_job_with_model(job_text, model, model_name, verbose=verbose, structured_input=structured_input)
+        except Exception as e:
+            title = structured_input.get('title', 'Unknown') if structured_input else 'Unknown'
+            print(f"[ERROR] Classification failed for '{title[:40]}': {e}")
+
+            # If primary model failed and not already using fallback, try fallback
+            if not _use_fallback:
+                _model_fallback_count += 1
+                print(f"[INFO] Falling back to {GEMINI_MODELS['fallback']}...")
+                return classify_job_with_gemini_retry(
+                    job_text, verbose=verbose, structured_input=structured_input,
+                    max_retries=max_retries, _use_fallback=True
+                )
+            raise
 
         # Accumulate costs
         if '_cost_data' in result:
@@ -584,6 +637,8 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
         if summary and isinstance(summary, str) and len(summary.strip()) > 10:
             # Success - attach accumulated cost data
             result['_cost_data'] = total_cost_data
+            if _use_fallback:
+                result['_used_fallback'] = True
             return result
 
         # Summary missing - log and retry
@@ -595,6 +650,98 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
     title = structured_input.get('title', 'Unknown') if structured_input else 'Unknown'
     print(f"[WARNING] Summary still missing after {max_retries} attempts for '{title[:40]}'")
     result['_cost_data'] = total_cost_data
+    return result
+
+
+def _classify_job_with_model(job_text: str, model, model_name: str, verbose: bool = False, structured_input: dict = None) -> Dict:
+    """Internal function that classifies using a specific model."""
+    prompt = build_classification_prompt(job_text, structured_input=structured_input)
+    prompt = adapt_prompt_for_gemini(prompt)
+
+    if verbose:
+        print("\n" + "="*60)
+        print(f"SENDING PROMPT TO {model_name.upper()}")
+        print("="*60)
+        print(prompt[:500] + "...\n")
+
+    start_time = time.time()
+    response = model.generate_content(prompt)
+    latency_ms = (time.time() - start_time) * 1000
+
+    # Extract token counts
+    usage = response.usage_metadata
+    input_tokens = usage.prompt_token_count if usage else 0
+    output_tokens = usage.candidates_token_count if usage else 0
+
+    # Calculate cost
+    costs = PROVIDER_COSTS["gemini"]
+    input_cost = (input_tokens / 1_000_000) * costs["input"]
+    output_cost = (output_tokens / 1_000_000) * costs["output"]
+    total_cost = input_cost + output_cost
+
+    cost_data = {
+        'input_tokens': input_tokens,
+        'output_tokens': output_tokens,
+        'input_cost': input_cost,
+        'output_cost': output_cost,
+        'total_cost': total_cost,
+        'latency_ms': latency_ms,
+        'provider': 'gemini',
+        'model': model_name
+    }
+
+    # Extract text from response
+    response_text = response.text
+
+    if verbose:
+        print("RAW RESPONSE")
+        print("="*60)
+        print(response_text[:1000] + "...\n" if len(response_text) > 1000 else response_text)
+
+    # Parse JSON
+    result = json.loads(response_text)
+    result = sanitize_null_strings(result)
+
+    # Handle list responses
+    if isinstance(result, list):
+        result = result[0] if result else {}
+
+    # Agency fields
+    if 'employer' not in result:
+        result['employer'] = {}
+    result['employer']['is_agency'] = None
+    result['employer']['agency_confidence'] = None
+
+    # Auto-derive job_family from job_subfamily
+    role = result.get('role', {})
+    if isinstance(role, dict) and role.get('job_subfamily'):
+        job_subfamily = role['job_subfamily']
+        if job_subfamily == 'out_of_scope':
+            result['role']['job_family'] = 'out_of_scope'
+        else:
+            try:
+                from pipeline.job_family_mapper import get_correct_job_family
+            except ImportError:
+                from job_family_mapper import get_correct_job_family
+            job_family = get_correct_job_family(job_subfamily)
+            if job_family:
+                result['role']['job_family'] = job_family
+            else:
+                result['role']['job_family'] = None
+    else:
+        if 'role' not in result:
+            result['role'] = {}
+        result['role']['job_family'] = None
+
+    # Enrich skills
+    if 'skills' in result and result['skills']:
+        try:
+            from pipeline.skill_family_mapper import enrich_skills_with_families
+        except ImportError:
+            from skill_family_mapper import enrich_skills_with_families
+        result['skills'] = enrich_skills_with_families(result['skills'])
+
+    result['_cost_data'] = cost_data
     return result
 
 
@@ -765,6 +912,22 @@ def classify_job(job_text: str, verbose: bool = False, structured_input: dict = 
         return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input)
     else:
         return classify_job_with_claude(job_text, verbose=verbose, structured_input=structured_input)
+
+
+# ============================================
+# Fallback Tracking Helpers
+# ============================================
+
+def get_model_fallback_count() -> int:
+    """Get the number of times classification fell back from primary to fallback model."""
+    return _model_fallback_count if LLM_PROVIDER == "gemini" else 0
+
+
+def reset_model_fallback_count():
+    """Reset the fallback counter."""
+    global _model_fallback_count
+    if LLM_PROVIDER == "gemini":
+        _model_fallback_count = 0
 
 
 # ============================================
