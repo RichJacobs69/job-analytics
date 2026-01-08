@@ -326,6 +326,75 @@
     },
     "Virtahealth": {
       "slug": "virtahealth"
+    },
+    "Adaptivesecurity": {
+      "slug": "adaptivesecurity"
+    },
+    "Brainco": {
+      "slug": "brainco"
+    },
+    "Centari": {
+      "slug": "centari"
+    },
+    "Deepgram": {
+      "slug": "deepgram"
+    },
+    "Ema": {
+      "slug": "ema"
+    },
+    "Fiducial": {
+      "slug": "fiducial"
+    },
+    "Flowengineering": {
+      "slug": "flowengineering"
+    },
+    "Influxdata": {
+      "slug": "influxdata"
+    },
+    "Junction": {
+      "slug": "junction"
+    },
+    "Liquid Ai": {
+      "slug": "liquid-ai"
+    },
+    "Magicschool": {
+      "slug": "magicschool"
+    },
+    "Meridianlink": {
+      "slug": "meridianlink"
+    },
+    "Nabla": {
+      "slug": "nabla"
+    },
+    "Nightfall Ai": {
+      "slug": "nightfall-ai"
+    },
+    "Robin Radar": {
+      "slug": "robin-radar"
+    },
+    "Rox Data Corp": {
+      "slug": "rox-data-corp"
+    },
+    "Socure": {
+      "slug": "socure"
+    },
+    "Taptapsend": {
+      "slug": "taptapsend"
+    },
+    "Tennr": {
+      "slug": "tennr"
+    },
+    "Topline Pro": {
+      "slug": "topline-pro"
+    },
+    "Veezu": {
+      "slug": "veezu"
+    },
+    "Watershed": {
+      "slug": "watershed"
+    },
+    "Weave": {
+      "slug": "weave"
     }
   },
   "_meta": {
@@ -334,8 +403,8 @@
       "epic_initial_list",
       "company_curator_2025-12-30"
     ],
-    "total_companies": 109,
+    "total_companies": 132,
     "notes": "All slugs validated against Ashby API. Removed 10 invalid slugs (Figma, Anthropic, Perplexity, Stability AI, Plaid, Glean, Rippling, Midjourney, Sourcegraph, Hex - these use different ATS).",
-    "last_updated": "2025-12-30"
+    "last_updated": "2026-01-07"
   }
 }

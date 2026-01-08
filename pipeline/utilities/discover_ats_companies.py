@@ -202,16 +202,22 @@ def extract_slugs(urls: List[str], platform: str) -> Set[str]:
 
 def validate_slug(slug: str, platform: str, timeout: int = 10, delay: float = 2.0) -> bool:
     """Check if a slug is valid on the ATS platform."""
-    headers = {'User-Agent': 'job-analytics-bot/1.0'}
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; job-analytics-bot/1.0)'}
 
     for url_template in ATS_CONFIG[platform]['validate_urls']:
         url = url_template.format(slug=slug)
         try:
-            # For API endpoints, use GET
-            if 'api.' in url:
+            # For API endpoints, use GET (check for /api/ in path, not api. subdomain)
+            if '/api/' in url:
                 response = requests.get(url, headers=headers, timeout=timeout)
                 if response.status_code == 200:
-                    return True
+                    # For Workable, also check if there are actual jobs
+                    if 'workable.com' in url:
+                        jobs = response.json().get('jobs', [])
+                        if len(jobs) > 0:
+                            return True
+                    else:
+                        return True
                 if response.status_code == 429:
                     # Rate limited - wait and signal to caller
                     return None  # Distinct from False (invalid)

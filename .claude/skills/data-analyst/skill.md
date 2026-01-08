@@ -198,6 +198,45 @@ Example:
 | `employer_metadata` | Enriched company data | industry, employer_size, founding_year, ownership_type |
 | `raw_jobs` | Unprocessed postings | title, description, posting_url |
 
+### Location Filtering (CRITICAL)
+
+**Always use inclusive location filtering** for ALL queries. A city market report includes all jobs accessible to candidates in that city, not just jobs with local offices.
+
+**Use the `locations` JSONB field, NOT `city_code`** (legacy field with drift issues).
+
+**Inclusive filtering includes:**
+
+| Filter Type | Example | Description |
+|-------------|---------|-------------|
+| Direct city | `{"city": "london"}` | Jobs based in the city |
+| Global remote | `{"scope": "global"}` | Remote jobs open to anyone |
+| Country remote | `{"scope": "country"}` | Remote jobs scoped to the country |
+| Country-wide | `{"type": "country"}` | Jobs open anywhere in the country |
+| Region | `{"region": "EMEA"}` | Jobs open to the region (London/EMEA, US cities/AMER) |
+
+**Example query pattern:**
+```python
+# Build inclusive OR filter for any city
+def build_location_filter(city: str, country_code: str, region: str = None):
+    parts = [
+        f'locations.cs.[{{"city":"{city}"}}]',
+        'locations.cs.[{"scope":"global"}]',
+        'locations.cs.[{"scope":"country"}]',
+        'locations.cs.[{"type":"country"}]'
+    ]
+    if region:
+        parts.append(f'locations.cs.[{{"region":"{region}"}}]')
+    return ','.join(parts)
+
+# Usage
+or_filter = build_location_filter('london', 'GB', 'EMEA')
+query = supabase.table('enriched_jobs').or_(or_filter)
+```
+
+**Why inclusive?** Job seekers care about ALL roles they're eligible for - local, remote, and regional. Reports should reflect candidate opportunity, not just local office presence.
+
+**Coverage note:** Our ATS coverage varies by city. Low direct job counts reflect our scraper coverage, not market size.
+
 ### Taxonomy Reference (v1.5.0)
 
 **Job Families:** product, data, delivery, out_of_scope

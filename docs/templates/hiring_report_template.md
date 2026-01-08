@@ -37,20 +37,22 @@ job_family_labels:
 | # | Section | Purpose | Data Requirements |
 |---|---------|---------|-------------------|
 | 1 | Key Findings | Verbose summary with headline + narrative + bullets | All sections |
-| 2 | Key Takeaways by Persona | Actionable insights for job seekers and hiring managers | All sections |
-| 3 | Industry Distribution | Sector breakdown | employer_metadata.industry |
-| 4 | Company Maturity | Young/growth/mature split | employer_metadata.founding_year |
-| 5 | Ownership Type | Public vs private hiring | employer_metadata.ownership_type |
-| 6 | Employer Size | Startup vs enterprise mix | employer_metadata.employer_size |
-| 7 | Top Employers | Market fragmentation | employer.name |
-| 8 | Role Specialization | Subfamily breakdown | job_subfamily |
-| 9 | Seniority Distribution | Career level demand | seniority |
-| 10 | IC vs Management | Track split | track |
-| 11 | Working Arrangement | Remote/hybrid/onsite | working_arrangement + employer_metadata fallback |
-| 12 | Compensation | Salary benchmarks (overall + by subfamily) | salary data (US cities only) |
-| 13 | Skills Demand | Capability expectations | skills (full descriptions only) |
-| 14 | Market Metrics | Derived contextual insights | Calculated from above |
-| 15 | Methodology | Credibility + CTA | Static |
+| 2 | Key Takeaways: Job Seekers | Actionable insights for candidates | All sections |
+| 3 | Key Takeaways: Hiring Managers | Strategic insights for talent acquisition | All sections |
+| 4 | Market Metrics | Derived contextual insights (structure, accessibility, flexibility) | Calculated |
+| 5 | Market Context | External factors and comparative analysis | Research |
+| 6 | Industry Distribution | Sector breakdown | employer_metadata.industry |
+| 7 | Company Maturity | Young/growth/mature split | employer_metadata.founding_year |
+| 8 | Ownership Type | Public vs private hiring | employer_metadata.ownership_type |
+| 9 | Employer Size | Startup vs enterprise mix | employer_metadata.employer_size |
+| 10 | Top Employers | Market fragmentation | employer.name |
+| 11 | Role Specialization | Subfamily breakdown | job_subfamily |
+| 12 | Seniority Distribution | Career level demand | seniority |
+| 13 | IC vs Management | Track split | track |
+| 14 | Working Arrangement | Remote/hybrid/onsite | working_arrangement |
+| 15 | Compensation | Salary benchmarks (overall + by subfamily) | salary data (US cities only) |
+| 16 | Skills Demand | Capability expectations | skills (full descriptions only) |
+| 17 | Methodology | Credibility, data quality notes, CTA | Static |
 
 **Location-specific rules:**
 - **London (lon)**: Skip compensation section entirely (no UK pay transparency laws)
@@ -460,41 +462,32 @@ Example: "There are leadership opportunities in Finance—Capital One, JPMorgan 
 **Purpose:** Critical filter for many job seekers post-COVID.
 
 **Required fields:**
-- `enriched_jobs.working_arrangement` (primary)
-- `employer_metadata.working_arrangement_default` (secondary fallback for unknown)
+- `enriched_jobs.working_arrangement` (onsite | hybrid | remote | flexible | unknown)
 
-**Two-layer approach:**
-1. Use job-level arrangement as primary signal
-2. Use employer default from metadata as secondary signal for jobs with "unknown" arrangement
-3. Report both "job-level known" and "effective" (with employer fallback) metrics
+**Internal logic (not exposed in report):**
+- Job-level arrangement is the primary source
+- For jobs with "unknown" arrangement, use `employer_metadata.working_arrangement_default` as fallback
+- Report final aggregated figures only - don't expose the two-layer logic
 
 **Content blocks:**
 
-#### Job-level arrangement (primary)
+#### Arrangement distribution
 ```
 - Hybrid: 48%
 - Onsite: 30%
 - Remote: 12%
 - Flexible: 8%
-- Unknown: 2%
-```
-
-#### Effective flexibility (with employer default fallback)
-```
-Of X jobs with unknown arrangement, Y (Z%) could be inferred from employer defaults:
-- Effective known arrangement: 65% (vs 48% job-level only)
 ```
 
 Note: "Flexible" means employer offers choice (remote OR hybrid OR onsite). Report as distinct category.
 
 #### Interpretation
 ```
-Example: "Hybrid dominates the known arrangements, but 75% of postings don't specify. Using employer-level defaults as a secondary signal, effective remote availability rises to 12%."
+Example: "Hybrid working has become the default in London's data market, with two-thirds of disclosed arrangements offering a mix of office and remote work. Only 19% of roles require full onsite presence."
 ```
 
 **Sparse data rule:**
 - If working_arrangement is null/unknown for >30% of jobs, add caveat: "Working arrangement specified in X% of postings."
-- Report how many unknowns could be filled from employer_metadata
 - If remote <10 jobs, report count not percentage
 
 ---
@@ -654,9 +647,12 @@ Distinguishing skills by role type:
 
 ---
 
-### 15. Market Context & Comparative Metrics
+### 4-5. Market Metrics & Market Context
 
-**Purpose:** Add analytical depth with derived metrics that contextualize findings. These help readers understand not just "what" but "how significant."
+**Purpose:** Add analytical depth with derived metrics that contextualize findings. These help readers understand not just "what" but "how significant." Place these sections immediately after Key Takeaways to frame the detailed analysis.
+
+**Section 4: Market Metrics** - Quantitative benchmarks (structure, accessibility, flexibility)
+**Section 5: Market Context** - Cross-segment comparisons and external factors
 
 **Content blocks:**
 
@@ -680,28 +676,6 @@ specialization_index:
   interpretation: "How concentrated is hiring in few role types"
   example: "78% of roles in top 3 subfamilies"
   benchmark: ">80% = specialized market, <60% = diverse market"
-```
-
-#### Data Quality Metrics
-
-```yaml
-agency_rate:
-  formula: "count(is_agency=true) / total_raw_jobs"
-  interpretation: "Recruitment agency noise in raw data"
-  example: "18% of raw postings were agency listings"
-  benchmark: "<10% = clean market, 10-25% = moderate noise, >25% = high agency activity"
-  note: "High agency rates may indicate talent scarcity or recruiter-heavy market"
-
-direct_employer_rate:
-  formula: "count(is_agency=false) / total_raw_jobs"
-  interpretation: "Proportion of direct employer postings"
-  example: "82% direct employer roles after filtering"
-
-source_quality_mix:
-  formula: "count(has_full_description=true) / total_jobs"
-  interpretation: "Proportion of roles with complete job descriptions"
-  example: "45% of roles have full descriptions available for skills analysis"
-  note: "Higher proportion = better skills analysis quality"
 ```
 
 #### Accessibility Metrics
@@ -783,9 +757,9 @@ Example comparisons:
 
 ---
 
-### 15. Methodology
+### 17. Methodology
 
-**Purpose:** Build credibility and provide transparency about data collection.
+**Purpose:** Build credibility, provide transparency about data collection, and document data quality.
 
 **Content blocks:**
 
@@ -801,12 +775,35 @@ Data collection:
 Classification:
 - Roles classified using an LLM-powered taxonomy
 - Subfamily, seniority, skills, and working arrangement extracted
-- Employer metadata enriched from company databases
+- Employer metadata enriched from company databases where available
 
 Limitations:
 - Not a complete census of the market - some roles may not be captured
-- Skills analysis limited to roles with full job descriptions
+- Skills analysis based on [X] roles with skill data ([Y]% coverage)
 - Salary data only available for US markets with pay transparency laws
+- Working arrangement specified in [X]% of postings
+- Employer metadata (industry, size) available for [X]% of jobs
+```
+
+#### Data Quality Metrics (internal reference)
+
+```yaml
+agency_rate:
+  formula: "count(is_agency=true) / total_raw_jobs"
+  interpretation: "Recruitment agency noise in raw data"
+  benchmark: "<10% = clean, 10-25% = moderate, >25% = high agency activity"
+
+seniority_coverage:
+  formula: "count(seniority != null) / total_jobs"
+  interpretation: "Proportion of roles with seniority classification"
+
+skills_coverage:
+  formula: "count(has_skills) / total_jobs"
+  interpretation: "Proportion of roles with skill data extracted"
+
+employer_metadata_coverage:
+  formula: "count(has_industry OR has_size) / total_jobs"
+  interpretation: "Proportion of roles with enriched employer data"
 ```
 
 **Do not:**
@@ -818,7 +815,9 @@ Limitations:
 ```
 This report was created by Rich Jacobs, a data product manager focused on hiring market intelligence.
 
-LinkedIn: rjacobsuk | Website: richjacobs.me
+Links: LinkedIn (rjacobsuk) | Website (richjacobs.me)
+
+Want the data? Contact rich@richjacobs.me
 ```
 
 ---

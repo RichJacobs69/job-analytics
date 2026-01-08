@@ -61,6 +61,24 @@ class ReportGenerator:
     All queries are codified here to ensure consistency across reports.
     """
 
+    # City to country/region mapping for inclusive location filtering
+    CITY_CONFIG = {
+        'london': {'country_code': 'GB', 'region': 'EMEA'},
+        'new_york': {'country_code': 'US', 'region': 'AMER'},
+        'denver': {'country_code': 'US', 'region': 'AMER'},
+        'san_francisco': {'country_code': 'US', 'region': 'AMER'},
+        'singapore': {'country_code': 'SG', 'region': 'APAC'},
+    }
+
+    # Legacy city_code to city name mapping
+    CITY_CODE_MAP = {
+        'lon': 'london',
+        'nyc': 'new_york',
+        'den': 'denver',
+        'sfo': 'san_francisco',
+        'sgp': 'singapore',
+    }
+
     # Industry display labels
     INDUSTRY_LABELS = {
         'ai_ml': 'AI & Machine Learning',
@@ -138,13 +156,49 @@ class ReportGenerator:
         )
         self._employer_metadata = None
 
+    def _build_location_filter(self, city: str) -> str:
+        """
+        Build inclusive location filter for a city.
+
+        Includes:
+        - Direct city match
+        - Global remote jobs
+        - Country-scoped remote jobs
+        - Country-wide jobs
+        - Region jobs (for non-US cities)
+        """
+        config = self.CITY_CONFIG.get(city, {})
+        country_code = config.get('country_code', 'US')
+        region = config.get('region')
+
+        parts = [
+            f'locations.cs.[{{"city":"{city}"}}]',
+            'locations.cs.[{"scope":"global"}]',
+            'locations.cs.[{"scope":"country"}]',
+            'locations.cs.[{"type":"country"}]',
+        ]
+
+        if region:
+            parts.append(f'locations.cs.[{{"region":"{region}"}}]')
+
+        return ','.join(parts)
+
     def _fetch_all_jobs(self, city_code: str, job_family: str,
                         start_date: str, end_date: str) -> list:
         """
         Fetch all jobs matching criteria with pagination.
 
+        Uses INCLUSIVE location filtering - includes all jobs accessible
+        to candidates in the specified city (local + remote + regional).
+
         Supabase has a 1000-row limit per query, so we paginate.
         """
+        # Convert legacy city_code to city name
+        city = self.CITY_CODE_MAP.get(city_code, city_code)
+
+        # Build inclusive location filter
+        location_filter = self._build_location_filter(city)
+
         all_jobs = []
         offset = 0
 
@@ -152,10 +206,10 @@ class ReportGenerator:
             batch = (
                 self.supabase.table('enriched_jobs')
                 .select('*')
-                .eq('city_code', city_code)
                 .eq('job_family', job_family)
                 .gte('posted_date', start_date)
                 .lte('posted_date', end_date)
+                .or_(location_filter)
                 .range(offset, offset + 999)
                 .execute()
             )

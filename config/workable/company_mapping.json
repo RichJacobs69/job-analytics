@@ -1,64 +1,367 @@
 {
   "workable": {
-    "Cogna": {"slug": "cogna"},
-    "Simple Machines": {"slug": "simple-machines-3"},
-    "Mustard Systems": {"slug": "mustard-systems"},
-    "Vortexa": {"slug": "vortexa"},
-    "Brilliant Corners": {"slug": "brilliant-corners"},
-    "Starling Bank": {"slug": "starling-bank"},
-    "Rokt": {"slug": "rokt"},
-    "LocalStack": {"slug": "localstack"},
-    "Riverlane": {"slug": "riverlane"},
-    "SeedLegals": {"slug": "seedlegals"},
-    "TetraScience": {"slug": "tetrascience"},
-    "Arkham Technologies": {"slug": "arkham-technologies"},
-    "Kantox": {"slug": "kantox"},
-    "Metaculus": {"slug": "metaculus"},
-    "Murmuration": {"slug": "murmuration"},
-    "Blackbird AI": {"slug": "blackbirdai"},
-    "Axle Energy": {"slug": "axle-energy"},
-    "Blueground": {"slug": "blueground"},
-    "Curology": {"slug": "curology"},
-    "Innovaccer": {"slug": "innovaccer-analytics"},
-    "Lithos": {"slug": "lithos"},
-    "DataVisor": {"slug": "datavisor-jobs"},
-    "Constructor": {"slug": "constructor-1"},
-    "Fastbreak AI": {"slug": "fastbreak-ai"},
-    "Suade": {"slug": "suade"},
-    "Opus 2": {"slug": "opus2"},
-    "Plum": {"slug": "withplum"},
-    "Charlotte Tilbury": {"slug": "charlotte-tilbury"},
-    "Trinny London": {"slug": "trinnylondon"},
-    "Epignosis": {"slug": "epignosis"},
-    "CloudStuff": {"slug": "cloudstuff"},
-    "LanguageWire": {"slug": "languagewire"},
-    "Leap Legal Software": {"slug": "leap-legal-software"},
-    "Skeepers": {"slug": "skeepers"},
-    "Mathspace": {"slug": "mathspace"},
-    "Clear Labs": {"slug": "clear-labs"},
-    "Mondia Group": {"slug": "mondia-group"},
-    "Soda": {"slug": "soda-data-nv"},
-    "PrePass": {"slug": "prepass"},
-    "FMX": {"slug": "fmx"},
-    "Orchard Therapeutics": {"slug": "orchard-therapeutics"},
-    "PopMenu": {"slug": "popmenu"},
-    "Sequel": {"slug": "sequel"},
-    "YouLend": {"slug": "youlend-1"},
-    "Atria Health": {"slug": "atria-health"},
-    "Burq": {"slug": "burq"},
-    "BusRight": {"slug": "busright"},
-    "CurbWaste": {"slug": "curbwaste"},
-    "Zifo": {"slug": "zifo"},
-    "Plum Inc": {"slug": "plum-inc"},
-    "CloudLinux": {"slug": "cloudlinux-1"},
-    "LendingOne": {"slug": "lendingone"},
-    "ForceMetrics": {"slug": "forcemetrics"},
-    "Kaseware": {"slug": "kaseware-inc"}
+    "Cogna": {
+      "slug": "cogna"
+    },
+    "Simple Machines": {
+      "slug": "simple-machines-3"
+    },
+    "Mustard Systems": {
+      "slug": "mustard-systems"
+    },
+    "Vortexa": {
+      "slug": "vortexa"
+    },
+    "Brilliant Corners": {
+      "slug": "brilliant-corners"
+    },
+    "Starling Bank": {
+      "slug": "starling-bank"
+    },
+    "Rokt": {
+      "slug": "rokt"
+    },
+    "LocalStack": {
+      "slug": "localstack"
+    },
+    "Riverlane": {
+      "slug": "riverlane"
+    },
+    "SeedLegals": {
+      "slug": "seedlegals"
+    },
+    "TetraScience": {
+      "slug": "tetrascience"
+    },
+    "Arkham Technologies": {
+      "slug": "arkham-technologies"
+    },
+    "Kantox": {
+      "slug": "kantox"
+    },
+    "Metaculus": {
+      "slug": "metaculus"
+    },
+    "Murmuration": {
+      "slug": "murmuration"
+    },
+    "Blackbird AI": {
+      "slug": "blackbirdai"
+    },
+    "Axle Energy": {
+      "slug": "axle-energy"
+    },
+    "Blueground": {
+      "slug": "blueground"
+    },
+    "Curology": {
+      "slug": "curology"
+    },
+    "Innovaccer": {
+      "slug": "innovaccer-analytics"
+    },
+    "Lithos": {
+      "slug": "lithos"
+    },
+    "DataVisor": {
+      "slug": "datavisor-jobs"
+    },
+    "Constructor": {
+      "slug": "constructor-1"
+    },
+    "Fastbreak AI": {
+      "slug": "fastbreak-ai"
+    },
+    "Suade": {
+      "slug": "suade"
+    },
+    "Opus 2": {
+      "slug": "opus2"
+    },
+    "Plum": {
+      "slug": "withplum"
+    },
+    "Charlotte Tilbury": {
+      "slug": "charlotte-tilbury"
+    },
+    "Trinny London": {
+      "slug": "trinnylondon"
+    },
+    "Epignosis": {
+      "slug": "epignosis"
+    },
+    "CloudStuff": {
+      "slug": "cloudstuff"
+    },
+    "LanguageWire": {
+      "slug": "languagewire"
+    },
+    "Leap Legal Software": {
+      "slug": "leap-legal-software"
+    },
+    "Skeepers": {
+      "slug": "skeepers"
+    },
+    "Mathspace": {
+      "slug": "mathspace"
+    },
+    "Clear Labs": {
+      "slug": "clear-labs"
+    },
+    "Mondia Group": {
+      "slug": "mondia-group"
+    },
+    "Soda": {
+      "slug": "soda-data-nv"
+    },
+    "PrePass": {
+      "slug": "prepass"
+    },
+    "FMX": {
+      "slug": "fmx"
+    },
+    "Orchard Therapeutics": {
+      "slug": "orchard-therapeutics"
+    },
+    "PopMenu": {
+      "slug": "popmenu"
+    },
+    "Sequel": {
+      "slug": "sequel"
+    },
+    "YouLend": {
+      "slug": "youlend-1"
+    },
+    "Atria Health": {
+      "slug": "atria-health"
+    },
+    "Burq": {
+      "slug": "burq"
+    },
+    "BusRight": {
+      "slug": "busright"
+    },
+    "CurbWaste": {
+      "slug": "curbwaste"
+    },
+    "Zifo": {
+      "slug": "zifo"
+    },
+    "Plum Inc": {
+      "slug": "plum-inc"
+    },
+    "CloudLinux": {
+      "slug": "cloudlinux-1"
+    },
+    "LendingOne": {
+      "slug": "lendingone"
+    },
+    "ForceMetrics": {
+      "slug": "forcemetrics"
+    },
+    "Kaseware": {
+      "slug": "kaseware-inc"
+    },
+    "1915 South Ashley": {
+      "slug": "1915-south-ashley"
+    },
+    "Aktlondon": {
+      "slug": "aktlondon"
+    },
+    "Albi": {
+      "slug": "albi"
+    },
+    "Alpaca Vc": {
+      "slug": "alpaca-vc"
+    },
+    "Angkas": {
+      "slug": "angkas"
+    },
+    "Aristo Sourcing": {
+      "slug": "aristo-sourcing"
+    },
+    "Aristotle": {
+      "slug": "aristotle"
+    },
+    "Asahi 1": {
+      "slug": "asahi-1"
+    },
+    "Atec Spine": {
+      "slug": "atec-spine"
+    },
+    "Bacr": {
+      "slug": "bacr"
+    },
+    "Bailey Abbott": {
+      "slug": "bailey-abbott"
+    },
+    "Blackstone Eit 2": {
+      "slug": "blackstone-eit-2"
+    },
+    "Blueprint Bryanjohnson": {
+      "slug": "blueprint-bryanjohnson"
+    },
+    "Careers At Sleek": {
+      "slug": "careers-at-sleek"
+    },
+    "Chemin": {
+      "slug": "chemin"
+    },
+    "Chesapeake Contracting Group": {
+      "slug": "chesapeake-contracting-group"
+    },
+    "Church Of The City New York": {
+      "slug": "church-of-the-city-new-york"
+    },
+    "Credence": {
+      "slug": "credence"
+    },
+    "Decathlon Sg": {
+      "slug": "decathlon-sg"
+    },
+    "Edgility Search": {
+      "slug": "edgility-search"
+    },
+    "Esr Group": {
+      "slug": "esr-group"
+    },
+    "Fenergocareers": {
+      "slug": "fenergocareers"
+    },
+    "Finaira": {
+      "slug": "finaira"
+    },
+    "Fiq": {
+      "slug": "fiq"
+    },
+    "Fridababy": {
+      "slug": "fridababy"
+    },
+    "Fuku": {
+      "slug": "fuku"
+    },
+    "Geodelphi": {
+      "slug": "geodelphi"
+    },
+    "Ggrc": {
+      "slug": "ggrc"
+    },
+    "Gumption": {
+      "slug": "gumption"
+    },
+    "Heartstrings Pet Hospice In Home Euthanasiaand Aftercare": {
+      "slug": "heartstrings-pet-hospice-in-home-euthanasiaand-aftercare"
+    },
+    "Helprise 1": {
+      "slug": "helprise-1"
+    },
+    "Icarda": {
+      "slug": "icarda"
+    },
+    "Infosys Singaporeand Australia": {
+      "slug": "infosys-singaporeand-australia"
+    },
+    "Intellecthq": {
+      "slug": "intellecthq"
+    },
+    "Kentro": {
+      "slug": "kentro"
+    },
+    "Knok": {
+      "slug": "knok"
+    },
+    "Leading Path Consulting": {
+      "slug": "leading-path-consulting"
+    },
+    "Lonerockpoint": {
+      "slug": "lonerockpoint"
+    },
+    "Lotte Travel Retail Singapore": {
+      "slug": "lotte-travel-retail-singapore"
+    },
+    "Lvis Team": {
+      "slug": "lvis-team"
+    },
+    "Maxrte": {
+      "slug": "maxrte"
+    },
+    "Methods": {
+      "slug": "methods"
+    },
+    "Morrow Health": {
+      "slug": "morrow-health"
+    },
+    "National Western Center": {
+      "slug": "national-western-center"
+    },
+    "Nawy Real Estate": {
+      "slug": "nawy-real-estate"
+    },
+    "Netguru": {
+      "slug": "netguru"
+    },
+    "Owlet Baby Care 1": {
+      "slug": "owlet-baby-care-1"
+    },
+    "Pacificaviation": {
+      "slug": "pacificaviation"
+    },
+    "Prismplus": {
+      "slug": "prismplus"
+    },
+    "Qualco": {
+      "slug": "qualco"
+    },
+    "Quantexa": {
+      "slug": "quantexa"
+    },
+    "Sand Cherry Associates 1": {
+      "slug": "sand-cherry-associates-1"
+    },
+    "Satoshi Energy": {
+      "slug": "satoshi-energy"
+    },
+    "Sourcecode Communications": {
+      "slug": "sourcecode-communications"
+    },
+    "Sumble Inc": {
+      "slug": "sumble-inc"
+    },
+    "Systems Engineering Solutions Corporation": {
+      "slug": "systems-engineering-solutions-corporation"
+    },
+    "Targetsmart Communications": {
+      "slug": "targetsmart-communications"
+    },
+    "Texashealthaction": {
+      "slug": "texashealthaction"
+    },
+    "Therapeutic Learning Consultants": {
+      "slug": "therapeutic-learning-consultants"
+    },
+    "Thisisgain": {
+      "slug": "thisisgain"
+    },
+    "Threenitas": {
+      "slug": "threenitas"
+    },
+    "Tutor Me Education 1": {
+      "slug": "tutor-me-education-1"
+    },
+    "V4C": {
+      "slug": "v4c"
+    },
+    "Welcome": {
+      "slug": "welcome"
+    }
   },
   "_meta": {
     "validated_at": "2026-01-07",
-    "discovery_sources": ["manual_testing", "google_cse"],
-    "total_companies": 54,
+    "discovery_sources": [
+      "manual_testing",
+      "google_cse"
+    ],
+    "total_companies": 118,
     "notes": "5 tested + 49 from Google CSE discovery. Unvalidated due to rate limits - pipeline will handle 404s gracefully.",
     "last_updated": "2026-01-07"
   }
