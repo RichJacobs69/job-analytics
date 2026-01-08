@@ -1,10 +1,10 @@
 # Refresh Employer Metadata Workflow
-# Purpose: Run weekly to infer working_arrangement_default from accumulated job data
+# Purpose: Complete employer metadata pipeline - seed, enrich, and infer working arrangements
 #
-# This workflow:
-# 1. Runs the backfill script to update employer_metadata
-# 2. Uses majority vote (70%+ agreement) to infer working arrangements
-# 3. Only updates employers with NULL or 'inferred' source (preserves manual overrides)
+# This workflow runs three steps in sequence:
+# 1. Seed: Create employer_metadata entries for new employers from enriched_jobs
+# 2. Enrich: LLM-powered enrichment (description, industry, headquarters, etc.)
+# 3. Backfill: Infer working_arrangement_default from accumulated job data
 #
 # Schedule: Sundays at 8AM UTC
 # Manual trigger: workflow_dispatch
@@ -25,6 +25,11 @@ on:
         options:
           - 'true'
           - 'false'
+      enrich_limit:
+        description: 'Max employers to enrich (0 = skip enrichment)'
+        required: false
+        default: '30'
+        type: string
 
 env:
   PYTHON_VERSION: '3.11'
@@ -32,7 +37,7 @@ env:
 jobs:
   refresh-metadata:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -49,16 +54,46 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run backfill script
+      # Step 1: Seed new employers from enriched_jobs
+      - name: Seed new employers
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
+          echo "=== Step 1/3: Seeding new employers ==="
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
-            echo "Running in dry-run mode..."
+            python pipeline/utilities/seed_employer_metadata.py --dry-run --min-jobs 3
+          else
+            python pipeline/utilities/seed_employer_metadata.py --min-jobs 3
+          fi
+
+      # Step 2: Enrich employers without descriptions (LLM-powered)
+      # Uses gemini-3-flash-preview for best quality, with fallback to gemini-2.5-flash on errors
+      - name: Enrich unenriched employers
+        if: ${{ github.event.inputs.enrich_limit != '0' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          echo "=== Step 2/3: Enriching employers (limit: ${{ github.event.inputs.enrich_limit || '30' }}, model: gemini-3-flash-preview) ==="
+          LIMIT="${{ github.event.inputs.enrich_limit || '30' }}"
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            python pipeline/utilities/enrich_employer_metadata.py --dry-run --limit "$LIMIT" --model flash
+          else
+            python pipeline/utilities/enrich_employer_metadata.py --apply --limit "$LIMIT" --model flash
+          fi
+
+      # Step 3: Backfill working arrangements from job data
+      - name: Backfill working arrangements
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "=== Step 3/3: Backfilling working arrangements ==="
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             python pipeline/utilities/backfill_working_arrangement_defaults.py --dry-run
           else
-            echo "Applying changes..."
             python pipeline/utilities/backfill_working_arrangement_defaults.py --apply
           fi
 
@@ -66,9 +101,10 @@ jobs:
         run: |
           echo "## Employer Metadata Refresh Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Threshold**: 70% agreement required" >> $GITHUB_STEP_SUMMARY
-          echo "- **Minimum jobs**: 3 jobs with known arrangement" >> $GITHUB_STEP_SUMMARY
-          echo "- **Source priority**: manual > scraped > inferred" >> $GITHUB_STEP_SUMMARY
+          echo "### Pipeline Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Seed**: Created entries for new employers (min 3 jobs)" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Enrich**: LLM enrichment via Gemini 3 for up to ${{ github.event.inputs.enrich_limit || '30' }} employers" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Backfill**: Inferred working arrangements (70% threshold)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             echo "[WARNING] This was a dry-run - no changes were made" >> $GITHUB_STEP_SUMMARY
