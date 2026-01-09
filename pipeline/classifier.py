@@ -1,10 +1,10 @@
 """
-Job classification using LLM (Gemini 3 Flash or Claude 3.5 Haiku)
+Job classification using LLM (Gemini 2.5 Flash or Claude 3.5 Haiku)
 UPDATED: Added Gemini support with 88% cost reduction
 UPDATED: Removed agency detection from LLM prompt (handled by Python pattern matching)
 UPDATED: LLM no longer classifies job_family - it's auto-derived from job_subfamily via strict mapping
 UPDATED: Sanitize string "null" values to Python None for database compatibility
-UPDATED: Upgraded to Gemini 3 Flash for better classification accuracy (fixes Product Engineer misclassifications)
+UPDATED: Using stable Gemini 2.5 Flash with fallback support (reverted from 3.0 preview due to JSON errors)
 """
 import os
 import json
@@ -61,8 +61,8 @@ elif LLM_PROVIDER == "gemini":
 
     # Model configurations with fallback support
     GEMINI_MODELS = {
-        "primary": "gemini-3-flash-preview",    # Best accuracy
-        "fallback": "gemini-2.5-flash",         # Stable fallback
+        "primary": "gemini-2.5-flash",          # Stable, proven reliability
+        "fallback": "gemini-2.5-flash-lite",    # Fast fallback
     }
 
     _gemini_generation_config = {
@@ -423,7 +423,7 @@ def adapt_prompt_for_gemini(prompt: str) -> str:
 
 def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """
-    Classify a job posting using Gemini 3 Flash.
+    Classify a job posting using Gemini 2.5 Flash.
 
     88% cheaper and 3.4x faster than Claude Haiku.
     Uses Years-First seniority logic for normalized cross-company analytics.
@@ -433,7 +433,7 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
 
     if verbose:
         print("\n" + "="*60)
-        print("SENDING PROMPT TO GEMINI 3 FLASH")
+        print("SENDING PROMPT TO GEMINI 2.5 FLASH")
         print("="*60)
         print(prompt[:500] + "...\n")
 
