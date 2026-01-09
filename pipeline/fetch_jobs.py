@@ -491,7 +491,8 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     }
                     classification = classify_job(
                         job_text=job.description,
-                        structured_input=structured_input
+                        structured_input=structured_input,
+                        source="greenhouse"
                     )
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
@@ -877,7 +878,8 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                 
                 classification = classify_job(
                     job_text=description,  # Fallback
-                    structured_input=structured_input
+                    structured_input=structured_input,
+                        source="adzuna"
                 )
                 stats['jobs_classified'] += 1
                 
@@ -1194,7 +1196,8 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                     }
                     classification = classify_job(
                         job_text=job.description,
-                        structured_input=structured_input
+                        structured_input=structured_input,
+                        source="lever"
                     )
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
@@ -1565,7 +1568,8 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
                     }
                     classification = classify_job(
                         job_text=job.description,
-                        structured_input=structured_input
+                        structured_input=structured_input,
+                        source="ashby"
                     )
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
@@ -1958,7 +1962,8 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
                     }
                     classification = classify_job(
                         job_text=job.description,
-                        structured_input=structured_input
+                        structured_input=structured_input,
+                        source="workable"
                     )
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
