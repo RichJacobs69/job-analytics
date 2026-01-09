@@ -2,11 +2,14 @@
 
 ## Issue
 
-Waymo job (https://careers.withwaymo.com/jobs/fleet-response-training-program-manager-mountain-view-california-united-states-phoenix-arizona-san-francisco?gh_jid=7435632) appears in London job feed despite being US-only remote.
+Multiple US remote jobs appear in London job feed despite being US-only remote:
+- Waymo job: https://careers.withwaymo.com/jobs/fleet-response-training-program-manager-mountain-view-california-united-states-phoenix-arizona-san-francisco?gh_jid=7435632
+- Instacart job: https://instacart.careers/job/?gh_jid=7406756
+- Likely affecting ALL country-scoped remote jobs
 
 ## Root Cause
 
-Job has locations:
+Jobs have locations like this (Waymo example):
 ```json
 [
   {"type": "city", "country_code": "US", "city": "mountain_view"},
@@ -16,6 +19,13 @@ Job has locations:
 ]
 ```
 
+**How this happens:**
+1. Job posting says something like "San Francisco, CA or Remote"
+2. Location extractor finds the US city
+3. Location extractor sees "Remote" and **infers country scope from the co-located city** (see `location_extractor.py:433-444`)
+4. Result: `{"scope": "country", "country_code": "US"}` (not global)
+
+**The bug:**
 The API is including **all** remote jobs regardless of their country scope. It should only include:
 - Global remote (`scope: "global"`)
 - Country-scoped remote matching the selected city's country
