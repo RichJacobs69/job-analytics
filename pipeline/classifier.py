@@ -59,11 +59,19 @@ elif LLM_PROVIDER == "gemini":
         raise ValueError("Missing GOOGLE_API_KEY in .env file")
     genai.configure(api_key=GOOGLE_API_KEY)
 
-    # Model configurations with fallback support
-    GEMINI_MODELS = {
-        "primary": "gemini-2.5-flash",          # Stable, proven reliability
-        "fallback": "gemini-2.5-flash-lite",    # Fast fallback
+    # Source-specific model configurations
+    # Use Gemini 3 Flash for cleaner ATS sources (Lever, Ashby, Workable)
+    # Use Gemini 2.5 Flash for complex/high-volume sources (Greenhouse, Adzuna)
+    SOURCE_MODEL_CONFIG = {
+        "greenhouse": "gemini-2.5-flash",          # Stable (avoids JSON errors on complex titles)
+        "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
+        "lever": "gemini-3-flash-preview",         # Better quality for structured data
+        "ashby": "gemini-3-flash-preview",         # Better quality for structured data
+        "workable": "gemini-3-flash-preview",      # Better quality for structured data
     }
+
+    # Fallback model for all sources
+    GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
     _gemini_generation_config = {
         "temperature": 0.1,
@@ -71,15 +79,32 @@ elif LLM_PROVIDER == "gemini":
         "response_mime_type": "application/json"
     }
 
-    gemini_model = genai.GenerativeModel(
-        model_name=GEMINI_MODELS["primary"],
+    # Pre-initialize all models
+    _gemini_models_cache = {}
+    for model_name in set(SOURCE_MODEL_CONFIG.values()):
+        _gemini_models_cache[model_name] = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config=_gemini_generation_config
+        )
+
+    # Fallback model
+    _gemini_models_cache[GEMINI_FALLBACK_MODEL] = genai.GenerativeModel(
+        model_name=GEMINI_FALLBACK_MODEL,
         generation_config=_gemini_generation_config
     )
 
-    gemini_fallback_model = genai.GenerativeModel(
-        model_name=GEMINI_MODELS["fallback"],
-        generation_config=_gemini_generation_config
-    )
+    def get_gemini_model_for_source(source: str = None):
+        """Get the appropriate Gemini model based on data source."""
+        if source and source.lower() in SOURCE_MODEL_CONFIG:
+            model_name = SOURCE_MODEL_CONFIG[source.lower()]
+        else:
+            # Default to stable model for unknown sources
+            model_name = "gemini-2.5-flash"
+        return _gemini_models_cache.get(model_name), model_name
+
+    # Legacy references for backward compatibility
+    gemini_model, _ = get_gemini_model_for_source("greenhouse")
+    gemini_fallback_model = _gemini_models_cache[GEMINI_FALLBACK_MODEL]
 
     # Track fallbacks for reporting
     _model_fallback_count = 0
@@ -571,16 +596,17 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
         raise
 
 
-def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structured_input: dict = None, max_retries: int = 2, _use_fallback: bool = False) -> Dict:
+def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structured_input: dict = None, max_retries: int = 2, source: str = None, _use_fallback: bool = False) -> Dict:
     """
     Wrapper around classify_job_with_gemini that retries if summary is missing.
-    Falls back to gemini-2.5-flash if gemini-3-flash-preview fails.
+    Falls back to gemini-2.5-flash-lite if source-specific model fails.
 
     Args:
         job_text: Job posting text
         verbose: Enable verbose logging
         structured_input: Structured fields from API
         max_retries: Maximum attempts (default 2 = 1 initial + 1 retry)
+        source: Data source (greenhouse, lever, ashby, workable, adzuna)
         _use_fallback: Internal flag to use fallback model
 
     Returns:
@@ -599,9 +625,12 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
         'attempts': 0
     }
 
-    # Select model based on fallback flag
-    model = gemini_fallback_model if _use_fallback else gemini_model
-    model_name = GEMINI_MODELS["fallback"] if _use_fallback else GEMINI_MODELS["primary"]
+    # Select model based on source and fallback flag
+    if _use_fallback:
+        model = gemini_fallback_model
+        model_name = GEMINI_FALLBACK_MODEL
+    else:
+        model, model_name = get_gemini_model_for_source(source)
 
     for attempt in range(max_retries):
         total_cost_data['attempts'] += 1
@@ -615,10 +644,10 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
             # If primary model failed and not already using fallback, try fallback
             if not _use_fallback:
                 _model_fallback_count += 1
-                print(f"[INFO] Falling back to {GEMINI_MODELS['fallback']}...")
+                print(f"[INFO] Falling back to {GEMINI_FALLBACK_MODEL}...")
                 return classify_job_with_gemini_retry(
                     job_text, verbose=verbose, structured_input=structured_input,
-                    max_retries=max_retries, _use_fallback=True
+                    max_retries=max_retries, source=source, _use_fallback=True
                 )
             raise
 
@@ -893,23 +922,25 @@ def classify_job_with_claude(job_text: str, verbose: bool = False, structured_in
 # Main Classification Function (Router)
 # ============================================
 
-def classify_job(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
+def classify_job(job_text: str, verbose: bool = False, structured_input: dict = None, source: str = None) -> Dict:
     """
     Classify a job posting using the configured LLM provider.
 
     Routes to Gemini (default, 88% cheaper) or Claude based on LLM_PROVIDER env var.
+    For Gemini, uses source-specific models for optimal quality/cost balance.
 
     Args:
         job_text: Full job posting text
         verbose: If True, print prompt and raw response
         structured_input: Optional dict with structured fields from API
+        source: Data source (greenhouse, lever, ashby, workable, adzuna) for model selection
 
     Returns:
         Dictionary with classified job data matching schema
     """
     if LLM_PROVIDER == "gemini":
         # Use retry wrapper to ensure summary is included
-        return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input)
+        return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input, source=source)
     else:
         return classify_job_with_claude(job_text, verbose=verbose, structured_input=structured_input)
 
