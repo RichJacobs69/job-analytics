@@ -11,7 +11,7 @@ on:
 jobs:
   lever:
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # 61 companies with rate limiting
+    timeout-minutes: 30  # 169 companies - allows 10min buffer over typical 20min runtime
 
     steps:
       - name: Checkout repository
@@ -42,6 +42,6 @@ jobs:
         run: |
           echo "## Lever Scrape Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Companies:** 61" >> $GITHUB_STEP_SUMMARY
-          echo "- **Source:** lever_company_mapping.json" >> $GITHUB_STEP_SUMMARY
+          echo "- **Companies:** 169" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source:** config/lever/company_mapping.json" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
