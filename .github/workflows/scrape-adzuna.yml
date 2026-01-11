@@ -23,7 +23,7 @@ on:
 jobs:
   adzuna:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # Allows for API rate limit retries when classifying many new jobs
+    timeout-minutes: 90  # Buffer for API rate limits and high new job volume (100 jobs @ 2.5 Flash)
     strategy:
       fail-fast: false
       matrix:
