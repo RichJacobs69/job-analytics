@@ -395,7 +395,10 @@
     },
     "Weave": {
       "slug": "weave"
-    }
+    },
+    "Zapier": {
+      "slug": "zapier"
+    },
   },
   "_meta": {
     "validated_at": "2025-12-30",
