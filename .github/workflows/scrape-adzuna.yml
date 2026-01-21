@@ -23,7 +23,7 @@ on:
 jobs:
   adzuna:
     runs-on: ubuntu-latest
-    timeout-minutes: 90  # Buffer for API rate limits and high new job volume (100 jobs @ 2.5 Flash)
+    timeout-minutes: 120  # Jan 2026: 5x volume spike (NYC 1869, DEN 1601) needs extra headroom
     strategy:
       fail-fast: false
       matrix:
