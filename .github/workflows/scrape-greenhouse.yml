@@ -23,9 +23,9 @@ on:
           - '4'
 
 jobs:
-  greenhouse-batch:
+  greenhouse:
     runs-on: ubuntu-latest
-    timeout-minutes: 120  # ~91 companies at ~47 sec each + API retry buffer
+    timeout-minutes: 150  # ~108 companies, some high-volume (Launch2: 138 jobs)
 
     steps:
       - name: Checkout repository
