@@ -4,9 +4,9 @@
 # Purpose: Filter recruitment agencies from job aggregation pipeline
 
 metadata:
-  version: 1.5
-  last_updated: "2026-01-04"
-  total_agencies: 210
+  version: 1.7
+  last_updated: "2026-01-28"
+  total_agencies: 318
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -279,6 +279,120 @@ hard_filter:
   - achieving stars therapy
   - summer browning associates
 
+  # Added 2026-01-08 from Professional Services audit
+  - reed
+  - reed.co.uk
+  - reed talent aquisition
+  - lorien
+  - digital waffle
+  - searchability
+  - searchability ltd
+  - searchability ns&d
+  - mccabe & barton
+  - octavius finance
+  - oscar technology
+  - io associates
+  - selby jennings
+  - selby jennings london
+  - eames consulting
+  - ic resources
+  - huxley associates
+  - bonhill partners
+  - rapp
+  - aldwych consulting
+  - aldwych consulting ltd
+  - green key resources
+  - volt workforce solutions
+  - rit solutions
+  - rit solutions, inc.
+  - e-solutions
+  - inizio partners
+  - inizio partners corp
+  - oscar associates limited
+  - oscar associates
+
+  # Added 2026-01-28: Job aggregators (not direct employers)
+  - jobgether
+
+  # Added 2026-01-08 from Denver/NYC Professional Services audit
+  - jobot
+  - hirexhire
+  - brooksource
+  - indotronix international corporation
+  - indotronix
+  - the judge group
+  - artech
+  - epm scientific
+  - stellent it llc
+  - stellent
+  - inceed
+  - tek ninjas
+  - synergisticit
+  - cynet systems
+  - forhyre
+  - saransh inc
+  - mitchell martin
+  - aptask
+  - kanak elite services inc
+  - kanak elite services
+  - amicis global
+  - apptad inc
+  - apptad
+  - strategic employment
+  - concord it systems
+  - saragossa
+  - siritech solutions corp
+  - epathusa inc
+  - epathusa
+  - gotham technology group
+  - the right click
+  - the right click, inc.
+  - esrhealthcare
+  - argyllinfotech
+  - psrtek
+  - saxon global
+  - career renew
+  - sharp decisions
+  - intersources
+  - kaav inc.
+  - kaav inc
+  - jconnect inc
+  - eteam
+  - soho dragon
+  - social capital resources
+  - addison group
+  - adidev technologies inc
+  - matlen silver
+  - software technology inc.
+  - intellibus
+  - sparc technology services inc
+  - pyramid consulting
+  - matrix global
+  - g2i
+  - jellyfishcareers
+  - sumeru solutions
+  - synapone
+  - ds technologies
+  - ec1 partners
+  - nxt level
+  - united software group
+  - systemsaccountants
+  - iris software inc.
+  - the dignify solutions llc
+  - the fountain group
+  - usm
+  - orangepeople
+  - akraya
+  - career mentors
+  - career mentors, llc
+  - navitspartners
+  - mindlance
+  - qed national
+  - apidel technologies
+  - axelon services corporation
+  - iconvergence
+  - universal technology solutions
+
 # =========================
 # PATTERN DETECTION
 # =========================
@@ -350,6 +464,9 @@ legitimate_companies:
   - openai
   - graphcore  # AI chip company, not an agency
   - avanti schools trust  # Education provider
+  - oscar health  # Health insurance company
+  - finn partners  # PR agency, direct employer
+  - inizio  # Pharma services, direct employer (not inizio partners)
 
 # =========================
 # DOMAIN FILTERING (for web scraping phase)
