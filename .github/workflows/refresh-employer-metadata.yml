@@ -9,7 +9,7 @@
 # Schedule: Sundays at 8AM UTC
 # Manual trigger: workflow_dispatch
 
-name: Refresh Employer Metadata
+name: Refresh Employer Metadata (Sun 8AM UTC)
 
 on:
   schedule:

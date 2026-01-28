@@ -234,7 +234,8 @@ Located in `.github/workflows/`:
 - `scrape-lever.yml` - Mon/Wed/Fri 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
 - `scrape-workable.yml` - Wed/Sat 6PM UTC (evening slot)
-- `refresh-derived-tables.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
+- `url-validation-stats.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
+- `refresh-employer-metadata.yml` - Sun 8AM UTC (seed, enrich, backfill)
 
 ## Key References
 

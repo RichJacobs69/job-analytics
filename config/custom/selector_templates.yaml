@@ -1,0 +1,144 @@
+# Reusable Selector Templates for Common ATS Platforms
+#
+# These templates define CSS selectors for job listing pages across
+# common enterprise ATS platforms. Employers can reference these
+# templates in employers.yaml instead of defining selectors inline.
+#
+# Usage in employers.yaml:
+#   jpmorgan:
+#     template: taleo
+#     ...
+
+templates:
+  # Oracle Taleo - Used by JPMorgan, Goldman Sachs, Morgan Stanley, etc.
+  # ~22% of Fortune 500 companies use Taleo
+  taleo:
+    job_card:
+      - 'tr.JobSearchResultRow'
+      - 'div[class*="requisitionList"] > div'
+      - 'li[class*="job-item"]'
+    title:
+      - 'a[class*="jobTitle"]'
+      - 'a[id*="requisition"]'
+      - 'span.jobTitle'
+    location:
+      - 'span[class*="location"]'
+      - 'td[class*="location"]'
+      - 'div.job-location'
+    url:
+      - 'a[class*="jobTitle"]::attr(href)'
+    department:
+      - 'span[class*="department"]'
+      - 'td[class*="department"]'
+    pagination:
+      type: next_button
+      selectors:
+        - 'a[id*="next"]'
+        - 'button[aria-label="Next"]'
+        - 'a.pagination-next'
+
+  # Phenom People - Used by Microsoft, many tech companies
+  # Known for personalized career sites and chatbots
+  phenom:
+    job_card:
+      - 'div[class*="job-card"]'
+      - 'li[class*="job-item"]'
+      - 'article[class*="job"]'
+    title:
+      - 'a[class*="job-title"]'
+      - 'h3[class*="title"] a'
+      - 'span.job-title'
+    location:
+      - 'span[class*="location"]'
+      - 'div[class*="job-location"]'
+      - 'p.location'
+    url:
+      - 'a[class*="job-title"]::attr(href)'
+    department:
+      - 'span[class*="category"]'
+      - 'div.job-category'
+    pagination:
+      type: scroll
+      selectors:
+        - 'button[class*="load-more"]'
+        - 'button[aria-label="Load more jobs"]'
+
+  # iCIMS - Used by various enterprises including parts of Microsoft
+  icims:
+    job_card:
+      - 'div.iCIMS_JobsTable tr'
+      - 'li.iCIMS_JobResult'
+      - 'div[class*="iCIMS_Job"]'
+    title:
+      - 'a.iCIMS_JobTitle'
+      - 'span.title'
+      - 'h3.job-title'
+    location:
+      - 'span.iCIMS_Location'
+      - 'div.location'
+      - 'td.location'
+    url:
+      - 'a.iCIMS_JobTitle::attr(href)'
+    pagination:
+      type: page_numbers
+      selectors:
+        - 'a[class*="pagination"]'
+        - 'ul.pagination a'
+
+  # Workday - Most common ATS for Fortune 500 (~38%)
+  # Note: Workday sites vary significantly by implementation
+  workday:
+    job_card:
+      - 'li[data-automation-id="compositeCard"]'
+      - 'div[data-automation-id="jobCard"]'
+      - 'article[class*="job"]'
+    title:
+      - 'a[data-automation-id="jobTitle"]'
+      - 'h3[data-automation-id="title"]'
+    location:
+      - 'dd[data-automation-id="locationField"]'
+      - 'span[data-automation-id="location"]'
+    url:
+      - 'a[data-automation-id="jobTitle"]::attr(href)'
+    department:
+      - 'dd[data-automation-id="departmentField"]'
+    pagination:
+      type: next_button
+      selectors:
+        - 'button[data-automation-id="paginationNextBtn"]'
+        - 'button[aria-label="next page"]'
+
+  # SAP SuccessFactors - ~14% of Fortune 500
+  successfactors:
+    job_card:
+      - 'tr.jobResultItem'
+      - 'div.job-item'
+    title:
+      - 'a.jobTitle'
+      - 'span.job-title'
+    location:
+      - 'span.jobLocation'
+      - 'td.location'
+    url:
+      - 'a.jobTitle::attr(href)'
+    pagination:
+      type: next_button
+      selectors:
+        - 'a.nextPage'
+        - 'button[aria-label="Next"]'
+
+# Metadata
+_meta:
+  version: "1.0"
+  created: "2026-01-08"
+  notes: |
+    Templates are based on common patterns observed across implementations.
+    Individual companies may customize their ATS, so selectors may need
+    adjustment. Use multiple fallback selectors where possible.
+
+    Market share (Fortune 500):
+    - Workday: ~38%
+    - Taleo: ~22%
+    - SuccessFactors: ~14%
+    - iCIMS: ~8%
+    - Phenom: Growing in tech sector

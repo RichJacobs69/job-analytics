@@ -1,0 +1,138 @@
+# Enterprise Employer Configurations
+# Config-driven scraper settings for Fortune 500 companies not on standard ATS platforms
+#
+# Types:
+#   - rss: Parse RSS/XML feed (no Playwright needed)
+#   - playwright: Browser automation with custom selectors
+#
+# For Playwright scrapers, selectors can be defined inline or reference a template
+# from selector_templates.yaml
+
+employers:
+  # =============================================================================
+  # RSS-based sources (Phase 1 - no Playwright needed)
+  # =============================================================================
+
+  google:
+    name: Google
+    type: rss
+    url: https://www.google.com/about/careers/applications/jobs/feed.xml
+    enabled: true
+    notes: "Official RSS feed, >10MB, includes salary data"
+
+  # =============================================================================
+  # Playwright-based sources (Phase 2+)
+  # =============================================================================
+
+  # Apple - Custom React careers site
+  apple:
+    name: Apple
+    type: playwright
+    url: https://jobs.apple.com/en-us/search
+    selectors:
+      job_card: 'div.table-row'
+      title: 'a.table__title'
+      location: 'span.locations-items'
+      url: 'a.table__title::attr(href)'
+      posted_date: 'span.date'
+      description_page:
+        container: 'div.job-description'
+    pagination:
+      type: scroll
+      load_more: 'button[aria-label="Load more"]'
+    enabled: false  # Phase 2
+    notes: "Custom React site, 600+ jobs"
+
+  # Netflix - External job board platform
+  netflix:
+    name: Netflix
+    type: playwright
+    url: https://explore.jobs.netflix.net/careers
+    selectors:
+      job_card: 'div[data-testid="job-card"], li.job-card'
+      title: 'a[data-testid="job-title"], h3.job-title a'
+      location: 'span[data-testid="location"], div.job-location'
+      url: 'a[data-testid="job-title"]::attr(href)'
+    pagination:
+      type: next_button
+      next: 'button[aria-label="Next page"], a.pagination-next'
+    enabled: false  # Phase 2
+    notes: "External platform at explore.jobs.netflix.net"
+
+  # JPMorgan Chase - Taleo (Oracle)
+  jpmorgan:
+    name: JPMorgan Chase
+    type: playwright
+    url: https://careers.jpmorgan.com/us/en/search-results
+    template: taleo  # Uses selector_templates.yaml
+    enabled: false  # Phase 2
+    notes: "Taleo-based, template reusable for other banks"
+
+  # Goldman Sachs - Taleo
+  goldman_sachs:
+    name: Goldman Sachs
+    type: playwright
+    url: https://goldmansachs.tal.net/vx/appcentre-ext/brand-0/candidate/jobboard/vacancy/1/adv/
+    template: taleo
+    enabled: false  # Phase 3
+    notes: "Taleo-based"
+
+  # Morgan Stanley - Taleo
+  morgan_stanley:
+    name: Morgan Stanley
+    type: playwright
+    url: https://ms.taleo.net/careersection/2/jobsearch.ftl
+    template: taleo
+    enabled: false  # Phase 3
+    notes: "Taleo-based"
+
+  # Microsoft - Phenom + iCIMS
+  microsoft:
+    name: Microsoft
+    type: playwright
+    url: https://careers.microsoft.com/us/en/search-results
+    template: phenom
+    enabled: false  # Phase 3
+    notes: "Phenom platform, complex SPA"
+
+  # Amazon - Custom heavy JS
+  amazon:
+    name: Amazon
+    type: playwright
+    url: https://www.amazon.jobs/en/search
+    selectors:
+      job_card: 'div[data-testid="job-card"], div.job-tile'
+      title: 'h3.job-title a, a[data-testid="job-link"]'
+      location: 'span.location-icon + span, div.job-location'
+      url: 'h3.job-title a::attr(href)'
+    pagination:
+      type: next_button
+      next: 'button[aria-label="Next"], a.pagination-next'
+    enabled: false  # Phase 3 - hard target
+    notes: "Custom platform, heavy JS rendering"
+
+  # Meta - Custom React SPA
+  meta:
+    name: Meta
+    type: playwright
+    url: https://www.metacareers.com/jobs
+    selectors:
+      job_card: 'div[role="listitem"], li.job-card'
+      title: 'a[data-testid="job-link"], h2.job-title a'
+      location: 'span.location, div.job-location'
+      url: 'a[data-testid="job-link"]::attr(href)'
+    pagination:
+      type: scroll
+      scroll_container: 'div[role="list"]'
+    enabled: false  # Phase 3 - hard target
+    notes: "React SPA, dynamic loading"
+
+# Metadata
+_meta:
+  version: "1.0"
+  created: "2026-01-08"
+  updated: "2026-01-08"
+  notes: |
+    Phase 1: Google RSS (enabled)
+    Phase 2: Apple, Netflix, JPMorgan (Taleo template)
+    Phase 3: Microsoft, Goldman, Morgan Stanley, Amazon, Meta

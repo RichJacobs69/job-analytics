@@ -75,10 +75,17 @@ Examples:
         help='Only process jobs from last N hours (default: all time)'
     )
 
+    parser.add_argument(
+        '--source',
+        type=str,
+        help='Filter by source (e.g., custom, greenhouse, lever, ashby, workable, adzuna)'
+    )
+
     args = parser.parse_args()
 
     backfill_missing_enriched(
         limit=args.limit,
         dry_run=args.dry_run,
-        hours_back=args.hours
+        hours_back=args.hours,
+        source=args.source
     )

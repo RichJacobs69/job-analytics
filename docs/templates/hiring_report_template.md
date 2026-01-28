@@ -586,6 +586,9 @@ Example: "While Core PM roles dominate, technical specialisation is the clear gr
 **Content blocks:**
 
 #### Percentage breakdown
+
+**IMPORTANT:** Order seniority levels linearly by career progression (Junior → Mid-Level → Senior → Staff/Principal → Director+), NOT by value. This provides intuitive reading of career ladder distribution.
+
 ```
 - Junior: 4%
 - Mid-Level: 17%
@@ -880,11 +883,13 @@ senior_to_junior_ratio:
   interpretation: "Competition intensity for entry roles"
   example: "15:1 ratio—expect fierce competition for junior positions"
   benchmark: ">10:1 = very competitive entry, 5-10:1 = competitive, <5:1 = accessible"
+  note: "Senior+ includes Senior, Staff/Principal, and Director+ levels combined"
 
 entry_accessibility_rate:
   formula: "count(junior + mid) / total_jobs"
-  interpretation: "Percentage of roles accessible to <3 years experience"
+  interpretation: "Percentage of roles accessible to early-career candidates"
   example: "21% of roles open to early-career candidates"
+  note: "Combines Junior and Mid-Level roles, which typically require <3 years experience"
   
 management_opportunity_rate:
   formula: "count(management_track) / total_jobs"

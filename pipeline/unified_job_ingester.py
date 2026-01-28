@@ -44,6 +44,7 @@ class DataSource(Enum):
     LEVER = "lever"
     ASHBY = "ashby"
     WORKABLE = "workable"
+    CUSTOM = "custom"  # Config-driven scrapers for custom career sites (Google, FAANG, banks)
     HYBRID = "hybrid"  # When Adzuna job data + Greenhouse description
 
 

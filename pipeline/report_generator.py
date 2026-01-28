@@ -79,6 +79,22 @@ class ReportGenerator:
         'sgp': 'singapore',
     }
 
+    # Display names for cities (used in portfolio reports)
+    CITY_DISPLAY_NAMES = {
+        'lon': 'London',
+        'nyc': 'New York',
+        'den': 'Denver',
+        'sfo': 'San Francisco',
+        'sgp': 'Singapore',
+    }
+
+    # Job family display names
+    JOB_FAMILY_LABELS = {
+        'data': 'Data & Analytics',
+        'product': 'Product Management',
+        'delivery': 'Project & Delivery',
+    }
+
     # Industry display labels
     INDUSTRY_LABELS = {
         'ai_ml': 'AI & Machine Learning',
@@ -741,6 +757,354 @@ class ReportGenerator:
             },
         }
 
+    def _format_period_label(self, start_date: str, end_date: str) -> str:
+        """Format date range as human-readable period label (e.g., 'December 2025')."""
+        from datetime import datetime
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        return start.strftime('%B %Y')
+
+    def _get_concentration_benchmark(self, pct: float) -> str:
+        """Return benchmark label for employer concentration."""
+        if pct < 10:
+            return 'Very fragmented'
+        elif pct < 15:
+            return 'Highly fragmented'
+        elif pct < 25:
+            return 'Distributed hiring'
+        elif pct < 35:
+            return 'Moderate concentration'
+        else:
+            return 'Concentrated'
+
+    def _get_ratio_benchmark(self, ratio: float) -> str:
+        """Return benchmark label for senior-to-junior ratio."""
+        if ratio > 15:
+            return 'Extremely competitive entry'
+        elif ratio > 10:
+            return 'Very competitive entry'
+        elif ratio > 5:
+            return 'Competitive but accessible'
+        else:
+            return 'Accessible entry market'
+
+    def _get_entry_benchmark(self, pct: float) -> str:
+        """Return benchmark label for entry accessibility rate."""
+        if pct < 15:
+            return 'Difficult entry market'
+        elif pct < 25:
+            return 'Competitive entry market'
+        elif pct < 35:
+            return 'Moderate entry market'
+        else:
+            return 'Accessible entry market'
+
+    def _get_management_benchmark(self, pct: float) -> str:
+        """Return benchmark label for management opportunity rate."""
+        if pct < 10:
+            return 'Highly IC-focused'
+        elif pct < 15:
+            return 'IC-focused'
+        elif pct < 25:
+            return 'Balanced tracks'
+        else:
+            return 'Management-heavy'
+
+    def _get_remote_benchmark(self, pct: float) -> str:
+        """Return benchmark label for remote availability."""
+        if pct < 20:
+            return 'Limited flexibility'
+        elif pct < 35:
+            return 'Moderate flexibility'
+        elif pct < 50:
+            return 'High flexibility'
+        else:
+            return 'Very high flexibility'
+
+    def _get_flexibility_benchmark(self, pct: float) -> str:
+        """Return benchmark label for overall flexibility rate."""
+        if pct < 50:
+            return 'Limited flexibility'
+        elif pct < 70:
+            return 'Moderate flexibility'
+        elif pct < 85:
+            return 'Flexible market'
+        else:
+            return 'Very flexible market'
+
+    def generate_portfolio_report(self, city_code: str, job_family: str,
+                                   start_date: str, end_date: str) -> dict:
+        """
+        Generate report data in portfolio-site format.
+
+        This produces JSON ready for the Next.js portfolio site,
+        with camelCase keys and the exact structure expected by ReportContent.tsx.
+
+        Narrative fields are left as placeholders to be filled by LLM/manual editing.
+
+        Args:
+            city_code: Location code (lon, nyc, den, sfo, sgp)
+            job_family: Job family (data, product, delivery)
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+
+        Returns:
+            Dict in portfolio-site JSON format.
+        """
+        # Get raw data
+        raw = self.generate_report_data(city_code, job_family, start_date, end_date)
+
+        # Helper to convert distribution to simple {label, value} format
+        def to_chart_data(distribution: list, top_n: int = None) -> list:
+            items = distribution[:top_n] if top_n else distribution
+            return [{'label': d['label'], 'value': round(d['percentage'])} for d in items]
+
+        # Helper to convert distribution to {label, value} with percentage as value
+        def to_employer_chart_data(employers: list, top_n: int = 15) -> list:
+            return [{'label': e['name'].title(), 'value': round(e['percentage'], 1)} for e in employers[:top_n]]
+
+        # Helper for salary range data
+        def to_salary_range_data(items: list, label_key: str = 'label') -> list:
+            return [{
+                'label': item[label_key],
+                'p25': item['p25'],
+                'median': item['median'],
+                'p75': item['p75'],
+                'sample': item['sample']
+            } for item in items]
+
+        # Market metrics
+        struct = raw['market_metrics']['structure']
+        access = raw['market_metrics']['accessibility']
+        flex = raw['market_metrics']['flexibility']
+        quality = raw['market_metrics']['data_quality']
+
+        # Build portfolio format
+        city_display = self.CITY_DISPLAY_NAMES.get(city_code, city_code.upper())
+        period_label = self._format_period_label(start_date, end_date)
+        total_jobs = raw['summary']['direct_jobs']
+        unique_employers = raw['summary']['unique_employers']
+
+        # Compensation section
+        comp_raw = raw['compensation']
+        if comp_raw.get('available'):
+            compensation = {
+                'coverage': f"{comp_raw['coverage']}% of roles with disclosed salary ranges",
+                'overall': {
+                    'percentile25': comp_raw['overall']['p25'],
+                    'median': comp_raw['overall']['median'],
+                    'percentile75': comp_raw['overall']['p75'],
+                    'iqr': comp_raw['overall']['iqr']
+                },
+                'bySeniority': to_salary_range_data(comp_raw['by_seniority']),
+                'byRole': to_salary_range_data(comp_raw['by_subfamily']),
+                'insights': []
+            }
+        else:
+            compensation = {
+                'coverage': comp_raw.get('reason', 'Compensation data excluded due to low disclosure rates in markets without pay transparency legislation.'),
+                'overall': None,
+                'bySeniority': [],
+                'byRole': [],
+                'insights': []
+            }
+
+        # Skills section
+        skills_raw = raw['skills']
+        skill_pairs = []
+        for pair in skills_raw.get('skill_pairs', []):
+            skill_pairs.append({
+                'skills': f"{pair['skill_1']} + {pair['skill_2']}",
+                'value': round(pair['percentage'])
+            })
+
+        return {
+            'meta': {
+                'city': city_display,
+                'cityCode': city_code,
+                'period': period_label,
+                'jobFamily': self.JOB_FAMILY_LABELS.get(job_family, job_family),
+                'totalJobs': total_jobs,
+                'uniqueEmployers': unique_employers,
+                'summary': f"[PLACEHOLDER] {city_display}'s {period_label} {job_family} market summary."
+            },
+            'keyFindings': {
+                'narrative': [
+                    f"[PLACEHOLDER] First narrative paragraph about {city_display}'s {job_family} market.",
+                    "[PLACEHOLDER] Second narrative paragraph with additional context.",
+                    "[PLACEHOLDER] Third narrative paragraph about market accessibility and trends."
+                ],
+                'bullets': [
+                    {'title': '[PLACEHOLDER] Key finding 1', 'text': 'Description of finding.'},
+                    {'title': '[PLACEHOLDER] Key finding 2', 'text': 'Description of finding.'},
+                    {'title': '[PLACEHOLDER] Key finding 3', 'text': 'Description of finding.'},
+                    {'title': '[PLACEHOLDER] Key finding 4', 'text': 'Description of finding.'},
+                    {'title': '[PLACEHOLDER] Key finding 5', 'text': 'Description of finding.'}
+                ],
+                'dataNote': f"Based on over {(total_jobs // 100) * 100:,} direct employer postings from {unique_employers}+ companies. Recruitment agency listings excluded."
+            },
+            'takeaways': {
+                'jobSeekers': [
+                    {'title': '[PLACEHOLDER] Takeaway 1', 'text': 'Actionable advice for job seekers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 2', 'text': 'Actionable advice for job seekers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 3', 'text': 'Actionable advice for job seekers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 4', 'text': 'Actionable advice for job seekers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 5', 'text': 'Actionable advice for job seekers.'}
+                ],
+                'hiringManagers': [
+                    {'title': '[PLACEHOLDER] Takeaway 1', 'text': 'Strategic insight for hiring managers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 2', 'text': 'Strategic insight for hiring managers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 3', 'text': 'Strategic insight for hiring managers.'},
+                    {'title': '[PLACEHOLDER] Takeaway 4', 'text': 'Strategic insight for hiring managers.'}
+                ]
+            },
+            'industryDistribution': {
+                'coverage': f"{raw['metadata_enrichment']['industry']['coverage']}% of roles with industry data",
+                'data': to_chart_data(raw['metadata_enrichment']['industry']['distribution'], 10),
+                'interpretation': '[PLACEHOLDER] Industry distribution interpretation.'
+            },
+            'companyMaturity': {
+                'coverage': f"{raw['metadata_enrichment']['maturity']['coverage']}% of roles with company age data",
+                'data': to_chart_data(raw['metadata_enrichment']['maturity']['distribution']),
+                'interpretation': '[PLACEHOLDER] Company maturity interpretation.'
+            },
+            'ownershipType': {
+                'coverage': f"{raw['metadata_enrichment']['ownership']['coverage']}% of roles with ownership data",
+                'data': to_chart_data(raw['metadata_enrichment']['ownership']['distribution']),
+                'interpretation': '[PLACEHOLDER] Ownership type interpretation.'
+            },
+            'employerSize': {
+                'coverage': f"{raw['metadata_enrichment']['employer_size']['coverage']}% of roles with company size data",
+                'data': to_chart_data(raw['metadata_enrichment']['employer_size']['distribution']),
+                'interpretation': '[PLACEHOLDER] Employer size interpretation.'
+            },
+            'topEmployers': {
+                'data': to_employer_chart_data(raw['employers']['top_employers']),
+                'interpretation': '[PLACEHOLDER] Top employers interpretation.'
+            },
+            'roleSpecialization': {
+                'data': to_chart_data(raw['subfamily']['distribution'], 8),
+                'interpretation': '[PLACEHOLDER] Role specialization interpretation.'
+            },
+            'seniorityDistribution': {
+                'data': to_chart_data(raw['seniority']['distribution']),
+                'seniorToJuniorRatio': round(access['senior_to_junior_ratio']),
+                'entryAccessibilityRate': round(access['entry_accessibility_rate']),
+                'interpretation': '[PLACEHOLDER] Seniority distribution interpretation.'
+            },
+            'icVsManagement': {
+                'data': to_chart_data(raw['track']['distribution']),
+                'interpretation': '[PLACEHOLDER] IC vs management interpretation.'
+            },
+            'workingArrangement': {
+                'coverage': f"{raw['working_arrangement']['coverage']}% of roles with known working arrangement",
+                'data': [d for d in to_chart_data(raw['working_arrangement']['distribution']) if d['label'] != 'Unknown'],
+                'interpretation': '[PLACEHOLDER] Working arrangement interpretation.'
+            },
+            'compensation': compensation,
+            'skillsDemand': {
+                'coverage': f"{skills_raw['coverage']}% of roles with skills data",
+                'data': [{'label': s['name'], 'value': round(s['percentage'])} for s in skills_raw['top_skills']],
+                'skillPairs': skill_pairs,
+                'interpretation': '[PLACEHOLDER] Skills demand interpretation.'
+            },
+            'marketMetrics': {
+                'marketStructure': [
+                    {
+                        'label': 'Jobs per employer',
+                        'value': str(struct['jobs_per_employer']),
+                        'benchmark': self._get_concentration_benchmark(struct['top_5_concentration']),
+                        'description': 'Average open roles per hiring company'
+                    },
+                    {
+                        'label': 'Top 5 concentration',
+                        'value': f"{round(struct['top_5_concentration'])}%",
+                        'benchmark': self._get_concentration_benchmark(struct['top_5_concentration']),
+                        'description': 'Combined market share of top 5 employers'
+                    },
+                    {
+                        'label': 'Top 15 concentration',
+                        'value': f"{round(struct['top_15_concentration'])}%",
+                        'benchmark': self._get_concentration_benchmark(struct['top_15_concentration']),
+                        'description': 'Combined market share of top 15 employers'
+                    }
+                ],
+                'accessibility': [
+                    {
+                        'label': 'Senior-to-Junior ratio',
+                        'value': f"{round(access['senior_to_junior_ratio'])}:1",
+                        'benchmark': self._get_ratio_benchmark(access['senior_to_junior_ratio']),
+                        'description': 'Senior+ roles for every junior role',
+                        'highlight': access['senior_to_junior_ratio'] > 10
+                    },
+                    {
+                        'label': 'Entry accessibility',
+                        'value': f"{round(access['entry_accessibility_rate'])}%",
+                        'benchmark': self._get_entry_benchmark(access['entry_accessibility_rate']),
+                        'description': 'Roles open to candidates with <3 years experience'
+                    },
+                    {
+                        'label': 'Management opportunity',
+                        'value': f"{round(access['management_opportunity_rate'])}%",
+                        'benchmark': self._get_management_benchmark(access['management_opportunity_rate']),
+                        'description': 'Roles on the people management track'
+                    }
+                ],
+                'flexibility': [
+                    {
+                        'label': 'Remote availability',
+                        'value': f"{round(flex['remote_rate'])}%",
+                        'benchmark': self._get_remote_benchmark(flex['remote_rate']),
+                        'description': 'Roles offering fully remote work'
+                    },
+                    {
+                        'label': 'Flexibility rate',
+                        'value': f"{round(flex['flexibility_rate'])}%",
+                        'benchmark': self._get_flexibility_benchmark(flex['flexibility_rate']),
+                        'description': 'Roles with remote, hybrid, or flexible arrangements'
+                    }
+                ]
+            },
+            'marketContext': [
+                {'title': '[PLACEHOLDER] Context 1', 'description': 'Market context description.'},
+                {'title': '[PLACEHOLDER] Context 2', 'description': 'Market context description.'},
+                {'title': '[PLACEHOLDER] Context 3', 'description': 'Market context description.'},
+                {'title': '[PLACEHOLDER] Context 4', 'description': 'Market context description.'},
+                {'title': '[PLACEHOLDER] Context 5', 'description': 'Market context description.'}
+            ],
+            'methodology': {
+                'description': f"This report analyzes direct employer job postings for {self.JOB_FAMILY_LABELS.get(job_family, job_family)} roles in {city_display} during {period_label}.",
+                'dataCollection': [
+                    f"Over {(total_jobs // 100) * 100:,} roles from {unique_employers}+ employers aggregated from multiple sources",
+                    f"Recruitment agency postings identified and excluded ({raw['summary']['agency_rate']}% of raw data)",
+                    "Jobs deduplicated across sources to avoid double-counting"
+                ],
+                'classification': [
+                    "Roles classified using an LLM-powered taxonomy",
+                    "Subfamily, seniority, skills, and working arrangement extracted",
+                    "Employer metadata enriched from company databases where available"
+                ],
+                'limitations': [
+                    "Not a complete census of the market - some roles may not be captured",
+                    f"Skills analysis based on {skills_raw['total_with_skills']:,} roles with skill data ({skills_raw['coverage']}% coverage)",
+                    f"Salary data {'available due to pay transparency law' if comp_raw.get('available') else 'not included due to low disclosure rates'}",
+                    f"Working arrangement specified in {raw['working_arrangement']['coverage']}% of postings"
+                ],
+                'dataQuality': [
+                    {'label': 'Seniority coverage', 'value': f"{round(quality['seniority_coverage'])}%", 'description': 'Roles with seniority level classified'},
+                    {'label': 'Arrangement coverage', 'value': f"{round(quality['arrangement_coverage'])}%", 'description': 'Roles with working arrangement known'},
+                    {'label': 'Skills coverage', 'value': f"{round(quality['skills_coverage'])}%", 'description': 'Roles with skills extracted from description'},
+                    {'label': 'Employer metadata', 'value': f"{round(quality['metadata_coverage'])}%", 'description': 'Roles with enriched company data'}
+                ]
+            },
+            'about': {
+                'author': 'Rich Jacobs',
+                'bio': 'Data product manager focused on hiring market intelligence',
+                'linkedin': 'rjacobsuk',
+                'website': 'richjacobs.me',
+                'contact': 'rich@richjacobs.me'
+            }
+        }
+
 
 def main():
     """CLI entry point for report generation."""
@@ -750,6 +1114,7 @@ def main():
         epilog="""
 Examples:
     python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
+    python pipeline/report_generator.py --city sfo --family data --start 2025-12-01 --end 2025-12-31 --output portfolio
     python pipeline/report_generator.py --city nyc --family data --start 2025-12-01 --end 2025-12-31 --output json
         """
     )
@@ -759,12 +1124,37 @@ Examples:
                         help='Job family')
     parser.add_argument('--start', required=True, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end', required=True, help='End date (YYYY-MM-DD)')
-    parser.add_argument('--output', choices=['json', 'summary'], default='summary',
-                        help='Output format')
+    parser.add_argument('--output', choices=['json', 'portfolio', 'summary'], default='summary',
+                        help='Output format: json (raw), portfolio (website-ready), summary (console)')
+    parser.add_argument('--save', type=str, default=None,
+                        help='Save output to file path (portfolio format only)')
 
     args = parser.parse_args()
 
     generator = ReportGenerator()
+
+    if args.output == 'portfolio':
+        data = generator.generate_portfolio_report(
+            city_code=args.city,
+            job_family=args.family,
+            start_date=args.start,
+            end_date=args.end,
+        )
+        output_json = json.dumps(data, indent=2)
+
+        if args.save:
+            with open(args.save, 'w', encoding='utf-8') as f:
+                f.write(output_json)
+            print(f"[OK] Portfolio report saved to: {args.save}")
+            print(f"     Total jobs: {data['meta']['totalJobs']}")
+            print(f"     Unique employers: {data['meta']['uniqueEmployers']}")
+            print(f"     Period: {data['meta']['period']}")
+            print(f"\n     [NOTE] Narrative fields contain [PLACEHOLDER] markers.")
+            print(f"     Edit the JSON to replace placeholders with actual content.")
+        else:
+            print(output_json)
+        return
+
     data = generator.generate_report_data(
         city_code=args.city,
         job_family=args.family,

@@ -39,13 +39,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def find_missing_enriched_jobs(hours_back: int = None, limit: int = None) -> List[Dict]:
+def find_missing_enriched_jobs(hours_back: int = None, limit: int = None, source: str = None) -> List[Dict]:
     """
     Find all raw_jobs that don't have a corresponding enriched_job.
 
     Args:
         hours_back: Only look at raw_jobs from last N hours (None = all time)
         limit: Maximum number of jobs to return
+        source: Filter by source (e.g., 'custom', 'greenhouse')
 
     Returns:
         List of raw_job records that need processing
@@ -89,11 +90,17 @@ def find_missing_enriched_jobs(hours_back: int = None, limit: int = None) -> Lis
         cutoff_str = cutoff.isoformat()
         logger.info(f"  Filtering to jobs scraped after {cutoff_str}")
 
+    if source:
+        logger.info(f"  Filtering to source: {source}")
+
     while True:
         query = supabase.table('raw_jobs').select('*').range(offset, offset + page_size - 1)
 
         if hours_back:
             query = query.gte('scraped_at', cutoff_str)
+
+        if source:
+            query = query.eq('source', source)
 
         raw_response = query.execute()
 
@@ -304,7 +311,8 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
 def backfill_missing_enriched(
     limit: int = None,
     dry_run: bool = False,
-    hours_back: int = None
+    hours_back: int = None,
+    source: str = None
 ) -> Dict:
     """
     Main backfill function.
@@ -313,6 +321,7 @@ def backfill_missing_enriched(
         limit: Maximum number of jobs to process
         dry_run: If True, only show what would be done
         hours_back: Only process jobs from last N hours
+        source: Filter by source (e.g., 'custom', 'greenhouse')
 
     Returns:
         Statistics about the backfill operation
@@ -324,10 +333,11 @@ def backfill_missing_enriched(
     logger.info(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
     logger.info(f"Limit: {limit or 'None (process all)'}")
     logger.info(f"Time window: {f'Last {hours_back} hours' if hours_back else 'All time'}")
+    logger.info(f"Source filter: {source or 'All sources'}")
     logger.info("="*80 + "\n")
 
     # Find missing jobs
-    missing_jobs = find_missing_enriched_jobs(hours_back=hours_back, limit=limit)
+    missing_jobs = find_missing_enriched_jobs(hours_back=hours_back, limit=limit, source=source)
 
     if not missing_jobs:
         logger.info("No missing jobs found. Exiting.")

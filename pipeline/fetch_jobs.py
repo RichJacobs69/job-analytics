@@ -2140,6 +2140,334 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
     return stats
 
 
+async def process_custom_incremental(employers: Optional[List[str]] = None) -> Dict:
+    """Process custom config jobs incrementally (Google XML + Playwright scrapers)
+
+    Phase 1: Google XML only (no Playwright needed)
+    Phase 2+: Add Apple, Netflix, JPMorgan etc. with Playwright
+
+    Args:
+        employers: Optional list of employer keys to process (e.g., ['google', 'apple']).
+                   If None, processes all enabled employers from config.
+
+    Returns:
+        Dict with processing statistics
+    """
+    from scrapers.custom.google_rss_fetcher import fetch_google_rss_jobs, GoogleJob
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
+    from pipeline.classifier import classify_job
+    from pipeline.agency_detection import is_agency_job, validate_agency_classification
+    from pipeline.unified_job_ingester import DataSource
+    from datetime import date
+    import json
+    import time
+    import yaml
+    from pathlib import Path
+
+    start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("="*80)
+    logger.info("CUSTOM CONFIG INCREMENTAL PROCESSING")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info("="*80)
+
+    # Time tracking
+    pipeline_start_time = time.time()
+
+    # Statistics tracking
+    stats = {
+        'employers_processed': 0,
+        'employers_with_jobs': 0,
+        'total_jobs_fetched': 0,
+        'total_jobs_kept': 0,
+        'total_filtered_by_title': 0,
+        'total_filtered_by_location': 0,
+        'jobs_written_raw': 0,
+        'jobs_duplicate': 0,
+        'jobs_classified': 0,
+        'jobs_agency_filtered': 0,
+        'jobs_written_enriched': 0,
+        'cost_saved_filtering': 0.0,
+        'cost_classification': 0.0,
+        'errors': []
+    }
+
+    # Load employer config
+    config_path = Path(__file__).parent.parent / 'config' / 'custom' / 'employers.yaml'
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        all_employers = config.get('employers', {})
+    except Exception as e:
+        logger.error(f"Failed to load custom config from {config_path}: {e}")
+        stats['errors'].append(f"Config load failed: {e}")
+        return stats
+
+    # Filter to enabled employers
+    enabled_employers = {
+        key: data for key, data in all_employers.items()
+        if data.get('enabled', False) and not key.startswith('_')
+    }
+
+    # Filter to specified employers if provided
+    if employers:
+        enabled_employers = {
+            key: data for key, data in enabled_employers.items()
+            if key in employers
+        }
+
+    if not enabled_employers:
+        logger.warning("No enabled employers to process")
+        return stats
+
+    logger.info(f"Processing {len(enabled_employers)} custom config employers...")
+    for key, data in enabled_employers.items():
+        logger.info(f"  - {data.get('name', key)} ({data.get('type', 'unknown')})")
+
+    # Cost per classification
+    cost_per_classification = 0.00388
+
+    # Process each employer
+    for employer_key, employer_data in enabled_employers.items():
+        employer_name = employer_data.get('name', employer_key)
+        employer_type = employer_data.get('type', 'unknown')
+
+        logger.info(f"\n{'='*80}")
+        logger.info(f"EMPLOYER: {employer_name.upper()} ({employer_type})")
+        logger.info(f"{'='*80}")
+
+        stats['employers_processed'] += 1
+
+        # Handle different source types
+        if employer_type == 'rss':
+            # Phase 1: RSS-based sources (Google)
+            if employer_key == 'google':
+                jobs, fetch_stats = fetch_google_rss_jobs(
+                    filter_titles=True,
+                    filter_locations=True
+                )
+                # Convert GoogleJob to dict for processing
+                jobs_to_process = []
+                for job in jobs:
+                    jobs_to_process.append({
+                        'id': job.id,
+                        'title': job.title,
+                        'company': job.company,
+                        'location': job.location,
+                        'description': job.description,
+                        'url': job.url,
+                        'apply_url': job.apply_url,
+                        'salary_min': job.salary_min,
+                        'salary_max': job.salary_max,
+                        'salary_currency': job.salary_currency,
+                    })
+
+                stats['total_jobs_fetched'] += fetch_stats['total_in_feed']
+                stats['total_filtered_by_title'] += fetch_stats['filtered_by_title']
+                stats['total_filtered_by_location'] += fetch_stats['filtered_by_location']
+                stats['total_jobs_kept'] += fetch_stats['jobs_kept']
+
+                filtered_count = fetch_stats['filtered_by_title'] + fetch_stats['filtered_by_location']
+                stats['cost_saved_filtering'] += filtered_count * cost_per_classification
+            else:
+                logger.warning(f"Unknown RSS employer: {employer_key}")
+                continue
+        elif employer_type == 'playwright':
+            # Phase 2+: Playwright-based scrapers (not yet implemented)
+            logger.info(f"  Playwright scraper not yet implemented for {employer_name}")
+            continue
+        else:
+            logger.warning(f"Unknown employer type: {employer_type}")
+            continue
+
+        logger.info(f"Fetch Summary:")
+        logger.info(f"  - Jobs in feed: {fetch_stats.get('total_in_feed', 0)}")
+        logger.info(f"  - Filtered (title): {fetch_stats.get('filtered_by_title', 0)}")
+        logger.info(f"  - Filtered (location): {fetch_stats.get('filtered_by_location', 0)}")
+        logger.info(f"  - Jobs to process: {len(jobs_to_process)}")
+
+        if not jobs_to_process:
+            logger.info(f"  No jobs to process for {employer_name}")
+            continue
+
+        stats['employers_with_jobs'] += 1
+        logger.info(f"{'-'*80}")
+
+        # Process each job
+        employer_jobs_written = 0
+        employer_jobs_duplicate = 0
+        employer_jobs_classified = 0
+        employer_jobs_enriched = 0
+        employer_agencies_blocked = 0
+
+        for i, job in enumerate(jobs_to_process, 1):
+            try:
+                # Step 1: Write to raw_jobs using UPSERT
+                upsert_result = insert_raw_job_upsert(
+                    source='custom',
+                    posting_url=job['url'],
+                    title=job['title'],
+                    company=job['company'],
+                    raw_text=job['description'],
+                    city_code='unk',
+                    source_job_id=job['id'],
+                    metadata={
+                        'employer_key': employer_key,
+                        'employer_type': employer_type,
+                        'location': job['location'],
+                        'salary_min': job.get('salary_min'),
+                        'salary_max': job.get('salary_max'),
+                        'salary_currency': job.get('salary_currency'),
+                    }
+                )
+
+                raw_job_id = upsert_result['id']
+                was_duplicate = upsert_result['was_duplicate']
+
+                if was_duplicate:
+                    employer_jobs_duplicate += 1
+                    continue  # Skip classification for duplicates
+                else:
+                    employer_jobs_written += 1
+
+                # Step 2: Ensure employer metadata exists
+                ensure_employer_metadata(
+                    employer_name=job['company'].lower().replace(' ', '_'),
+                    display_name=job['company']
+                )
+
+                # Step 3: Classify the job
+                structured_input = {
+                    'title': job['title'],
+                    'company': job['company'],
+                    'location': job['location'],
+                    'salary_min': job.get('salary_min'),
+                    'salary_max': job.get('salary_max'),
+                }
+                classification = classify_job(
+                    job_text=job['description'],
+                    structured_input=structured_input
+                )
+
+                employer_jobs_classified += 1
+                stats['cost_classification'] += cost_per_classification
+
+                # Extract nested classification fields
+                role = classification.get('role', {})
+                location = classification.get('location', {})
+                compensation = classification.get('compensation', {})
+                employer_info = classification.get('employer', {})
+
+                # Step 4: Agency detection
+                is_agency = is_agency_job(job['company'])
+                validated_agency = validate_agency_classification(
+                    employer_info.get('is_agency', False),
+                    is_agency,
+                    job['company']
+                )
+
+                if validated_agency:
+                    employer_agencies_blocked += 1
+                    logger.debug(f"  Agency blocked: {job['title']}")
+                    continue
+
+                # Step 5: Get working arrangement fallback
+                wa_default = get_working_arrangement_fallback(job['company'].lower().replace(' ', '_'))
+                working_arrangement = location.get('working_arrangement') or wa_default
+
+                # Step 6: Write to enriched_jobs
+                insert_enriched_job(
+                    raw_job_id=raw_job_id,
+                    employer_name=job['company'].lower().replace(' ', '_'),
+                    title_display=job['title'],
+                    data_source='custom',
+                    description_source='custom',
+                    locations=classification.get('locations', []),
+                    job_family=role.get('job_family') or 'out_of_scope',
+                    job_subfamily=role.get('job_subfamily') or 'other',
+                    seniority_level=role.get('seniority') or 'mid',
+                    working_arrangement=working_arrangement,
+                    is_agency=validated_agency,
+                    is_engineering_or_product=role.get('is_engineering_or_product', False),
+                    summary=classification.get('summary'),
+                    salary_min=compensation.get('base_salary_range', {}).get('min') or job.get('salary_min'),
+                    salary_max=compensation.get('base_salary_range', {}).get('max') or job.get('salary_max'),
+                    salary_currency=compensation.get('currency') or job.get('salary_currency'),
+                    fetched_date=date.today(),
+                    source_metadata=json.dumps({
+                        'employer_key': employer_key,
+                        'employer_type': employer_type,
+                    })
+                )
+
+                employer_jobs_enriched += 1
+
+                if employer_jobs_enriched % 10 == 0:
+                    logger.info(f"  Progress: {employer_jobs_enriched} enriched / {i} processed")
+
+            except Exception as e:
+                logger.warning(f"  Error processing job {job.get('title', 'unknown')}: {e}")
+                stats['errors'].append(f"{employer_name}: {str(e)[:100]}")
+                continue
+
+        # Update stats
+        stats['jobs_written_raw'] += employer_jobs_written
+        stats['jobs_duplicate'] += employer_jobs_duplicate
+        stats['jobs_classified'] += employer_jobs_classified
+        stats['jobs_agency_filtered'] += employer_agencies_blocked
+        stats['jobs_written_enriched'] += employer_jobs_enriched
+
+        logger.info(f"\n{employer_name} Summary:")
+        logger.info(f"  - New jobs written: {employer_jobs_written}")
+        logger.info(f"  - Duplicates skipped: {employer_jobs_duplicate}")
+        logger.info(f"  - Jobs classified: {employer_jobs_classified}")
+        logger.info(f"  - Agencies blocked: {employer_agencies_blocked}")
+        logger.info(f"  - Jobs enriched: {employer_jobs_enriched}")
+
+    # Final summary
+    pipeline_duration = time.time() - pipeline_start_time
+
+    logger.info("\n" + "="*80)
+    logger.info("ENTERPRISE PIPELINE COMPLETE")
+    logger.info(f"Duration: {pipeline_duration:.1f}s")
+    logger.info("="*80)
+
+    logger.info(f"\nEmployers:")
+    logger.info(f"  - Processed: {stats['employers_processed']}")
+    logger.info(f"  - With jobs: {stats['employers_with_jobs']}")
+
+    logger.info(f"\nJob Fetching & Filtering:")
+    logger.info(f"  - Jobs fetched: {stats['total_jobs_fetched']}")
+    logger.info(f"  - Filtered (title): {stats['total_filtered_by_title']}")
+    logger.info(f"  - Filtered (location): {stats['total_filtered_by_location']}")
+    logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
+
+    logger.info(f"\nDatabase Writes:")
+    logger.info(f"  - New raw jobs: {stats['jobs_written_raw']}")
+    logger.info(f"  - Duplicates skipped: {stats['jobs_duplicate']}")
+    logger.info(f"  - Jobs classified: {stats['jobs_classified']}")
+    logger.info(f"  - Enriched jobs: {stats['jobs_written_enriched']}")
+    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
+
+    logger.info(f"\nCost Analysis:")
+    logger.info(f"  - Saved from filtering: ${stats['cost_saved_filtering']:.2f}")
+    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
+
+    if stats['errors']:
+        logger.info(f"\nErrors ({len(stats['errors'])}):")
+        for error in stats['errors'][:5]:
+            logger.info(f"  - {error}")
+        if len(stats['errors']) > 5:
+            logger.info(f"  ... and {len(stats['errors']) - 5} more")
+
+    logger.info("="*80)
+
+    return stats
+
+
 async def merge_jobs(
     adzuna_jobs: List,
     greenhouse_jobs: List,
@@ -2422,7 +2750,12 @@ Examples:
     parser.add_argument(
         '--sources',
         required=True,
-        help='Comma-separated sources: adzuna, greenhouse, lever, ashby (required). Example: --sources adzuna,greenhouse,ashby'
+        help='Comma-separated sources: adzuna, greenhouse, lever, ashby, workable, custom (required). Example: --sources adzuna,greenhouse,ashby,custom'
+    )
+
+    parser.add_argument(
+        '--employers',
+        help='Comma-separated list of custom config employer keys (applies to custom source). Example: --employers google,apple'
     )
 
     parser.add_argument(
@@ -2568,6 +2901,19 @@ Examples:
         workable_stats = await process_workable_incremental(workable_companies)
         total_stats['workable'] = workable_stats
 
+    # CUSTOM CONFIG PIPELINE: Google XML + Playwright scrapers (FAANG, banks, etc.)
+    if 'custom' in sources:
+        custom_employers = None
+        if args.employers:
+            custom_employers = [e.strip() for e in args.employers.split(',')]
+
+        logger.info("\n" + "="*80)
+        logger.info("STARTING CUSTOM CONFIG INCREMENTAL PIPELINE")
+        logger.info("="*80 + "\n")
+
+        custom_stats = await process_custom_incremental(custom_employers)
+        total_stats['custom'] = custom_stats
+
     # FINAL SUMMARY
     logger.info("\n" + "="*80)
     logger.info("MULTI-SOURCE PIPELINE COMPLETE")
@@ -2650,6 +2996,21 @@ Examples:
         logger.info(f"  Cost saved from filtering: ${total_stats['workable']['cost_saved_filtering']:.2f}")
         logger.info(f"  Cost of classification: ${total_stats['workable']['cost_classification']:.2f}")
 
+    if total_stats['custom']:
+        logger.info("\nCustom Config Pipeline:")
+        logger.info(f"  Employers processed: {total_stats['custom']['employers_processed']}")
+        logger.info(f"  Employers with jobs: {total_stats['custom']['employers_with_jobs']}")
+        logger.info(f"  Jobs fetched: {total_stats['custom']['total_jobs_fetched']}")
+        logger.info(f"  Filtered (title): {total_stats['custom']['total_filtered_by_title']}")
+        logger.info(f"  Filtered (location): {total_stats['custom']['total_filtered_by_location']}")
+        logger.info(f"  Jobs kept: {total_stats['custom']['total_jobs_kept']}")
+        logger.info(f"  New jobs (written to raw): {total_stats['custom']['jobs_written_raw']}")
+        logger.info(f"  Duplicates skipped: {total_stats['custom']['jobs_duplicate']}")
+        logger.info(f"  Jobs classified: {total_stats['custom']['jobs_classified']}")
+        logger.info(f"  Jobs written to enriched_jobs: {total_stats['custom']['jobs_written_enriched']}")
+        logger.info(f"  Cost saved from filtering: ${total_stats['custom']['cost_saved_filtering']:.2f}")
+        logger.info(f"  Cost of classification: ${total_stats['custom']['cost_classification']:.2f}")
+
     total_jobs = 0
     if total_stats['greenhouse']:
         total_jobs += total_stats['greenhouse']['jobs_written_enriched']
@@ -2661,6 +3022,8 @@ Examples:
         total_jobs += total_stats['ashby']['jobs_written_enriched']
     if total_stats['workable']:
         total_jobs += total_stats['workable']['jobs_written_enriched']
+    if total_stats['custom']:
+        total_jobs += total_stats['custom']['jobs_written_enriched']
 
     logger.info(f"\nTotal jobs processed: {total_jobs}")
     logger.info("="*80)

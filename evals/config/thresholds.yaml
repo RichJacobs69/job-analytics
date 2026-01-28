@@ -1,0 +1,31 @@
+# Evaluation Thresholds
+# These define pass/fail criteria for regression testing
+
+version: "1.0"
+created: "2026-01-08"
+
+# Classification accuracy thresholds (0.0 - 1.0)
+classification:
+  job_family: 0.95        # Critical - gates all downstream
+  job_subfamily: 0.88     # Complex taxonomy with edge cases
+  seniority: 0.80         # Often ambiguous without years stated
+  working_arrangement: 0.85
+  track: 0.85
+  position_type: 0.90     # Usually clear from posting
+
+# Employer classification
+employer:
+  industry: 0.85          # Subjective boundaries between categories
+
+# LLM-as-Judge quality scores (1.0 - 5.0 scale)
+quality:
+  summary_overall: 3.5    # Average quality score
+  summary_accuracy: 3.5
+  summary_specificity: 3.0
+  summary_completeness: 3.5
+  summary_conciseness: 4.0
+
+# Skills extraction (0.0 - 1.0)
+skills:
+  precision: 0.85         # % of extracted skills that are valid
+  recall: 0.70            # % of gold skills that were found
