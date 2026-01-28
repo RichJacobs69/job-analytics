@@ -2831,7 +2831,8 @@ Examples:
         'adzuna': None,
         'lever': None,
         'ashby': None,
-        'workable': None
+        'workable': None,
+        'custom': None
     }
 
     # GREENHOUSE PIPELINE: Incremental processing (scrape → write raw → classify → write enriched)
