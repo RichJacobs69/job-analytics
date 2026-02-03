@@ -635,6 +635,36 @@
     },
     "Zeta": {
       "slug": "zeta"
+    },
+    "Ninja Van": {
+      "slug": "ninjavan",
+      "instance": "global",
+      "notes": "Singapore logistics unicorn"
+    },
+    "PatSnap": {
+      "slug": "patsnap",
+      "instance": "global",
+      "notes": "Singapore AI/IP company"
+    },
+    "Nium": {
+      "slug": "nium",
+      "instance": "global",
+      "notes": "Singapore fintech"
+    },
+    "GoTo Group": {
+      "slug": "GoToGroup",
+      "instance": "global",
+      "notes": "Gojek + Tokopedia, Indonesia/Singapore"
+    },
+    "CoinGecko": {
+      "slug": "coingecko",
+      "instance": "global",
+      "notes": "Crypto data, Malaysia/Singapore"
+    },
+    "CoinMarketCap": {
+      "slug": "coinmarketcap",
+      "instance": "global",
+      "notes": "Crypto data"
     }
   },
   "_meta": {
@@ -643,8 +673,8 @@
       "cli",
       "migrated_from_company_ats_mapping"
     ],
-    "total_companies": 169,
-    "notes": "Added 12 companies migrated from company_ats_mapping.json. Removed Plaid (moved to Ashby).",
-    "last_updated": "2026-01-07"
+    "total_companies": 175,
+    "notes": "Added 6 Singapore/APAC companies: Ninja Van, PatSnap, Nium, GoTo Group, CoinGecko, CoinMarketCap",
+    "last_updated": "2026-02-03"
   }
 }
