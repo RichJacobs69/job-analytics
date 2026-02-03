@@ -353,6 +353,46 @@
     },
     "Welcome": {
       "slug": "welcome"
+    },
+    "Activate Interactive": {
+      "slug": "activate-interactive-pte-ltd",
+      "notes": "Singapore"
+    },
+    "Cornspring": {
+      "slug": "cornspring",
+      "notes": "Singapore"
+    },
+    "Fifty Five": {
+      "slug": "fifty-five",
+      "notes": "Singapore"
+    },
+    "PeopleCert": {
+      "slug": "peoplecert",
+      "notes": "Singapore"
+    },
+    "Royal Ocean Marine": {
+      "slug": "royal-ocean-marine",
+      "notes": "Singapore"
+    },
+    "Tiger Analytics": {
+      "slug": "tiger-analytics",
+      "notes": "Singapore"
+    },
+    "Tyme": {
+      "slug": "tyme",
+      "notes": "Singapore fintech"
+    },
+    "Unison Consulting": {
+      "slug": "unison-consulting-pte-ltd",
+      "notes": "Singapore"
+    },
+    "WeLoveSuperMom": {
+      "slug": "welovesupermom-pte-ltd",
+      "notes": "Singapore"
+    },
+    "Funding Societies": {
+      "slug": "fundingsocieties",
+      "notes": "Singapore fintech"
     }
   },
   "_meta": {
@@ -361,8 +401,8 @@
       "manual_testing",
       "google_cse"
     ],
-    "total_companies": 118,
-    "notes": "5 tested + 49 from Google CSE discovery. Unvalidated due to rate limits - pipeline will handle 404s gracefully.",
-    "last_updated": "2026-01-07"
+    "total_companies": 128,
+    "notes": "Added 10 Singapore companies: Activate Interactive, Cornspring, Fifty Five, PeopleCert, Royal Ocean Marine, Tiger Analytics, Tyme, Unison Consulting, WeLoveSuperMom, Funding Societies",
+    "last_updated": "2026-02-03"
   }
 }
