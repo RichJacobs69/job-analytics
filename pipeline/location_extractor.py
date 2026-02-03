@@ -344,6 +344,208 @@ COUNTRY_NAME_TO_ISO = {
 }
 
 
+# =============================================================================
+# Country Restriction Patterns (for job descriptions)
+# =============================================================================
+# These patterns detect country restrictions buried in job description text.
+# Used when location field just says "Remote" but description specifies a country.
+
+COUNTRY_RESTRICTION_PATTERNS = {
+    'US': [
+        # "This role is remote and based in the United States"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+(?:the\s+)?(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "Remote - US only", "US only", "USA only"
+        r'(?:remote[^.]*?)?\b(?:u\.?s\.?a?\.?|united\s+states)\s+only\b',
+        # "candidates must be based/located in the US"
+        r'(?:candidates?|applicants?|you)\s+must\s+(?:be\s+)?(?:based|located|reside|residing|live|living)\s+in\s+(?:the\s+)?(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "eligible to work in the United States"
+        r'(?:eligible|authorized|legally\s+authorized)\s+to\s+work\s+in\s+(?:the\s+)?(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "open to US candidates", "available to US-based"
+        r'(?:open|available)\s+(?:to|for)\s+(?:candidates?\s+)?(?:in\s+)?(?:the\s+)?(?:u\.?s\.?|united\s+states)',
+        # "Remote (US)" or "Remote, US"
+        r'\bremote\s*[\(\[,]\s*(?:u\.?s\.?a?\.?|united\s+states)\s*[\)\]]?',
+        # "within the US", "within the United States"
+        r'\bwithin\s+(?:the\s+)?(?:u\.?s\.?a?\.?|united\s+states)\b',
+        # "United States - Remote" (country first format, common in job headers)
+        r'\bunited\s+states\s*[-\u2013\u2014]\s*remote\b',
+        # "US - Remote" or "USA - Remote"
+        r'\bu\.?s\.?a?\.?\s*[-\u2013\u2014]\s*remote\b',
+        # "Remote in United States" or "Remote in US" (Stripe format)
+        r'\bremote\s+(?:in|within)\s+(?:the\s+)?(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "live and work anywhere in the United States" (Upstart format)
+        r'\blive\s+and\s+work\s+(?:anywhere\s+)?in\s+(?:the\s+)?(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "USA | Remote" or "United States | Remote" (Grafana Labs pipe format)
+        r'\b(?:u\.?s\.?a?\.?|united\s+states)\s*\|\s*remote\b',
+        # "United States (Remote)" or "USA (Remote)" (parentheses suffix)
+        r'\b(?:united\s+states|u\.?s\.?a?\.?)\s*\(remote\)',
+        # "Remote - United States" (hyphen with Remote first - Reddit format)
+        r'\bremote\s*[-\u2013\u2014]\s*(?:united\s+states|u\.?s\.?a?\.?)\b',
+        # "U.S. Remote" or "US Remote" (direct space, no separator - Webflow)
+        r'\bu\.?s\.?\s+remote\b',
+        # "For US applicants" or "For United States applicants" (Coinbase format)
+        r'\bfor\s+(?:u\.?s\.?|united\s+states)\s+(?:based\s+)?(?:applicants?|candidates?|employees?)\b',
+        # "For applicants in the US"
+        r'\bfor\s+(?:applicants?|candidates?|employees?)\s+(?:based\s+)?in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)\b',
+    ],
+    'CA': [
+        # "based in Canada"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+canada\b',
+        # "Canada only"
+        r'(?:remote[^.]*?)?\bcanada\s+only\b',
+        # "must be based/located in Canada"
+        r'(?:candidates?|applicants?|you)\s+must\s+(?:be\s+)?(?:based|located|reside|residing)\s+in\s+canada\b',
+        # "Remote (Canada)" or "Remote, Canada"
+        r'\bremote\s*[\(\[,]\s*canada\s*[\)\]]?',
+        # "within Canada"
+        r'\bwithin\s+canada\b',
+        # "Canada - Remote" (country first format)
+        r'\bcanada\s*[-\u2013\u2014]\s*remote\b',
+        # "Remote in Canada"
+        r'\bremote\s+(?:in|within)\s+canada\b',
+        # "Canada | Remote" (Grafana Labs pipe format)
+        r'\bcanada\s*\|\s*remote\b',
+        # "Canada (Remote)" (parentheses suffix)
+        r'\bcanada\s*\(remote\)',
+        # "Remote - Canada" (hyphen with Remote first)
+        r'\bremote\s*[-\u2013\u2014]\s*canada\b',
+        # "CA Remote" or "Canada Remote" (direct space, no separator)
+        r'\bcanada\s+remote\b',
+    ],
+    'GB': [
+        # "based in the UK/United Kingdom"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+(?:the\s+)?(?:uk|united\s+kingdom|britain|england)\b',
+        # "UK only"
+        r'(?:remote[^.]*?)?\b(?:uk|united\s+kingdom)\s+only\b',
+        # "must be based in the UK"
+        r'(?:candidates?|applicants?|you)\s+must\s+(?:be\s+)?(?:based|located|reside|residing)\s+in\s+(?:the\s+)?(?:uk|united\s+kingdom)\b',
+        # "Remote (UK)"
+        r'\bremote\s*[\(\[,]\s*(?:uk|united\s+kingdom)\s*[\)\]]?',
+        # "UK - Remote" or "United Kingdom - Remote"
+        r'\b(?:uk|united\s+kingdom)\s*[-\u2013\u2014]\s*remote\b',
+        # "Remote UK" (Affirm format - no separator)
+        r'\bremote\s+uk\b',
+        # "Remote - UK" (hyphen with Remote first)
+        r'\bremote\s*[-\u2013\u2014]\s*(?:uk|united\s+kingdom)\b',
+        # "UK | Remote" (pipe format)
+        r'\b(?:uk|united\s+kingdom)\s*\|\s*remote\b',
+        # "UK (Remote)" (parentheses suffix)
+        r'\b(?:uk|united\s+kingdom)\s*\(remote\)',
+    ],
+    'IN': [
+        # "based in India"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+india\b',
+        # "India only"
+        r'(?:remote[^.]*?)?\bindia\s+only\b',
+        # "must be based in India"
+        r'(?:candidates?|applicants?|you)\s+must\s+(?:be\s+)?(?:based|located|reside|residing)\s+in\s+india\b',
+        # "Remote (India)"
+        r'\bremote\s*[\(\[,]\s*india\s*[\)\]]?',
+        # "India - Remote"
+        r'\bindia\s*[-\u2013\u2014]\s*remote\b',
+    ],
+    'DE': [
+        # "based in Germany"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+germany\b',
+        # "Germany only"
+        r'(?:remote[^.]*?)?\bgermany\s+only\b',
+        # "must be based in Germany"
+        r'(?:candidates?|applicants?|you)\s+must\s+(?:be\s+)?(?:based|located|reside|residing)\s+in\s+germany\b',
+        # "Germany - Remote"
+        r'\bgermany\s*[-\u2013\u2014]\s*remote\b',
+    ],
+    'IE': [
+        # "based in Ireland"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+ireland\b',
+        # "Ireland only"
+        r'(?:remote[^.]*?)?\bireland\s+only\b',
+    ],
+    'AU': [
+        # "based in Australia"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+australia\b',
+        # "Australia only"
+        r'(?:remote[^.]*?)?\baustralia\s+only\b',
+        # "Australia - Remote" / "Remote - Australia"
+        r'\baustralia\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*australia\b',
+    ],
+    'SE': [
+        # "based in Sweden"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+sweden\b',
+        # "Sweden only"
+        r'(?:remote[^.]*?)?\bsweden\s+only\b',
+        # "Sweden - Remote" / "Remote - Sweden" (Reddit format)
+        r'\bsweden\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*sweden\b',
+        # "Remote (Sweden)"
+        r'\bremote\s*[\(\[,]\s*sweden\s*[\)\]]?',
+    ],
+    'NL': [
+        # "based in Netherlands/Holland"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+(?:the\s+)?(?:netherlands|holland)\b',
+        # "Netherlands only"
+        r'(?:remote[^.]*?)?\b(?:netherlands|holland)\s+only\b',
+        # "Netherlands - Remote" / "Remote - Netherlands"
+        r'\b(?:netherlands|holland)\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*(?:netherlands|holland)\b',
+    ],
+    'FR': [
+        # "based in France"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+france\b',
+        # "France only"
+        r'(?:remote[^.]*?)?\bfrance\s+only\b',
+        # "France - Remote" / "Remote - France"
+        r'\bfrance\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*france\b',
+    ],
+    'ES': [
+        # "based in Spain"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+spain\b',
+        # "Spain only"
+        r'(?:remote[^.]*?)?\bspain\s+only\b',
+        # "Spain - Remote" / "Remote - Spain"
+        r'\bspain\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*spain\b',
+    ],
+    'PL': [
+        # "based in Poland"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+poland\b',
+        # "Poland only"
+        r'(?:remote[^.]*?)?\bpoland\s+only\b',
+        # "Poland - Remote" / "Remote - Poland"
+        r'\bpoland\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*poland\b',
+    ],
+}
+
+
+def extract_country_restriction_from_description(description: str) -> Optional[str]:
+    """
+    Extract country restriction from job description text.
+
+    Searches for patterns like "This role is US-only" or "candidates must be
+    based in the United States" to determine if a remote job is country-scoped.
+
+    Args:
+        description: Job description text
+
+    Returns:
+        ISO country code if restriction found, None otherwise
+    """
+    if not description:
+        return None
+
+    description_lower = description.lower()
+
+    # Check patterns in priority order (US most common)
+    for country_code in ['US', 'CA', 'GB', 'IN', 'DE', 'IE', 'AU', 'SE', 'NL', 'FR', 'ES', 'PL']:
+        patterns = COUNTRY_RESTRICTION_PATTERNS.get(country_code, [])
+        for pattern in patterns:
+            if re.search(pattern, description_lower, re.IGNORECASE):
+                return country_code
+
+    return None
+
+
 def match_country_remote_pattern(text: str) -> Optional[Dict]:
     """
     Match patterns like "India - Remote", "Germany, Remote", "Remote - France".
@@ -493,6 +695,15 @@ def extract_locations(
     arrangement = check_working_arrangement_term(raw_location)
     if arrangement is not None:
         if arrangement:  # Remote type
+            # Check description for country restriction before returning
+            if description_text and arrangement.get("scope") == "global":
+                country_code = extract_country_restriction_from_description(description_text)
+                if country_code:
+                    return [{
+                        "type": "remote",
+                        "scope": "country",
+                        "country_code": country_code
+                    }]
             return [arrangement]
         else:  # Empty dict = arrangement term but not location (Hybrid, In-Office)
             return [{"type": "unknown"}]
@@ -577,6 +788,20 @@ def extract_locations(
     # If no locations found, return unknown
     if not locations:
         return [{"type": "unknown"}]
+
+    # Check description for country restrictions on global remote jobs
+    # This catches cases where location field is just "Remote" but description
+    # says "This role is US-only" or "candidates must be based in Canada"
+    if description_text:
+        for i, loc in enumerate(locations):
+            if loc.get("type") == "remote" and loc.get("scope") == "global":
+                country_code = extract_country_restriction_from_description(description_text)
+                if country_code:
+                    locations[i] = {
+                        "type": "remote",
+                        "scope": "country",
+                        "country_code": country_code
+                    }
 
     return locations
 

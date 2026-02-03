@@ -538,7 +538,10 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
 
                 # Extract locations from Greenhouse job.location field (Global Location Expansion Epic)
                 greenhouse_location = job.location if job.location and job.location != 'Unspecified' else None
-                extracted_locations = extract_locations(greenhouse_location) if greenhouse_location else [{"type": "unknown"}]
+                extracted_locations = extract_locations(
+                    greenhouse_location,
+                    description_text=job.description
+                ) if greenhouse_location else [{"type": "unknown"}]
 
                 # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
                 legacy_city_code = 'unk'
@@ -919,7 +922,11 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
 
             # Extract locations from Adzuna API location field (Global Location Expansion Epic)
             # This replaces the legacy city_code approach
-            extracted_locations = extract_locations(adzuna_location) if adzuna_location else [{"type": "unknown"}]
+            # Note: Adzuna descriptions are truncated (100-200 chars) so patterns may not match
+            extracted_locations = extract_locations(
+                adzuna_location,
+                description_text=description
+            ) if adzuna_location else [{"type": "unknown"}]
 
             # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
             # This will be removed once all queries use the locations JSONB column
@@ -1243,7 +1250,10 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                 # Extract locations from Lever job.location field (Global Location Expansion Epic)
                 # Note: job.location now contains allLocations joined with " / " (fixed in lever_fetcher.py)
                 lever_location = job.location if job.location else None
-                extracted_locations = extract_locations(lever_location) if lever_location else [{"type": "unknown"}]
+                extracted_locations = extract_locations(
+                    lever_location,
+                    description_text=job.description
+                ) if lever_location else [{"type": "unknown"}]
 
                 # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
                 legacy_city_code = 'unk'
@@ -1623,7 +1633,10 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
                 employer = classification.get('employer', {})
 
                 # Extract locations from Ashby job.location field
-                extracted_locations = extract_locations(ashby_location) if ashby_location else [{"type": "unknown"}]
+                extracted_locations = extract_locations(
+                    ashby_location,
+                    description_text=job.description
+                ) if ashby_location else [{"type": "unknown"}]
 
                 # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
                 legacy_city_code = 'unk'
@@ -2017,7 +2030,10 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
                 employer = classification.get('employer', {})
 
                 # Extract locations from Workable job.location field
-                extracted_locations = extract_locations(workable_location) if workable_location else [{"type": "unknown"}]
+                extracted_locations = extract_locations(
+                    workable_location,
+                    description_text=job.description
+                ) if workable_location else [{"type": "unknown"}]
 
                 # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
                 legacy_city_code = 'unk'

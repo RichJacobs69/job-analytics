@@ -550,6 +550,162 @@ def test_real_world_lever_locations():
 
 
 # =============================================================================
+# Description-based Country Restriction Tests
+# =============================================================================
+
+def test_description_us_only_based_in():
+    """Test: Location 'Remote' + description 'based in the United States'"""
+    result = extract_locations(
+        "Remote",
+        description_text="This role is remote and based in the United States."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "US"
+
+
+def test_description_us_only_eligible():
+    """Test: Location 'Remote' + description 'eligible to work in the US'"""
+    result = extract_locations(
+        "Remote",
+        description_text="You must be eligible to work in the U.S. for this position."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "US"
+
+
+def test_description_us_only_must_be_located():
+    """Test: Location 'Remote' + description 'must be located in the US'"""
+    result = extract_locations(
+        "Remote",
+        description_text="Candidates must be located in the United States."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "US"
+
+
+def test_description_canada_based():
+    """Test: Location 'Remote' + description 'based in Canada'"""
+    result = extract_locations(
+        "Remote",
+        description_text="This role is remote and based in Canada."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "CA"
+
+
+def test_description_canada_only():
+    """Test: Location 'Remote' + description 'Canada only'"""
+    result = extract_locations(
+        "Remote",
+        description_text="This is a remote position, Canada only."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "CA"
+
+
+def test_description_uk_based():
+    """Test: Location 'Remote' + description 'based in the UK'"""
+    result = extract_locations(
+        "Remote",
+        description_text="This position is remote and based in the UK."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "GB"
+
+
+def test_description_india_based():
+    """Test: Location 'Remote' + description 'based in India'"""
+    result = extract_locations(
+        "Remote",
+        description_text="This role is remote and based in India."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "IN"
+
+
+def test_description_work_from_anywhere_stays_global():
+    """Test: Location 'Remote' + description 'work from anywhere' -> stays global"""
+    result = extract_locations(
+        "Remote",
+        description_text="Work from anywhere in the world! We're a fully distributed team."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "global"
+
+
+def test_description_no_restriction_stays_global():
+    """Test: Location 'Remote' + description without country mention -> stays global"""
+    result = extract_locations(
+        "Remote",
+        description_text="Join our engineering team! We build amazing products."
+    )
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "global"
+
+
+def test_description_empty_stays_global():
+    """Test: Location 'Remote' + empty description -> stays global"""
+    result = extract_locations("Remote", description_text="")
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "global"
+
+
+def test_description_none_stays_global():
+    """Test: Location 'Remote' + None description -> stays global"""
+    result = extract_locations("Remote", description_text=None)
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "global"
+
+
+def test_description_city_plus_remote_still_infers():
+    """Test: Location 'NYC or Remote' with US description -> Remote is US-scoped"""
+    # This tests that city inference works AND description doesn't override it incorrectly
+    result = extract_locations(
+        "NYC or Remote",
+        description_text="Join us in New York or work remotely within the US."
+    )
+    assert len(result) == 2
+    # First should be NYC city
+    assert result[0]["type"] == "city"
+    assert result[0]["city"] == "new_york"
+    # Second should be US-scoped remote (inferred from city)
+    assert result[1]["type"] == "remote"
+    assert result[1]["scope"] == "country"
+    assert result[1]["country_code"] == "US"
+
+
+def test_description_already_scoped_not_overridden():
+    """Test: Location 'Remote - US' is already scoped, description shouldn't change it"""
+    result = extract_locations(
+        "Remote - US",
+        description_text="This role is based in Canada."  # Conflicting info
+    )
+    # Should match the explicit "Remote - US" pattern, not description
+    assert len(result) == 1
+    assert result[0]["type"] == "remote"
+    assert result[0]["scope"] == "country"
+    assert result[0]["country_code"] == "US"
+
+
+# =============================================================================
 # Run tests
 # =============================================================================
 
