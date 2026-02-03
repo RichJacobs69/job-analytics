@@ -61,6 +61,11 @@ class ReportGenerator:
     All queries are codified here to ensure consistency across reports.
     """
 
+    # ATS sources with full job descriptions (reliable for working arrangement extraction)
+    # Adzuna is excluded because its 100-200 char truncated descriptions cause
+    # unreliable working arrangement classification (tends to default to "onsite")
+    ATS_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable']
+
     # City to country/region mapping for inclusive location filtering
     CITY_CONFIG = {
         'london': {'country_code': 'GB', 'region': 'EMEA'},
@@ -174,17 +179,20 @@ class ReportGenerator:
 
     def _build_location_filter(self, city: str) -> str:
         """
-        Build inclusive location filter for a city.
+        Build broad location filter for a city (refined client-side).
+
+        This filter is intentionally broad because Supabase's cs operator
+        doesn't support compound JSON matching. The _is_job_accessible()
+        method does precise filtering client-side.
 
         Includes:
         - Direct city match
         - Global remote jobs
-        - Country-scoped remote jobs
-        - Country-wide jobs
-        - Region jobs (for non-US cities)
+        - Country-scoped remote jobs (any country - filtered client-side)
+        - Country-wide jobs (any country - filtered client-side)
+        - Region jobs
         """
         config = self.CITY_CONFIG.get(city, {})
-        country_code = config.get('country_code', 'US')
         region = config.get('region')
 
         parts = [
@@ -199,6 +207,39 @@ class ReportGenerator:
 
         return ','.join(parts)
 
+    def _is_job_accessible(self, job: dict, city: str) -> bool:
+        """
+        Check if a job is accessible to candidates in the given city.
+
+        Performs precise filtering that Supabase's cs operator can't handle.
+        """
+        config = self.CITY_CONFIG.get(city, {})
+        country_code = config.get('country_code', 'US')
+        region = config.get('region')
+
+        locations = job.get('locations', [])
+        if not locations:
+            return False
+
+        for loc in locations:
+            # Direct city match
+            if loc.get('city') == city:
+                return True
+            # Global remote
+            if loc.get('scope') == 'global':
+                return True
+            # Country-scoped remote (must match country)
+            if loc.get('scope') == 'country' and loc.get('country_code') == country_code:
+                return True
+            # Country-wide (must match country)
+            if loc.get('type') == 'country' and loc.get('country_code') == country_code:
+                return True
+            # Region match
+            if region and loc.get('region') == region:
+                return True
+
+        return False
+
     def _fetch_all_jobs(self, city_code: str, job_family: str,
                         start_date: str, end_date: str) -> list:
         """
@@ -208,11 +249,12 @@ class ReportGenerator:
         to candidates in the specified city (local + remote + regional).
 
         Supabase has a 1000-row limit per query, so we paginate.
+        Server-side filter is broad; client-side _is_job_accessible() refines it.
         """
         # Convert legacy city_code to city name
         city = self.CITY_CODE_MAP.get(city_code, city_code)
 
-        # Build inclusive location filter
+        # Build broad location filter (refined client-side)
         location_filter = self._build_location_filter(city)
 
         all_jobs = []
@@ -239,7 +281,11 @@ class ReportGenerator:
             if len(batch.data) < 1000:
                 break
 
-        return all_jobs
+        # Client-side filter to exclude jobs from wrong countries
+        # (Supabase cs operator can't filter on compound JSON conditions)
+        accessible_jobs = [j for j in all_jobs if self._is_job_accessible(j, city)]
+
+        return accessible_jobs
 
     def _fetch_employer_metadata(self) -> dict:
         """
@@ -282,6 +328,16 @@ class ReportGenerator:
         agency_jobs = [j for j in jobs if j.get('is_agency') == True]
         direct_jobs = [j for j in jobs if not j.get('is_agency')]
         return direct_jobs, len(agency_jobs)
+
+    def _filter_ats_jobs(self, jobs: list) -> list:
+        """
+        Filter to only ATS sources with full job descriptions.
+
+        Excludes Adzuna because its truncated descriptions (100-200 chars)
+        cause unreliable working arrangement classification.
+        Used for working_arrangement analysis.
+        """
+        return [j for j in jobs if j.get('data_source') in self.ATS_SOURCES]
 
     def _calculate_distribution(self, jobs: list, field: str,
                                 labels: dict = None) -> dict:
@@ -694,9 +750,14 @@ class ReportGenerator:
         track_dist = self._calculate_distribution(
             direct_jobs, 'track', self.TRACK_LABELS
         )
+        # Working arrangement uses only ATS sources (Adzuna excluded due to truncated descriptions)
+        ats_jobs = self._filter_ats_jobs(direct_jobs)
         arrangement_dist = self._calculate_distribution(
-            direct_jobs, 'working_arrangement', self.ARRANGEMENT_LABELS
+            ats_jobs, 'working_arrangement', self.ARRANGEMENT_LABELS
         )
+        # Add ATS job count for context
+        arrangement_dist['ats_job_count'] = len(ats_jobs)
+        arrangement_dist['total_job_count'] = len(direct_jobs)
         skills_metrics = self._calculate_skills_metrics(direct_jobs)
         metadata_metrics = self._calculate_metadata_enriched_metrics(direct_jobs)
         compensation_metrics = self._calculate_compensation_metrics(direct_jobs, city_code)
@@ -831,8 +892,135 @@ class ReportGenerator:
         else:
             return 'Very flexible market'
 
+    def _calculate_comparison(self, current_dist: list, previous_dist: list,
+                              previous_period_label: str, min_change: float = 1.0) -> dict:
+        """
+        Calculate MoM comparison between two distributions.
+
+        Args:
+            current_dist: Current period distribution list (from _calculate_distribution)
+            previous_dist: Previous period distribution list
+            previous_period_label: Label for previous period (e.g., "November 2025")
+            min_change: Minimum change in percentage points to be considered significant
+
+        Returns:
+            Dict with previousPeriod, biggestGainer, biggestDecline, newEntries
+        """
+        if not previous_dist:
+            return None
+
+        # Build lookup for previous period by code
+        prev_lookup = {item['code']: item['percentage'] for item in previous_dist}
+
+        # Calculate changes for each current item
+        changes = []
+        new_entries = []
+
+        for item in current_dist:
+            code = item['code']
+            curr_pct = item['percentage']
+
+            if code in prev_lookup:
+                prev_pct = prev_lookup[code]
+                change = round(curr_pct - prev_pct, 1)
+                changes.append({
+                    'label': item['label'],
+                    'code': code,
+                    'change': change,
+                    'previousValue': prev_pct
+                })
+            else:
+                # New entry this period
+                new_entries.append(item['label'])
+
+        # Find biggest movers (only significant changes)
+        significant = [c for c in changes if abs(c['change']) >= min_change]
+        sorted_changes = sorted(significant, key=lambda x: x['change'], reverse=True)
+
+        biggest_gainer = None
+        biggest_decline = None
+
+        if sorted_changes:
+            # Biggest gainer is first (highest positive change)
+            if sorted_changes[0]['change'] > 0:
+                biggest_gainer = {
+                    'label': sorted_changes[0]['label'],
+                    'change': sorted_changes[0]['change']
+                }
+            # Biggest decline is last (lowest negative change)
+            if sorted_changes[-1]['change'] < 0:
+                biggest_decline = {
+                    'label': sorted_changes[-1]['label'],
+                    'change': sorted_changes[-1]['change']
+                }
+
+        return {
+            'previousPeriod': previous_period_label,
+            'biggestGainer': biggest_gainer,
+            'biggestDecline': biggest_decline,
+            'newEntries': new_entries if new_entries else None
+        }
+
+    def _calculate_employer_comparison(self, current_employers: list, previous_employers: list,
+                                       previous_period_label: str) -> dict:
+        """
+        Calculate MoM comparison for top employers.
+
+        Uses employer names (title case) for matching.
+        """
+        if not previous_employers:
+            return None
+
+        # Build lookup by name
+        prev_lookup = {e['name'].lower(): e['percentage'] for e in previous_employers}
+
+        changes = []
+        new_entries = []
+
+        for emp in current_employers:
+            name_lower = emp['name'].lower()
+            curr_pct = emp['percentage']
+
+            if name_lower in prev_lookup:
+                prev_pct = prev_lookup[name_lower]
+                change = round(curr_pct - prev_pct, 1)
+                changes.append({
+                    'label': emp['name'].title(),
+                    'change': change
+                })
+            else:
+                new_entries.append(emp['name'].title())
+
+        # Find biggest movers (min 0.5pp change for employers since values are smaller)
+        significant = [c for c in changes if abs(c['change']) >= 0.5]
+        sorted_changes = sorted(significant, key=lambda x: x['change'], reverse=True)
+
+        biggest_gainer = None
+        biggest_decline = None
+
+        if sorted_changes:
+            if sorted_changes[0]['change'] > 0:
+                biggest_gainer = {
+                    'label': sorted_changes[0]['label'],
+                    'change': sorted_changes[0]['change']
+                }
+            if sorted_changes[-1]['change'] < 0:
+                biggest_decline = {
+                    'label': sorted_changes[-1]['label'],
+                    'change': sorted_changes[-1]['change']
+                }
+
+        return {
+            'previousPeriod': previous_period_label,
+            'biggestGainer': biggest_gainer,
+            'biggestDecline': biggest_decline,
+            'newEntries': new_entries[:3] if new_entries else None  # Limit to top 3 new
+        }
+
     def generate_portfolio_report(self, city_code: str, job_family: str,
-                                   start_date: str, end_date: str) -> dict:
+                                   start_date: str, end_date: str,
+                                   compare_start: str = None,
+                                   compare_end: str = None) -> dict:
         """
         Generate report data in portfolio-site format.
 
@@ -846,12 +1034,21 @@ class ReportGenerator:
             job_family: Job family (data, product, delivery)
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
+            compare_start: Optional comparison period start date (YYYY-MM-DD)
+            compare_end: Optional comparison period end date (YYYY-MM-DD)
 
         Returns:
             Dict in portfolio-site JSON format.
         """
-        # Get raw data
+        # Get raw data for current period
         raw = self.generate_report_data(city_code, job_family, start_date, end_date)
+
+        # Get comparison period data if requested
+        compare_raw = None
+        compare_period_label = None
+        if compare_start and compare_end:
+            compare_raw = self.generate_report_data(city_code, job_family, compare_start, compare_end)
+            compare_period_label = self._format_period_label(compare_start, compare_end)
 
         # Helper to convert distribution to simple {label, value} format
         def to_chart_data(distribution: list, top_n: int = None) -> list:
@@ -960,7 +1157,12 @@ class ReportGenerator:
             'industryDistribution': {
                 'coverage': f"{raw['metadata_enrichment']['industry']['coverage']}% of roles with industry data",
                 'data': to_chart_data(raw['metadata_enrichment']['industry']['distribution'], 10),
-                'interpretation': '[PLACEHOLDER] Industry distribution interpretation.'
+                'interpretation': '[PLACEHOLDER] Industry distribution interpretation.',
+                'comparison': self._calculate_comparison(
+                    raw['metadata_enrichment']['industry']['distribution'],
+                    compare_raw['metadata_enrichment']['industry']['distribution'] if compare_raw else None,
+                    compare_period_label
+                ) if compare_raw else None
             },
             'companyMaturity': {
                 'coverage': f"{raw['metadata_enrichment']['maturity']['coverage']}% of roles with company age data",
@@ -979,26 +1181,42 @@ class ReportGenerator:
             },
             'topEmployers': {
                 'data': to_employer_chart_data(raw['employers']['top_employers']),
-                'interpretation': '[PLACEHOLDER] Top employers interpretation.'
+                'interpretation': '[PLACEHOLDER] Top employers interpretation.',
+                'comparison': self._calculate_employer_comparison(
+                    raw['employers']['top_employers'],
+                    compare_raw['employers']['top_employers'] if compare_raw else None,
+                    compare_period_label
+                ) if compare_raw else None
             },
             'roleSpecialization': {
                 'data': to_chart_data(raw['subfamily']['distribution'], 8),
-                'interpretation': '[PLACEHOLDER] Role specialization interpretation.'
+                'interpretation': '[PLACEHOLDER] Role specialization interpretation.',
+                'comparison': self._calculate_comparison(
+                    raw['subfamily']['distribution'],
+                    compare_raw['subfamily']['distribution'] if compare_raw else None,
+                    compare_period_label
+                ) if compare_raw else None
             },
             'seniorityDistribution': {
                 'data': to_chart_data(raw['seniority']['distribution']),
                 'seniorToJuniorRatio': round(access['senior_to_junior_ratio']),
                 'entryAccessibilityRate': round(access['entry_accessibility_rate']),
-                'interpretation': '[PLACEHOLDER] Seniority distribution interpretation.'
+                'interpretation': '[PLACEHOLDER] Seniority distribution interpretation.',
+                'comparison': self._calculate_comparison(
+                    raw['seniority']['distribution'],
+                    compare_raw['seniority']['distribution'] if compare_raw else None,
+                    compare_period_label
+                ) if compare_raw else None
             },
             'icVsManagement': {
                 'data': to_chart_data(raw['track']['distribution']),
                 'interpretation': '[PLACEHOLDER] IC vs management interpretation.'
             },
             'workingArrangement': {
-                'coverage': f"{raw['working_arrangement']['coverage']}% of roles with known working arrangement",
+                'coverage': f"{raw['working_arrangement']['coverage']}% of ATS-sourced roles with known working arrangement",
                 'data': [d for d in to_chart_data(raw['working_arrangement']['distribution']) if d['label'] != 'Unknown'],
-                'interpretation': '[PLACEHOLDER] Working arrangement interpretation.'
+                'interpretation': '[PLACEHOLDER] Working arrangement interpretation.',
+                'note': f"Based on {raw['working_arrangement'].get('ats_job_count', 0)} roles from ATS sources (Greenhouse, Lever, Ashby, Workable). Adzuna excluded due to truncated descriptions."
             },
             'compensation': compensation,
             'skillsDemand': {
@@ -1087,7 +1305,7 @@ class ReportGenerator:
                     "Not a complete census of the market - some roles may not be captured",
                     f"Skills analysis based on {skills_raw['total_with_skills']:,} roles with skill data ({skills_raw['coverage']}% coverage)",
                     f"Salary data {'available due to pay transparency law' if comp_raw.get('available') else 'not included due to low disclosure rates'}",
-                    f"Working arrangement specified in {raw['working_arrangement']['coverage']}% of postings"
+                    f"Working arrangement based on {raw['working_arrangement'].get('ats_job_count', 0)} ATS-sourced roles (Adzuna excluded)"
                 ],
                 'dataQuality': [
                     {'label': 'Seniority coverage', 'value': f"{round(quality['seniority_coverage'])}%", 'description': 'Roles with seniority level classified'},
@@ -1116,6 +1334,9 @@ Examples:
     python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
     python pipeline/report_generator.py --city sfo --family data --start 2025-12-01 --end 2025-12-31 --output portfolio
     python pipeline/report_generator.py --city nyc --family data --start 2025-12-01 --end 2025-12-31 --output json
+
+    # With MoM comparison:
+    python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31 --compare-start 2025-11-01 --compare-end 2025-11-30 --output portfolio
         """
     )
     parser.add_argument('--city', required=True, choices=['lon', 'nyc', 'den', 'sfo', 'sgp'],
@@ -1128,6 +1349,10 @@ Examples:
                         help='Output format: json (raw), portfolio (website-ready), summary (console)')
     parser.add_argument('--save', type=str, default=None,
                         help='Save output to file path (portfolio format only)')
+    parser.add_argument('--compare-start', type=str, default=None,
+                        help='Comparison period start date (YYYY-MM-DD) for MoM analysis')
+    parser.add_argument('--compare-end', type=str, default=None,
+                        help='Comparison period end date (YYYY-MM-DD) for MoM analysis')
 
     args = parser.parse_args()
 
@@ -1139,6 +1364,8 @@ Examples:
             job_family=args.family,
             start_date=args.start,
             end_date=args.end,
+            compare_start=args.compare_start,
+            compare_end=args.compare_end,
         )
         output_json = json.dumps(data, indent=2)
 
