@@ -1436,6 +1436,39 @@
     },
     "WorldQuant": {
       "slug": "worldquant"
+    },
+    "OKX": {
+      "slug": "okx"
+    },
+    "Temus": {
+      "slug": "temus"
+    },
+    "HoYoverse": {
+      "slug": "hoyoverse"
+    },
+    "Rimes Technologies": {
+      "slug": "rimestechnologies"
+    },
+    "Feedzai": {
+      "slug": "feedzai"
+    },
+    "BitMEX": {
+      "slug": "bitmex"
+    },
+    "PALO IT": {
+      "slug": "paloit"
+    },
+    "AvePoint": {
+      "slug": "avepoint"
+    },
+    "DeVries": {
+      "slug": "devries"
+    },
+    "Workstream": {
+      "slug": "workstream"
+    },
+    "Shift Technology": {
+      "slug": "shifttechnology"
     }
   }
 }
