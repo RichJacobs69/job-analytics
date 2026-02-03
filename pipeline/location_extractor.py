@@ -382,10 +382,18 @@ COUNTRY_RESTRICTION_PATTERNS = {
         r'\bremote\s*[-\u2013\u2014]\s*(?:united\s+states|u\.?s\.?a?\.?)\b',
         # "U.S. Remote" or "US Remote" (direct space, no separator - Webflow)
         r'\bu\.?s\.?\s+remote\b',
+        # "U.S. Remote" followed by capital letter (title format like "U.S. RemoteApply")
+        r'\bu\.?s\.?\s+remote(?:[A-Z]|\b)',
+        # "USA - Remote" followed by capital letter (title format like "USA - RemoteApply")
+        r'\b(?:usa|united\s+states)\s*[-\u2013\u2014]\s*remote(?:[A-Z]|\b)',
         # "For US applicants" or "For United States applicants" (Coinbase format)
         r'\bfor\s+(?:u\.?s\.?|united\s+states)\s+(?:based\s+)?(?:applicants?|candidates?|employees?)\b',
         # "For applicants in the US"
         r'\bfor\s+(?:applicants?|candidates?|employees?)\s+(?:based\s+)?in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)\b',
+        # US state names with USA/Remote context (like "California, USA, Remote")
+        r'\b(?:california|texas|new\s+york|florida|washington|colorado|massachusetts|illinois|georgia|arizona|virginia|north\s+carolina|pennsylvania|ohio|michigan|tennessee)[,\s]+(?:usa|u\.?s\.?)[,\s]+remote\b',
+        # City/state with (Remote) - like "Washington, D.C. (Remote)"
+        r'\b(?:washington,?\s+d\.?c\.?|new\s+york\s+city|san\s+francisco|los\s+angeles|boston|chicago|austin|seattle|denver)\s*\(remote\)',
     ],
     'CA': [
         # "based in Canada"
@@ -410,6 +418,11 @@ COUNTRY_RESTRICTION_PATTERNS = {
         r'\bremote\s*[-\u2013\u2014]\s*canada\b',
         # "CA Remote" or "Canada Remote" (direct space, no separator)
         r'\bcanada\s+remote\b',
+        # "Remote Canada" followed by word boundary (Affirm title format)
+        r'\bremote\s+canada(?:\b|[A-Z])',
+        # Canadian provinces with Remote (Reddit format) - BC, ON, Alberta, etc.
+        r'\bremote\s*[-\u2013\u2014]\s*(?:british\s+columbia|ontario|alberta|quebec|manitoba|saskatchewan)',
+        r'\b(?:british\s+columbia|ontario|alberta|quebec),?\s+canada\b',
     ],
     'GB': [
         # "based in the UK/United Kingdom"
@@ -515,6 +528,36 @@ COUNTRY_RESTRICTION_PATTERNS = {
         r'\bpoland\s*[-\u2013\u2014]\s*remote\b',
         r'\bremote\s*[-\u2013\u2014]\s*poland\b',
     ],
+    'UA': [
+        # "based in Ukraine"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+ukraine\b',
+        # "Ukraine only" / "candidates based in Ukraine"
+        r'(?:remote[^.]*?)?\bukraine\s+only\b',
+        r'(?:candidates?|applicants?)\s+(?:based|located)\s+in\s+ukraine\b',
+        # "Ukraine - Remote" / "Remote - Ukraine"
+        r'\bukraine\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*ukraine\b',
+    ],
+    'MK': [
+        # "based in North Macedonia"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+(?:north\s+)?macedonia\b',
+        # "North Macedonia only"
+        r'(?:remote[^.]*?)?\b(?:north\s+)?macedonia\s+only\b',
+        # "North Macedonia - Remote" / "Remote - North Macedonia" (Valtech format)
+        r'\b(?:north\s+)?macedonia\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*(?:north\s+)?macedonia\b',
+        # "candidates based in Ukraine, North Macedonia, Bulgaria"
+        r'(?:candidates?|applicants?)\s+(?:based|located)\s+in\s+(?:ukraine,?\s+)?(?:north\s+)?macedonia',
+    ],
+    'BG': [
+        # "based in Bulgaria"
+        r'(?:this\s+)?(?:role|position|job)\s+(?:is\s+)?(?:remote\s+(?:and\s+)?)?(?:based|located)\s+in\s+bulgaria\b',
+        # "Bulgaria only"
+        r'(?:remote[^.]*?)?\bbulgaria\s+only\b',
+        # "Bulgaria - Remote" / "Remote - Bulgaria"
+        r'\bbulgaria\s*[-\u2013\u2014]\s*remote\b',
+        r'\bremote\s*[-\u2013\u2014]\s*bulgaria\b',
+    ],
 }
 
 
@@ -537,7 +580,7 @@ def extract_country_restriction_from_description(description: str) -> Optional[s
     description_lower = description.lower()
 
     # Check patterns in priority order (US most common)
-    for country_code in ['US', 'CA', 'GB', 'IN', 'DE', 'IE', 'AU', 'SE', 'NL', 'FR', 'ES', 'PL']:
+    for country_code in ['US', 'CA', 'GB', 'IN', 'DE', 'IE', 'AU', 'SE', 'NL', 'FR', 'ES', 'PL', 'UA', 'MK', 'BG']:
         patterns = COUNTRY_RESTRICTION_PATTERNS.get(country_code, [])
         for pattern in patterns:
             if re.search(pattern, description_lower, re.IGNORECASE):
