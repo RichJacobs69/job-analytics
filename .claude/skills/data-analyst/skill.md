@@ -42,7 +42,33 @@ python pipeline/report_generator.py --city lon --family data --start 2025-12-01 
 
 # Generate JSON output for programmatic use
 python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31 --output json
+
+# Generate portfolio report WITH month-over-month comparison
+python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31 --compare-start 2025-11-01 --compare-end 2025-11-30 --output portfolio
 ```
+
+### Month-over-Month Comparison
+
+The report generator supports MoM comparisons for 4 sections:
+- **Industry Distribution** - Tracks industry hiring shifts
+- **Top Employers** - Shows employer market share changes
+- **Role Specialization** - Monitors subfamily demand changes
+- **Seniority Distribution** - Tracks seniority level shifts
+
+When `--compare-start` and `--compare-end` are provided, each section includes a `comparison` object:
+
+```json
+{
+  "comparison": {
+    "previousPeriod": "November 2025",
+    "biggestGainer": { "label": "AI & Machine Learning", "change": 4.0 },
+    "biggestDecline": { "label": "Consumer Tech", "change": -2.5 },
+    "newEntries": null
+  }
+}
+```
+
+The portfolio site renders this as a compact "Biggest Movers" summary box below each chart.
 
 ### Using Programmatically
 
@@ -298,6 +324,22 @@ Report in methodology: "X agency listings (Y%) identified and excluded"
 Only jobs with full descriptions (skills coverage in output). If < 30 jobs with skills, skip section with note:
 > "Skills analysis requires full job descriptions. Insufficient data for this market segment."
 
+### Working Arrangement Analysis
+
+**CRITICAL: Exclude Adzuna from working arrangement metrics.**
+
+Adzuna job descriptions are truncated to 100-200 characters, which causes unreliable working arrangement classification. The classifier tends to default to "onsite" when it cannot find remote/hybrid keywords in the truncated text.
+
+The report_generator automatically filters to ATS sources only (Greenhouse, Lever, Ashby, Workable) for working arrangement calculations. These sources provide full job descriptions for reliable classification.
+
+| Source | Description Length | Use for Working Arrangement |
+|--------|-------------------|----------------------------|
+| Greenhouse | Full | Yes |
+| Lever | Full | Yes |
+| Ashby | Full | Yes |
+| Workable | Full | Yes |
+| Adzuna | 100-200 chars | **No** - excluded |
+
 ### Compensation Analysis
 
 **Only for US cities with pay transparency laws (nyc, den, sfo).**
@@ -313,18 +355,93 @@ For London and Singapore, skip compensation section with note:
 
 1. **Confirm inputs** (see Pre-Generation Checklist)
 
-2. **Run report generator:**
+2. **Run report generator with MoM comparison:**
    ```bash
-   python pipeline/report_generator.py --city {city} --family {family} --start {start} --end {end} --output json
+   python pipeline/report_generator.py \
+     --city {city} --family {family} \
+     --start {start} --end {end} \
+     --compare-start {prev_start} --compare-end {prev_end} \
+     --output portfolio \
+     --save "portfolio-site/content/reports/{city}-data-{month}-{year}.json"
    ```
 
-3. **Search for market context** - Run web searches for economic/industry context
+   Example for December 2025 with November comparison:
+   ```bash
+   python pipeline/report_generator.py \
+     --city lon --family data \
+     --start 2025-12-01 --end 2025-12-31 \
+     --compare-start 2025-11-01 --compare-end 2025-11-30 \
+     --output portfolio \
+     --save "portfolio-site/content/reports/london-data-december-2025.json"
+   ```
+
+3. **Search for market context** - Run web searches for economic/industry context:
+   ```
+   [city] tech hiring [month] [year]
+   [city] layoffs OR hiring freeze [month] [year]
+   [job_family] job market trends [year]
+   remote work policy changes [year]
+   ```
+   Use sub-agents where helpful to focus on specific research angles (economic, political, legal, technological).
 
 4. **Validate data volume** - If < 30 jobs, do not publish report
 
-5. **Generate markdown report** using template at `docs/templates/hiring_report_template.md`
+5. **Fill in [PLACEHOLDER] content** - The report generator outputs data with placeholder markers. You MUST replace all placeholders with interpretive content based on the data and market context.
 
-6. **Create portfolio JSON** at `portfolio-site/content/reports/{city}-data-{month}-{year}.json`
+6. **Save completed JSON** to `portfolio-site/content/reports/{city}-data-{month}-{year}.json`
+
+### Placeholder Content Checklist
+
+The report generator creates these sections with `[PLACEHOLDER]` markers that require manual content:
+
+| Section | Field | Content Required |
+|---------|-------|------------------|
+| `meta` | `summary` | 2-3 sentence market overview highlighting key findings |
+| `keyFindings` | `narrative[]` | 3 paragraphs: role composition, employer landscape, accessibility |
+| `keyFindings` | `bullets[]` | 5 findings with title + text, lead with most surprising |
+| `takeaways` | `jobSeekers[]` | 5 actionable insights for candidates |
+| `takeaways` | `hiringManagers[]` | 4 strategic insights for employers |
+| `industryDistribution` | `interpretation` | Explain top industries + MoM shifts with context |
+| `companyMaturity` | `interpretation` | Explain maturity distribution implications |
+| `ownershipType` | `interpretation` | Explain private/public mix implications |
+| `employerSize` | `interpretation` | Explain enterprise/scale-up/startup distribution |
+| `topEmployers` | `interpretation` | Highlight notable employers + new entrants |
+| `roleSpecialization` | `interpretation` | Explain role mix + MoM shifts |
+| `seniorityDistribution` | `interpretation` | Explain seniority mix + accessibility |
+| `icVsManagement` | `interpretation` | Explain IC/management split |
+| `workingArrangement` | `interpretation` | Explain flexibility patterns |
+| `skillsDemand` | `interpretation` | Explain skill patterns + pairs |
+| `marketContext[]` | 5 items | External context with source citations |
+
+### Content Guidelines for Placeholders
+
+1. **Use hedged language** for causal claims ("likely reflects", "may indicate")
+2. **Cite external sources** for market context claims (Source, Date)
+3. **Reference MoM changes** where comparison data exists (+X.Xpp, -X.Xpp)
+4. **Be specific** with numbers ("24%" not "about a quarter")
+5. **Split by persona** for takeaways (job seekers vs hiring managers)
+
+### Local Testing
+
+After creating the report JSON, verify it renders correctly:
+
+1. Start the portfolio-site dev server:
+   ```bash
+   cd portfolio-site && npm run dev
+   ```
+
+2. View the report at:
+   ```
+   http://localhost:3000/hiring-market/reports/{city}-data-{month}-{year}
+   ```
+
+3. Verify:
+   - All charts render with data
+   - MoM comparison boxes appear below Industry, Top Employers, Role Specialization, and Seniority sections
+   - No `[PLACEHOLDER]` text visible in any section
+   - Source citations appear in Market Context section
+
+---
 
 ### Section Thresholds
 
@@ -340,7 +457,7 @@ For London and Singapore, skip compensation section with note:
 | Role Specialization | 30 | Combine <5 into "Other" |
 | Seniority Distribution | 30 | Add entry accessibility context |
 | IC vs Management | 30 | Report count if mgmt <10 |
-| Working Arrangement | 30 | Need 70% coverage |
+| Working Arrangement | 30 | ATS sources only (Adzuna excluded) |
 | Compensation | 20 with salary | US cities only |
 | Skills Demand | 30 with skills | Source filter |
 | Market Metrics | 50 | Skip cross-segment if thin |
