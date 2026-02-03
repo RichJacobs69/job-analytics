@@ -67,6 +67,7 @@ class LeverJob:
     team: Optional[str] = None
     department: Optional[str] = None
     commitment: Optional[str] = None  # Full-time, Part-time, etc.
+    workplace_type: Optional[str] = None  # onsite, hybrid, remote, unspecified
     instance: str = "global"
 
 
@@ -162,6 +163,7 @@ def parse_lever_job(job_data: Dict, company_slug: str, instance: str = "global")
         team=categories.get('team'),
         department=categories.get('department'),
         commitment=categories.get('commitment'),
+        workplace_type=job_data.get('workplaceType'),  # onsite, hybrid, remote, unspecified
         instance=instance
     )
 

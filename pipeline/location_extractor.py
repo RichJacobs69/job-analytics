@@ -268,6 +268,128 @@ def split_multi_location(raw_location: str) -> List[str]:
 
 
 # =============================================================================
+# Country Name to ISO Code Mapping (Extended)
+# =============================================================================
+# Includes countries beyond our active cities for proper remote scoping
+# Used to detect "India - Remote", "Germany - Remote", etc.
+
+COUNTRY_NAME_TO_ISO = {
+    # Our active countries
+    'united states': 'US',
+    'usa': 'US',
+    'us': 'US',
+    'america': 'US',
+    'united kingdom': 'GB',
+    'uk': 'GB',
+    'great britain': 'GB',
+    'britain': 'GB',
+    'england': 'GB',
+    'singapore': 'SG',
+
+    # Common countries in job postings (not in our active list)
+    'india': 'IN',
+    'germany': 'DE',
+    'france': 'FR',
+    'spain': 'ES',
+    'italy': 'IT',
+    'netherlands': 'NL',
+    'ireland': 'IE',
+    'canada': 'CA',
+    'australia': 'AU',
+    'japan': 'JP',
+    'brazil': 'BR',
+    'mexico': 'MX',
+    'poland': 'PL',
+    'portugal': 'PT',
+    'sweden': 'SE',
+    'norway': 'NO',
+    'denmark': 'DK',
+    'finland': 'FI',
+    'switzerland': 'CH',
+    'austria': 'AT',
+    'belgium': 'BE',
+    'israel': 'IL',
+    'south korea': 'KR',
+    'korea': 'KR',
+    'china': 'CN',
+    'hong kong': 'HK',
+    'taiwan': 'TW',
+    'philippines': 'PH',
+    'vietnam': 'VN',
+    'thailand': 'TH',
+    'indonesia': 'ID',
+    'malaysia': 'MY',
+    'new zealand': 'NZ',
+    'south africa': 'ZA',
+    'uae': 'AE',
+    'united arab emirates': 'AE',
+    'argentina': 'AR',
+    'chile': 'CL',
+    'colombia': 'CO',
+    'peru': 'PE',
+    'czech republic': 'CZ',
+    'czechia': 'CZ',
+    'romania': 'RO',
+    'ukraine': 'UA',
+    'hungary': 'HU',
+    'greece': 'GR',
+    'turkey': 'TR',
+    'russia': 'RU',
+    'egypt': 'EG',
+    'nigeria': 'NG',
+    'kenya': 'KE',
+    'pakistan': 'PK',
+    'bangladesh': 'BD',
+    'sri lanka': 'LK',
+}
+
+
+def match_country_remote_pattern(text: str) -> Optional[Dict]:
+    """
+    Match patterns like "India - Remote", "Germany, Remote", "Remote - France".
+
+    These indicate country-scoped remote jobs, not global remote.
+
+    Args:
+        text: Raw location string
+
+    Returns:
+        Location object if match found, None otherwise
+    """
+    text_lower = text.lower().strip()
+
+    # Patterns to match:
+    # "Country - Remote", "Country, Remote", "Country Remote"
+    # "Remote - Country", "Remote, Country", "Remote (Country)"
+
+    # Check for "remote" keyword
+    if 'remote' not in text_lower:
+        return None
+
+    # Try to find a country name in the text
+    for country_name, country_code in COUNTRY_NAME_TO_ISO.items():
+        # For short codes (us, uk), use word boundary matching to avoid false positives
+        if len(country_name) <= 2:
+            # Use word boundary regex for short codes
+            if re.search(r'\b' + re.escape(country_name) + r'\b', text_lower):
+                return {
+                    'type': 'remote',
+                    'scope': 'country',
+                    'country_code': country_code
+                }
+        else:
+            # For longer names, simple substring match is safe
+            if country_name in text_lower:
+                return {
+                    'type': 'remote',
+                    'scope': 'country',
+                    'country_code': country_code
+                }
+
+    return None
+
+
+# =============================================================================
 # Working Arrangement Detection (Not Locations)
 # =============================================================================
 
@@ -390,6 +512,12 @@ def extract_locations(
         coverage = len(matched_pattern) / len(full_text_lower)
         if coverage > 0.5:
             return [remote_match]
+
+    # Early check: handle "Country - Remote" patterns (e.g., "India - Remote")
+    # These should be country-scoped, not global remote
+    country_remote = match_country_remote_pattern(raw_location)
+    if country_remote:
+        return [country_remote]
 
     # Split into parts if multi-location
     parts = split_multi_location(raw_location)

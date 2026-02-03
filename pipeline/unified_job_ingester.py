@@ -81,6 +81,7 @@ class UnifiedJob:
     lever_team: Optional[str] = None
     lever_department: Optional[str] = None
     lever_commitment: Optional[str] = None  # Full-time, Part-time, etc.
+    lever_workplace_type: Optional[str] = None  # onsite, hybrid, remote, unspecified
     lever_description: Optional[str] = None  # Keep original for reference
 
     # Classification results (added after Claude processing)

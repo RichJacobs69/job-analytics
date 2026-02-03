@@ -261,6 +261,7 @@ async def fetch_from_lever(companies: Optional[List[str]] = None) -> List:
                     lever_team=job.team,
                     lever_department=job.department,
                     lever_commitment=job.commitment,
+                    lever_workplace_type=job.workplace_type,
                     lever_description=job.description
                 )
                 unified_jobs.append(unified_job)
@@ -1157,7 +1158,8 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                         'lever_location': job.location,  # Lever's location field from API
                         'lever_team': job.team,
                         'lever_department': job.department,
-                        'lever_commitment': job.commitment
+                        'lever_commitment': job.commitment,
+                        'lever_workplace_type': job.workplace_type  # onsite, hybrid, remote, unspecified
                     }
                 )
 
@@ -1252,13 +1254,23 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
                 elif extracted_locations and extracted_locations[0].get('type') == 'remote':
                     legacy_city_code = 'remote'
 
-                # Determine working arrangement with employer metadata fallback
-                wa_from_classifier = location.get('working_arrangement') or 'unknown'
-                if wa_from_classifier == 'unknown':
-                    wa_fallback = get_working_arrangement_fallback(company_display)
-                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+                # Determine working arrangement - prioritize Lever's structured metadata
+                # Priority: 1) Lever workplace_type, 2) Classifier, 3) Employer metadata fallback
+                working_arrangement = 'unknown'
+                lever_wt = job.workplace_type  # onsite, hybrid, remote, unspecified
+
+                if lever_wt and lever_wt != 'unspecified':
+                    # Lever's workplace_type maps directly to our taxonomy
+                    working_arrangement = lever_wt
                 else:
-                    working_arrangement = wa_from_classifier
+                    # Fall back to classifier inference
+                    wa_from_classifier = location.get('working_arrangement') or 'unknown'
+                    if wa_from_classifier != 'unknown':
+                        working_arrangement = wa_from_classifier
+                    else:
+                        # Fall back to employer metadata
+                        wa_fallback = get_working_arrangement_fallback(company_display)
+                        working_arrangement = wa_fallback if wa_fallback else 'unknown'
 
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
