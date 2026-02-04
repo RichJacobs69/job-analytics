@@ -52,13 +52,14 @@ from pipeline.db_connection import supabase
 # Gemini Configuration
 # ============================================
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("Missing GOOGLE_API_KEY in .env file")
 
-genai.configure(api_key=GOOGLE_API_KEY)
+gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Model configurations
 GEMINI_MODELS = {
@@ -67,20 +68,18 @@ GEMINI_MODELS = {
     "lite": "gemini-2.5-flash-lite",    # Cost-effective but less accurate
 }
 
+_enrichment_config = types.GenerateContentConfig(
+    temperature=0.3,
+    max_output_tokens=2000,  # Increased for longer descriptions
+    response_mime_type="application/json"
+)
+
 # Track model fallbacks for reporting
 _model_fallback_count = 0
 
-def get_gemini_model(model_tier: str = "flash"):
-    """Get Gemini model based on tier selection."""
-    model_name = GEMINI_MODELS.get(model_tier, GEMINI_MODELS["flash"])
-    return genai.GenerativeModel(
-        model_name=model_name,
-        generation_config={
-            "temperature": 0.3,
-            "max_output_tokens": 2000,  # Increased for longer descriptions
-            "response_mime_type": "application/json"
-        }
-    )
+def get_gemini_model_name(model_tier: str = "flash") -> str:
+    """Get Gemini model name based on tier selection."""
+    return GEMINI_MODELS.get(model_tier, GEMINI_MODELS["flash"])
 
 # ============================================
 # ATS URL Templates
@@ -527,11 +526,15 @@ def call_gemini_enrichment(
         industry_list=INDUSTRY_DESCRIPTIONS
     )
 
-    model = get_gemini_model(model_tier)
+    model_name = get_gemini_model_name(model_tier)
 
     for attempt in range(max_retries):
         try:
-            response = model.generate_content(prompt)
+            response = gemini_client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=_enrichment_config
+            )
             result = json.loads(response.text)
 
             # Handle case where Gemini returns array instead of object

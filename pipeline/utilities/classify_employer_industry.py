@@ -62,21 +62,19 @@ from pipeline.db_connection import supabase
 # Gemini Configuration
 # ============================================
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("Missing GOOGLE_API_KEY in .env file")
 
-genai.configure(api_key=GOOGLE_API_KEY)
+gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
-gemini_model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash-lite",
-    generation_config={
-        "temperature": 0.2,  # Lower temp for more consistent classification
-        "max_output_tokens": 200,
-        "response_mime_type": "application/json"
-    }
+_classification_config = types.GenerateContentConfig(
+    temperature=0.2,  # Lower temp for more consistent classification
+    max_output_tokens=200,
+    response_mime_type="application/json"
 )
 
 # ============================================
@@ -189,7 +187,11 @@ def classify_employer(company_name: str, job_titles: List[str], max_retries: int
 
     for attempt in range(max_retries):
         try:
-            response = gemini_model.generate_content(prompt)
+            response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash-lite",
+                contents=prompt,
+                config=_classification_config
+            )
             result = json.loads(response.text)
 
             # Validate industry code

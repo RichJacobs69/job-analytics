@@ -17,7 +17,8 @@ from typing import Dict, List
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from pipeline.classifier import build_classification_prompt
 from pipeline.job_family_mapper import get_correct_job_family
@@ -31,7 +32,7 @@ if not GOOGLE_API_KEY:
     print("Get one from: https://aistudio.google.com/app/apikey")
     sys.exit(1)
 
-genai.configure(api_key=GOOGLE_API_KEY)
+gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Gemini 2.0 Flash pricing (per 1M tokens)
 GEMINI_INPUT_PRICE = 0.10
@@ -121,19 +122,20 @@ def classify_with_gemini(job_text: str, verbose: bool = False) -> Dict:
     prompt = build_classification_prompt(job_text)
     prompt = adapt_prompt_for_gemini(prompt)
 
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
-        generation_config={
-            "temperature": 0.1,
-            "max_output_tokens": 4000,  # Increased to avoid truncation
-            "response_mime_type": "application/json"
-        }
+    _eval_config = types.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=4000,  # Increased to avoid truncation
+        response_mime_type="application/json"
     )
 
     start_time = time.time()
 
     try:
-        response = model.generate_content(prompt)
+        response = gemini_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=_eval_config
+        )
         latency_ms = (time.time() - start_time) * 1000
 
         # Extract token counts

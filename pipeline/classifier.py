@@ -53,11 +53,12 @@ if LLM_PROVIDER == "claude":
     claude_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 elif LLM_PROVIDER == "gemini":
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     if not GOOGLE_API_KEY:
         raise ValueError("Missing GOOGLE_API_KEY in .env file")
-    genai.configure(api_key=GOOGLE_API_KEY)
+    gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
     # Source-specific model configurations
     # Use Gemini 3 Flash for cleaner ATS sources (Lever, Ashby, Workable)
@@ -73,38 +74,20 @@ elif LLM_PROVIDER == "gemini":
     # Fallback model for all sources
     GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
-    _gemini_generation_config = {
-        "temperature": 0.1,
-        "max_output_tokens": 8000,
-        "response_mime_type": "application/json"
-    }
-
-    # Pre-initialize all models
-    _gemini_models_cache = {}
-    for model_name in set(SOURCE_MODEL_CONFIG.values()):
-        _gemini_models_cache[model_name] = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config=_gemini_generation_config
-        )
-
-    # Fallback model
-    _gemini_models_cache[GEMINI_FALLBACK_MODEL] = genai.GenerativeModel(
-        model_name=GEMINI_FALLBACK_MODEL,
-        generation_config=_gemini_generation_config
+    _gemini_generation_config = types.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=8000,
+        response_mime_type="application/json"
     )
 
-    def get_gemini_model_for_source(source: str = None):
-        """Get the appropriate Gemini model based on data source."""
+    def get_gemini_model_for_source(source: str = None) -> str:
+        """Get the appropriate Gemini model name based on data source."""
         if source and source.lower() in SOURCE_MODEL_CONFIG:
-            model_name = SOURCE_MODEL_CONFIG[source.lower()]
-        else:
-            # Default to stable model for unknown sources
-            model_name = "gemini-2.5-flash"
-        return _gemini_models_cache.get(model_name), model_name
+            return SOURCE_MODEL_CONFIG[source.lower()]
+        return "gemini-2.5-flash"
 
-    # Legacy references for backward compatibility
-    gemini_model, _ = get_gemini_model_for_source("greenhouse")
-    gemini_fallback_model = _gemini_models_cache[GEMINI_FALLBACK_MODEL]
+    # Default model name for legacy classify_job_with_gemini()
+    _default_model_name = get_gemini_model_for_source("greenhouse")
 
     # Track fallbacks for reporting
     _model_fallback_count = 0
@@ -464,7 +447,11 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
 
     try:
         start_time = time.time()
-        response = gemini_model.generate_content(prompt)
+        response = gemini_client.models.generate_content(
+            model=_default_model_name,
+            contents=prompt,
+            config=_gemini_generation_config
+        )
         latency_ms = (time.time() - start_time) * 1000
 
         # Extract token counts
@@ -627,16 +614,15 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
 
     # Select model based on source and fallback flag
     if _use_fallback:
-        model = gemini_fallback_model
         model_name = GEMINI_FALLBACK_MODEL
     else:
-        model, model_name = get_gemini_model_for_source(source)
+        model_name = get_gemini_model_for_source(source)
 
     for attempt in range(max_retries):
         total_cost_data['attempts'] += 1
 
         try:
-            result = _classify_job_with_model(job_text, model, model_name, verbose=verbose, structured_input=structured_input)
+            result = _classify_job_with_model(job_text, model_name, verbose=verbose, structured_input=structured_input)
         except Exception as e:
             title = structured_input.get('title', 'Unknown') if structured_input else 'Unknown'
             print(f"[ERROR] Classification failed for '{title[:40]}': {e}")
@@ -682,7 +668,7 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
     return result
 
 
-def _classify_job_with_model(job_text: str, model, model_name: str, verbose: bool = False, structured_input: dict = None) -> Dict:
+def _classify_job_with_model(job_text: str, model_name: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """Internal function that classifies using a specific model."""
     prompt = build_classification_prompt(job_text, structured_input=structured_input)
     prompt = adapt_prompt_for_gemini(prompt)
@@ -694,7 +680,11 @@ def _classify_job_with_model(job_text: str, model, model_name: str, verbose: boo
         print(prompt[:500] + "...\n")
 
     start_time = time.time()
-    response = model.generate_content(prompt)
+    response = gemini_client.models.generate_content(
+        model=model_name,
+        contents=prompt,
+        config=_gemini_generation_config
+    )
     latency_ms = (time.time() - start_time) * 1000
 
     # Extract token counts
