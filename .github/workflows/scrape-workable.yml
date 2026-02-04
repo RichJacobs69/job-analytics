@@ -10,7 +10,7 @@ on:
 jobs:
   workable:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # API-based fetching, similar to Ashby
+    timeout-minutes: 60  # API-based fetching + Gemini classification
 
     steps:
       - name: Checkout repository
