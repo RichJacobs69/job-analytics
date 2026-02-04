@@ -1359,20 +1359,8 @@
     "Grey": {
       "slug": "greylondon"
     },
-    "10Pearlsuk": {
-      "slug": "10pearlsuk"
-    },
-    "Aegworldwide": {
-      "slug": "aegworldwide"
-    },
     "Airtable": {
       "slug": "airtable"
-    },
-    "Akunacapital": {
-      "slug": "akunacapital"
-    },
-    "Aura798": {
-      "slug": "aura798"
     },
     "Blankstreet": {
       "slug": "blankstreet"
@@ -1380,20 +1368,11 @@
     "Counterpart": {
       "slug": "counterpart"
     },
-    "Epath": {
-      "slug": "epath"
-    },
     "Flyzipline": {
       "slug": "flyzipline"
     },
     "Gofundme": {
       "slug": "gofundme"
-    },
-    "Lifeedittherapeutics": {
-      "slug": "lifeedittherapeutics"
-    },
-    "Matic": {
-      "slug": "matic"
     },
     "Medier": {
       "slug": "medier"
@@ -1401,23 +1380,11 @@
     "Msgentertainmentholdingsllc": {
       "slug": "msgentertainmentholdingsllc"
     },
-    "Msgsports": {
-      "slug": "msgsports"
-    },
     "Okta": {
       "slug": "okta"
     },
-    "Owllabs": {
-      "slug": "owllabs"
-    },
     "Roku": {
       "slug": "roku"
-    },
-    "Scribex": {
-      "slug": "scribex"
-    },
-    "Spacexglobal": {
-      "slug": "spacexglobal"
     },
     "Vaynermedia": {
       "slug": "vaynermedia"
@@ -1446,12 +1413,6 @@
     "HoYoverse": {
       "slug": "hoyoverse"
     },
-    "Rimes Technologies": {
-      "slug": "rimestechnologies"
-    },
-    "Feedzai": {
-      "slug": "feedzai"
-    },
     "BitMEX": {
       "slug": "bitmex"
     },
@@ -1460,9 +1421,6 @@
     },
     "AvePoint": {
       "slug": "avepoint"
-    },
-    "DeVries": {
-      "slug": "devries"
     },
     "Workstream": {
       "slug": "workstream"
