@@ -203,14 +203,80 @@ Format: `[Finding] ([Source Name], [Date])`
 Example:
 > "The 15% increase in remote roles may reflect the broader pullback from strict RTO mandates, with several major tech employers softening their in-office requirements in Q4 (WSJ, November 2024)."
 
-### Tone: Hedged Speculation
+### Tone: Neutral, Data-Driven Language
+
+**Core principle: Let the data speak. Use numbers and benchmarks, not adjectives.**
+
+#### Hedging Causal Claims
 
 | Avoid | Use Instead |
 |-------|-------------|
 | "This is because..." | "This likely reflects..." |
 | "The reason is..." | "This could be driven by..." |
-| "This proves that..." | "This aligns with..." |
+| "This proves that..." | "This aligns with..." / "This is consistent with..." |
 | "Companies are doing X because..." | "This may indicate that..." |
+| "reflecting X" (unhedged) | "likely reflecting X" / "consistent with X" |
+
+#### Word Blocklist
+
+Never use these words in report content. They editorialize rather than describe.
+
+| Category | Blocked Words | Use Instead |
+|----------|--------------|-------------|
+| **Emotive adjectives** | remarkable, impressive, stunning, extraordinary, exceptional, incredible, outstanding, fierce | (remove adjective, or use: high, broad, notable) |
+| **Power language** | dominate, dominated, dominates, dominant, dominance, commanding, powerhouse, crushing | leads, accounts for, represents the largest share |
+| **Catastrophe language** | collapse, collapsed, plunge, explode, skyrocket, soar | declined sharply, dropped, grew, increased |
+| **Editorializing** | epicenter, fundamental shift, game-changing, unprecedented | center, shift, change |
+| **Vague intensifiers** | significant, dramatic, massive, huge, tremendous, robust | (use the specific number instead, or: notable, wide) |
+| **Certainty language** | clearly, obviously, undoubtedly, certainly, definitely, proves | (remove, or hedge with: may, likely, appears to) |
+
+#### Correct Patterns
+
+| Instead of | Write |
+|-----------|-------|
+| "The market shows remarkable flexibility with 72% remote" | "The market offers 72% remote availability" |
+| "Fintech dominates at 23%" | "Fintech leads at 23%" |
+| "Mid-level roles collapsed -9.2pp" | "Mid-level roles declined -9.2pp" |
+| "A dramatic shift toward ML engineering" | "ML engineering's share grew +3.8pp to 40%" |
+| "Despite significant economic headwinds" | (remove -- unsourced external claim) |
+
+### Data Scope: Avoiding Whole-Market Claims
+
+**Core principle: Our data represents a slice of the market, not the whole market.**
+
+Our sources (ATS integrations and job board aggregators) skew toward tech-forward and scaling companies. Large enterprises using other hiring platforms are underrepresented. All commentary must reflect this limited scope.
+
+#### Language Rules
+
+| Avoid | Use Instead |
+|-------|-------------|
+| "[City]'s data market is..." | "Among tracked employers, [City]'s data hiring shows..." |
+| "X% market share" | "X% of tracked roles/postings" |
+| "The market is highly fragmented" | "Hiring is broadly distributed across tracked sources" |
+| "Competing against X% of the market" | "Among ATS-sourced roles, X% offer..." |
+| "The most fragmented employer landscape" | "The top 5 hold just X% of tracked postings" |
+| "All data hiring in [city]" | "All tracked roles" |
+| "X% of the market" | "X% of tracked/ATS-sourced roles" |
+| "The most accessible market" | "The most accessible of tracked cities" |
+
+#### Where This Matters Most
+
+- **meta.summary** - Always qualify with "among tracked employers" or similar
+- **keyFindings narratives** - Avoid definitive pronouncements about what a city's market "is"
+- **Employer size/maturity/ownership distributions** - These reflect our sample bias; present as "among tracked employers"
+- **Working arrangement claims** - Always specify "ATS-sourced roles"; never claim flexibility rates apply to the whole market
+- **Cross-city comparisons** - Use "across tracked cities" not "across all markets"
+- **Takeaways** - When citing percentages from our data, clarify they are from tracked roles
+
+#### Required Disclosures
+
+Every report must include:
+
+1. **dataNote**: "Based on [N] direct employer postings from [N]+ companies, sourced via ATS integrations and job board aggregators. This sample skews toward tech-forward and scaling companies; large enterprises may be underrepresented. Recruitment agency listings excluded."
+
+2. **methodology.limitations[0]**: "Not a complete census of the market - ATS and job board sources over-represent tech-forward and scaling companies; large enterprises may be underrepresented"
+
+**IMPORTANT: Do NOT name specific ATS platforms in report content.** Use generic terms: "ATS integrations", "ATS sources", "ATS-sourced roles", or "job board aggregators".
 
 ---
 
@@ -261,7 +327,7 @@ query = supabase.table('enriched_jobs').or_(or_filter)
 
 **Why inclusive?** Job seekers care about ALL roles they're eligible for - local, remote, and regional. Reports should reflect candidate opportunity, not just local office presence.
 
-**Coverage note:** Our ATS coverage varies by city. Low direct job counts reflect our scraper coverage, not market size.
+**Coverage note:** Our ATS coverage varies by city. Job counts reflect our source coverage, not total market size. See "Data Scope: Avoiding Whole-Market Claims" above.
 
 ### Taxonomy Reference (v1.5.0)
 
@@ -326,19 +392,12 @@ Only jobs with full descriptions (skills coverage in output). If < 30 jobs with 
 
 ### Working Arrangement Analysis
 
-**CRITICAL: Exclude Adzuna from working arrangement metrics.**
+**CRITICAL: ATS sources only (Adzuna excluded).** The report_generator filters to ATS sources (Greenhouse, Lever, Ashby, Workable) for working arrangement analysis. Adzuna is excluded because:
+- Truncated descriptions (100-200 chars) cause the classifier to default to "onsite"
+- Employer metadata fallback has only ~17% coverage for Adzuna employers
+- Including Adzuna inflates onsite from ~3% to ~52% -- a misleading artifact
 
-Adzuna job descriptions are truncated to 100-200 characters, which causes unreliable working arrangement classification. The classifier tends to default to "onsite" when it cannot find remote/hybrid keywords in the truncated text.
-
-The report_generator automatically filters to ATS sources only (Greenhouse, Lever, Ashby, Workable) for working arrangement calculations. These sources provide full job descriptions for reliable classification.
-
-| Source | Description Length | Use for Working Arrangement |
-|--------|-------------------|----------------------------|
-| Greenhouse | Full | Yes |
-| Lever | Full | Yes |
-| Ashby | Full | Yes |
-| Workable | Full | Yes |
-| Adzuna | 100-200 chars | **No** - excluded |
+Jobs with `unknown` arrangement are excluded from the distribution.
 
 ### Compensation Analysis
 
@@ -382,7 +441,7 @@ For London and Singapore, skip compensation section with note:
    [job_family] job market trends [year]
    remote work policy changes [year]
    ```
-   Use sub-agents where helpful to focus on specific research angles (economic, political, legal, technological).
+   Limit to 3-4 focused searches per city to manage context. See "Parallel Report Generation" below for multi-city workflows.
 
 4. **Validate data volume** - If < 30 jobs, do not publish report
 
@@ -443,6 +502,58 @@ After creating the report JSON, verify it renders correctly:
 
 ---
 
+### Parallel Report Generation (Multi-City)
+
+When generating reports for multiple cities, use this workflow to avoid sub-agent context exhaustion.
+
+**Problem:** A single sub-agent that reads a large JSON file (~15-35KB), runs web research, and writes the completed JSON will exceed context limits and crash. The report JSON + web search results + Write tool call can consume 70-100K tokens.
+
+**Solution:** Split the work across the main context and lightweight Edit-only sub-agents.
+
+#### Recommended Workflow
+
+1. **Run report generators in parallel** (one Bash call per city, all in background):
+   ```bash
+   python pipeline/report_generator.py --city {city} --family data \
+     --start {start} --end {end} \
+     --compare-start {prev_start} --compare-end {prev_end} \
+     --output portfolio \
+     --save "portfolio-site/content/reports/{city}-data-{month}-{year}.json"
+   ```
+
+2. **From the main context**, read each city's data (using targeted offset/limit reads) and run web research (3-4 searches per city). Compile a concise data summary and research notes.
+
+3. **Launch Edit-only sub-agents** (one per city, in parallel) with:
+   - All data and research pre-computed in the prompt
+   - Explicit instructions to use ONLY the Edit tool -- no Read, no WebSearch, no Write
+   - The exact old_string for each placeholder and guidance on what to write
+   - Tone rules and word blocklist included in the prompt
+
+4. **Verify** from the main context: grep for `PLACEHOLDER` in each file to confirm zero remain.
+
+#### What NOT To Do
+
+| Anti-Pattern | Why It Fails |
+|-------------|-------------|
+| Single agent: Read + WebSearch + Write | Exceeds context limits on reports >200 jobs |
+| Edit-only agent that also reads the file | Burns context on data reads before reaching edits |
+| Edit-only agent that also does web research | Burns context on search results before reaching edits |
+| Using Write tool for placeholder filling | Sends entire 25-35KB JSON into context; use Edit instead |
+
+#### Context Budget Guide
+
+| Action | Approximate Tokens |
+|--------|-------------------|
+| Report generator Bash output | ~5K |
+| Reading full JSON file | 15-35K |
+| 5 web search results | 15-25K |
+| Writing full JSON via Write tool | 25-35K |
+| **Total for Read+Search+Write** | **60-100K (too large)** |
+| Edit call (per placeholder) | ~0.5-1K |
+| **Total for 30 Edit calls** | **15-30K (fits easily)** |
+
+---
+
 ### Section Thresholds
 
 | Section | Min Jobs | Special Rules |
@@ -457,7 +568,7 @@ After creating the report JSON, verify it renders correctly:
 | Role Specialization | 30 | Combine <5 into "Other" |
 | Seniority Distribution | 30 | Add entry accessibility context |
 | IC vs Management | 30 | Report count if mgmt <10 |
-| Working Arrangement | 30 | ATS sources only (Adzuna excluded) |
+| Working Arrangement | 30 | ATS sources only (Adzuna excluded); unknown excluded |
 | Compensation | 20 with salary | US cities only |
 | Skills Demand | 30 with skills | Source filter |
 | Market Metrics | 50 | Skip cross-segment if thin |
@@ -472,8 +583,8 @@ The report_generator calculates these automatically. Key benchmarks:
 
 | Metric | Benchmark |
 |--------|-----------|
-| Jobs per employer | <1.5 fragmented, 1.5-3 moderate, >3 concentrated |
-| Top 5 concentration | <15% fragmented, 15-30% moderate, >30% concentrated |
+| Jobs per employer | <1.5 broadly distributed, 1.5-3 moderate, >3 concentrated |
+| Top 5 concentration | <15% broadly distributed, 15-30% moderate, >30% concentrated |
 
 ### Accessibility
 

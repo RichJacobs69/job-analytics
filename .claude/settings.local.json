@@ -96,7 +96,18 @@
       "WebFetch(domain:www.metacareers.com)",
       "WebFetch(domain:jobs.netflix.com)",
       "Bash(Get-Content \"C:\\\\Users\\\\rich2\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Cursor-Projects-job-analytics\\\\tasks\\\\bbcf547.output\" -Tail 20)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(sort:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\rich2\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Cursor-Projects-job-analytics\\\\6ca0ed54-4b59-4544-a7b8-81ae477454ce\\\\scratchpad\\\\mom-prototype.html\")",
+      "Bash(npm run dev)",
+      "Bash(ping:*)",
+      "Bash(start \"\" \"http://localhost:3000/hiring-market/reports/london-data-december-2025-test\")",
+      "WebFetch(domain:jobgether.com)",
+      "WebFetch(domain:careers.airbnb.com)",
+      "WebFetch(domain:instacart.careers)",
+      "WebFetch(domain:stripe.com)",
+      "WebFetch(domain:www.coinbase.com)"
     ],
     "deny": [],
     "ask": []

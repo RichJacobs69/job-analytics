@@ -6,7 +6,7 @@
 metadata:
   version: 1.7
   last_updated: "2026-01-28"
-  total_agencies: 318
+  total_agencies: 322
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -313,6 +313,14 @@ hard_filter:
 
   # Added 2026-01-28: Job aggregators (not direct employers)
   - jobgether
+  - efinancialcareers
+  - jobs via efinancialcareers
+
+  # Added 2026-02-04: UK tech recruitment agency
+  - client server
+
+  # Added 2026-02-04: US IT staffing agency
+  - eliassen group
 
   # Added 2026-01-08 from Denver/NYC Professional Services audit
   - jobot
