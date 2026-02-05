@@ -368,7 +368,6 @@ class TestUrlStatusParameter:
                     city_code="lon",
                     working_arrangement="hybrid",
                     position_type="full_time",
-                    posted_date=date.today(),
                     last_seen_date=date.today(),
                     url_status='active'
                 )

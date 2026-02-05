@@ -155,7 +155,6 @@ class TestDbConnectionSummaryParam:
                 city_code=test_city,
                 working_arrangement='hybrid',
                 position_type='full_time',
-                posted_date=date.today(),
                 last_seen_date=date.today(),
                 job_subfamily='data_engineer',
                 summary=test_summary,  # NEW: Pass summary
@@ -209,7 +208,6 @@ class TestDbConnectionSummaryParam:
                 city_code=test_city,
                 working_arrangement='remote',
                 position_type='full_time',
-                posted_date=date.today(),
                 last_seen_date=date.today(),
                 # summary NOT provided - should default to None
                 data_source='test',

@@ -232,7 +232,6 @@ def insert_enriched_job(
     city_code: str,
     working_arrangement: str,
     position_type: str,
-    posted_date: date,
     last_seen_date: date,
     # Optional fields
     job_subfamily: Optional[str] = None,
@@ -275,7 +274,6 @@ def insert_enriched_job(
         city_code: 'lon', 'nyc', or 'den' (legacy, being replaced by locations)
         working_arrangement: 'onsite', 'hybrid', 'remote', or 'flexible'
         position_type: 'full_time', 'part_time', 'contract', or 'internship'
-        posted_date: Date job was posted
         last_seen_date: Date job was last seen active
         locations: Array of location objects (Global Location Expansion)
         summary: AI-generated 2-3 sentence role summary (from classifier)
@@ -353,8 +351,7 @@ def insert_enriched_job(
         # AI-generated summary
         "summary": summary,
 
-        # Dates
-        "posted_date": posted_date.isoformat(),
+        # Dates (posted_date omitted -- set by DB DEFAULT on first insert, preserved on upsert)
         "last_seen_date": last_seen_date.isoformat(),
         "classified_at": datetime.utcnow().isoformat(),  # Update on every classification
 

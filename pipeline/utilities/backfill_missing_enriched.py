@@ -275,7 +275,6 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             city_code=legacy_city_code,  # DEPRECATED - use locations instead
             working_arrangement=location.get('working_arrangement') or 'unknown',
             position_type=role.get('position_type') or 'full_time',
-            posted_date=date.today(),
             last_seen_date=date.today(),
             # Optional fields
             job_subfamily=role.get('job_subfamily'),
