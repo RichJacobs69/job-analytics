@@ -371,7 +371,7 @@ class ReportGenerator:
                 'code': value,
                 'label': label,
                 'count': count,
-                'percentage': round(pct * 100, 1),
+                'percentage': round(pct * 100),
             })
 
         return {
@@ -379,7 +379,7 @@ class ReportGenerator:
             'total': total,
             'known': known,
             'unknown': unknown_count,
-            'coverage': round(coverage * 100, 1),
+            'coverage': round(coverage * 100),
         }
 
     def _calculate_employer_metrics(self, jobs: list) -> dict:
@@ -409,7 +409,7 @@ class ReportGenerator:
             top_employers.append({
                 'name': emp,
                 'count': count,
-                'percentage': round(pct * 100, 1),
+                'percentage': round(pct * 100),
             })
 
         # Concentration metrics
@@ -423,8 +423,8 @@ class ReportGenerator:
         return {
             'unique_employers': unique_employers,
             'jobs_per_employer': round(jobs_per_employer, 2),
-            'top_5_concentration': round(top_5_concentration * 100, 1),
-            'top_15_concentration': round(top_15_concentration * 100, 1),
+            'top_5_concentration': round(top_5_concentration * 100),
+            'top_15_concentration': round(top_15_concentration * 100),
             'top_employers': top_employers,
         }
 
@@ -457,8 +457,8 @@ class ReportGenerator:
 
         return {
             **dist,
-            'senior_to_junior_ratio': round(senior_to_junior, 1),
-            'entry_accessibility_rate': round(entry_accessibility * 100, 1),
+            'senior_to_junior_ratio': round(senior_to_junior),
+            'entry_accessibility_rate': round(entry_accessibility * 100),
         }
 
     def _calculate_skills_metrics(self, jobs: list) -> dict:
@@ -496,7 +496,7 @@ class ReportGenerator:
             top_skills.append({
                 'name': skill,
                 'count': count,
-                'percentage': round(pct * 100, 1),
+                'percentage': round(pct * 100),
             })
 
         # Skill pairs
@@ -521,14 +521,14 @@ class ReportGenerator:
                 'skill_1': s1,
                 'skill_2': s2,
                 'count': count,
-                'percentage': round(pct * 100, 1),
+                'percentage': round(pct * 100),
             })
 
         coverage = len(jobs_with_skills) / len(jobs) if jobs else 0
 
         return {
             'total_with_skills': len(jobs_with_skills),
-            'coverage': round(coverage * 100, 1),
+            'coverage': round(coverage * 100),
             'top_skills': top_skills,
             'skill_pairs': skill_pairs,
         }
@@ -596,18 +596,18 @@ class ReportGenerator:
                     'code': code,
                     'label': label,
                     'count': count,
-                    'percentage': round(pct * 100, 1),
+                    'percentage': round(pct * 100),
                 })
 
             return {
                 'distribution': dist,
                 'total': total_known,
-                'coverage': round(total_known / total * 100, 1) if total > 0 else 0,
+                'coverage': round(total_known / total * 100) if total > 0 else 0,
             }
 
         return {
             'matched_jobs': matched_count,
-            'match_rate': round(matched_count / total * 100, 1) if total > 0 else 0,
+            'match_rate': round(matched_count / total * 100) if total > 0 else 0,
             'industry': build_distribution(industry_counts, self.INDUSTRY_LABELS),
             'employer_size': build_distribution(size_counts, self.SIZE_LABELS),
             'maturity': build_distribution(maturity_counts, {
@@ -710,7 +710,7 @@ class ReportGenerator:
         return {
             'available': True,
             'total_with_salary': len(jobs_with_salary),
-            'coverage': round(coverage * 100, 1),
+            'coverage': round(coverage * 100),
             'overall': {
                 'p25': round(p25),
                 'median': round(median),
@@ -775,7 +775,7 @@ class ReportGenerator:
                 'total_jobs': len(all_jobs),
                 'direct_jobs': len(direct_jobs),
                 'agency_jobs': agency_count,
-                'agency_rate': round(agency_count / len(all_jobs) * 100, 1) if all_jobs else 0,
+                'agency_rate': round(agency_count / len(all_jobs) * 100) if all_jobs else 0,
                 'unique_employers': employer_metrics['unique_employers'],
             },
             'employers': employer_metrics,
@@ -826,15 +826,13 @@ class ReportGenerator:
         return start.strftime('%B %Y')
 
     def _get_concentration_benchmark(self, pct: float) -> str:
-        """Return benchmark label for employer concentration."""
-        if pct < 15:
-            return 'Broadly distributed'
-        elif pct < 25:
-            return 'Distributed hiring'
-        elif pct < 35:
-            return 'Moderate concentration'
-        else:
-            return 'Concentrated'
+        """Return benchmark label for employer concentration.
+
+        Note: Concentration metrics are sampling artifacts of our ATS sources
+        (Greenhouse, Lever, Ashby, Workable) which skew toward startups/scale-ups.
+        Do not editorialize these as market findings.
+        """
+        return 'Among tracked employers'
 
     def _get_ratio_benchmark(self, ratio: float) -> str:
         """Return benchmark label for senior-to-junior ratio."""
@@ -1056,7 +1054,7 @@ class ReportGenerator:
 
         # Helper to convert distribution to {label, value} with percentage as value
         def to_employer_chart_data(employers: list, top_n: int = 15) -> list:
-            return [{'label': e['name'].title(), 'value': round(e['percentage'], 1)} for e in employers[:top_n]]
+            return [{'label': e['name'].title(), 'value': round(e['percentage'])} for e in employers[:top_n]]
 
         # Helper for salary range data
         def to_salary_range_data(items: list, label_key: str = 'label') -> list:
@@ -1121,7 +1119,7 @@ class ReportGenerator:
                 'jobFamily': self.JOB_FAMILY_LABELS.get(job_family, job_family),
                 'totalJobs': total_jobs,
                 'uniqueEmployers': unique_employers,
-                'summary': f"[PLACEHOLDER] {city_display}'s {period_label} {job_family} market summary."
+                'summary': f"[PLACEHOLDER] SEO meta description only (not displayed inline). 1-2 sentences summarizing {city_display}'s {period_label} {job_family} market for search engines and social sharing."
             },
             'keyFindings': {
                 'narrative': [
