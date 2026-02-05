@@ -194,6 +194,14 @@ For each report, search for relevant context on:
 remote work policy changes [year]
 ```
 
+### Market Context Deduplication
+
+When generating reports for multiple cities, each city's Market Context section must feature **city-specific insights**, not verbatim shared macro trends. Shared national or global statistics (e.g., "AI postings 45% above pre-pandemic levels") should be:
+
+1. **Referenced briefly** with local grounding (e.g., "consistent with Denver's 24% ML Engineer share")
+2. **Not copy-pasted identically** across cities -- adapt framing and emphasis per market
+3. **Limited to 1-2 shared items max** per city; prioritize local context (city-specific industry shifts, employer moves, policy impacts)
+
 ### Source Citation
 
 **Every external claim must include a source.**
@@ -216,6 +224,8 @@ Example:
 | "This proves that..." | "This aligns with..." / "This is consistent with..." |
 | "Companies are doing X because..." | "This may indicate that..." |
 | "reflecting X" (unhedged) | "likely reflecting X" / "consistent with X" |
+| "The shift indicates..." (from MoM data) | "Based on a single month's movement, this may indicate..." |
+| "Roles are being absorbed into..." (from MoM data) | "Based on a single month's movement, the decline may indicate..." |
 
 #### Word Blocklist
 
@@ -244,7 +254,7 @@ Never use these words in report content. They editorialize rather than describe.
 
 **Core principle: Our data represents a slice of the market, not the whole market.**
 
-Our sources (ATS integrations and job board aggregators) skew toward tech-forward and scaling companies. Large enterprises using other hiring platforms are underrepresented. All commentary must reflect this limited scope.
+Our sources (direct employer integrations and job board aggregators) skew toward tech-forward and scaling companies. Large enterprises using other hiring platforms are underrepresented. All commentary must reflect this limited scope.
 
 #### Language Rules
 
@@ -252,19 +262,39 @@ Our sources (ATS integrations and job board aggregators) skew toward tech-forwar
 |-------|-------------|
 | "[City]'s data market is..." | "Among tracked employers, [City]'s data hiring shows..." |
 | "X% market share" | "X% of tracked roles/postings" |
-| "The market is highly fragmented" | "Hiring is broadly distributed across tracked sources" |
-| "Competing against X% of the market" | "Among ATS-sourced roles, X% offer..." |
-| "The most fragmented employer landscape" | "The top 5 hold just X% of tracked postings" |
+| "The market is highly fragmented" | (remove -- sampling artifact, see below) |
+| "Broadly distributed employer landscape" | (remove -- sampling artifact, see below) |
+| "Competing against X% of the market" | "Among direct employer postings, X% offer..." |
+| "The most fragmented employer landscape" | (remove -- sampling artifact, see below) |
 | "All data hiring in [city]" | "All tracked roles" |
-| "X% of the market" | "X% of tracked/ATS-sourced roles" |
+| "X% of the market" | "X% of tracked roles/direct employer postings" |
 | "The most accessible market" | "The most accessible of tracked cities" |
+
+#### Employer Concentration Is a Sampling Artifact -- Do NOT Editorialize
+
+**Our direct employer sources (Greenhouse, Lever, Ashby, Workable) skew toward startups and scale-ups.** Large enterprises use Workday, Taleo, and SuccessFactors, which we do not scrape. A single bank or big tech company could have more data roles than our entire top 10. Therefore:
+
+- **NEVER** describe employer concentration as a market finding (e.g., "broadly distributed", "highly fragmented", "distributed hiring")
+- **NEVER** present "jobs per employer" or "top 5 concentration" as evidence of market health or opportunity
+- **NEVER** frame low concentration as positive for job seekers ("wide range of opportunities", "substantial choice")
+- **DO** present these metrics factually with "Among tracked employers" as the benchmark label
+- **DO** keep the raw numbers (jobs per employer, top 5 %) -- they describe our sample, not the market
+
+| Blocked Phrases | Why |
+|-----------------|-----|
+| "broadly distributed employer landscape" | Sampling artifact, not a market finding |
+| "highly/very fragmented" | Sampling artifact |
+| "distributed hiring" | Sampling artifact |
+| "no single employer dominates" | Would change if we added enterprise ATS |
+| "creates diverse opportunities" (re: concentration) | Causal claim from biased data |
 
 #### Where This Matters Most
 
 - **meta.summary** - Always qualify with "among tracked employers" or similar
 - **keyFindings narratives** - Avoid definitive pronouncements about what a city's market "is"
+- **Employer concentration metrics** - These are sampling artifacts; present factually with "Among tracked employers" benchmark, never editorialize
 - **Employer size/maturity/ownership distributions** - These reflect our sample bias; present as "among tracked employers"
-- **Working arrangement claims** - Always specify "ATS-sourced roles"; never claim flexibility rates apply to the whole market
+- **Working arrangement claims** - Always specify "direct employer postings"; never claim flexibility rates apply to the whole market
 - **Cross-city comparisons** - Use "across tracked cities" not "across all markets"
 - **Takeaways** - When citing percentages from our data, clarify they are from tracked roles
 
@@ -272,11 +302,11 @@ Our sources (ATS integrations and job board aggregators) skew toward tech-forwar
 
 Every report must include:
 
-1. **dataNote**: "Based on [N] direct employer postings from [N]+ companies, sourced via ATS integrations and job board aggregators. This sample skews toward tech-forward and scaling companies; large enterprises may be underrepresented. Recruitment agency listings excluded."
+1. **dataNote**: "Based on [N] direct employer postings from [N]+ companies, sourced via direct employer integrations and job board aggregators. This sample skews toward tech-forward and scaling companies; large enterprises may be underrepresented. Recruitment agency listings excluded."
 
-2. **methodology.limitations[0]**: "Not a complete census of the market - ATS and job board sources over-represent tech-forward and scaling companies; large enterprises may be underrepresented"
+2. **methodology.limitations[0]**: "Not a complete census of the market - direct employer sources and job board aggregators over-represent tech-forward and scaling companies; large enterprises may be underrepresented"
 
-**IMPORTANT: Do NOT name specific ATS platforms in report content.** Use generic terms: "ATS integrations", "ATS sources", "ATS-sourced roles", or "job board aggregators".
+**IMPORTANT: Do NOT name specific ATS platforms in report content.** Use generic terms: "direct employer integrations", "direct employer sources", "direct employer postings", or "job board aggregators".
 
 ---
 
@@ -327,7 +357,7 @@ query = supabase.table('enriched_jobs').or_(or_filter)
 
 **Why inclusive?** Job seekers care about ALL roles they're eligible for - local, remote, and regional. Reports should reflect candidate opportunity, not just local office presence.
 
-**Coverage note:** Our ATS coverage varies by city. Job counts reflect our source coverage, not total market size. See "Data Scope: Avoiding Whole-Market Claims" above.
+**Coverage note:** Our direct employer source coverage varies by city. Job counts reflect our source coverage, not total market size. See "Data Scope: Avoiding Whole-Market Claims" above.
 
 ### Taxonomy Reference (v1.5.0)
 
@@ -392,7 +422,7 @@ Only jobs with full descriptions (skills coverage in output). If < 30 jobs with 
 
 ### Working Arrangement Analysis
 
-**CRITICAL: ATS sources only (Adzuna excluded).** The report_generator filters to ATS sources (Greenhouse, Lever, Ashby, Workable) for working arrangement analysis. Adzuna is excluded because:
+**CRITICAL: Direct employer sources only (Adzuna excluded).** The report_generator filters to direct employer sources (Greenhouse, Lever, Ashby, Workable) for working arrangement analysis. Adzuna is excluded because:
 - Truncated descriptions (100-200 chars) cause the classifier to default to "onsite"
 - Employer metadata fallback has only ~17% coverage for Adzuna employers
 - Including Adzuna inflates onsite from ~3% to ~52% -- a misleading artifact
@@ -455,7 +485,7 @@ The report generator creates these sections with `[PLACEHOLDER]` markers that re
 
 | Section | Field | Content Required |
 |---------|-------|------------------|
-| `meta` | `summary` | 2-3 sentence market overview highlighting key findings |
+| `meta` | `summary` | SEO meta description only (not displayed inline on page). 1-2 sentences for search engines and social sharing. Do NOT repeat key findings content. |
 | `keyFindings` | `narrative[]` | 3 paragraphs: role composition, employer landscape, accessibility |
 | `keyFindings` | `bullets[]` | 5 findings with title + text, lead with most surprising |
 | `takeaways` | `jobSeekers[]` | 5 actionable insights for candidates |
@@ -479,6 +509,8 @@ The report generator creates these sections with `[PLACEHOLDER]` markers that re
 3. **Reference MoM changes** where comparison data exists (+X.Xpp, -X.Xpp)
 4. **Be specific** with numbers ("24%" not "about a quarter")
 5. **Split by persona** for takeaways (job seekers vs hiring managers)
+6. **Industry coverage inline** -- `industryDistribution.interpretation` must mention coverage % in the first sentence (e.g., "Among tracked employers with industry data (52% coverage), ..."), consistent with how company metadata sections (maturity, ownership, size) already do it
+7. **Single-month hedging** -- MoM changes are single-month movements, not trends. Always qualify speculation derived from MoM data with "based on a single month's movement" or "in the most recent month"
 
 ### Local Testing
 
@@ -568,7 +600,7 @@ When generating reports for multiple cities, use this workflow to avoid sub-agen
 | Role Specialization | 30 | Combine <5 into "Other" |
 | Seniority Distribution | 30 | Add entry accessibility context |
 | IC vs Management | 30 | Report count if mgmt <10 |
-| Working Arrangement | 30 | ATS sources only (Adzuna excluded); unknown excluded |
+| Working Arrangement | 30 | Direct employer sources only (Adzuna excluded); unknown excluded |
 | Compensation | 20 with salary | US cities only |
 | Skills Demand | 30 with skills | Source filter |
 | Market Metrics | 50 | Skip cross-segment if thin |
@@ -581,10 +613,10 @@ The report_generator calculates these automatically. Key benchmarks:
 
 ### Market Structure
 
-| Metric | Benchmark |
-|--------|-----------|
-| Jobs per employer | <1.5 broadly distributed, 1.5-3 moderate, >3 concentrated |
-| Top 5 concentration | <15% broadly distributed, 15-30% moderate, >30% concentrated |
+| Metric | Benchmark | Note |
+|--------|-----------|------|
+| Jobs per employer | "Among tracked employers" | Sampling artifact -- do NOT editorialize |
+| Top 5 concentration | "Among tracked employers" | Sampling artifact -- do NOT editorialize |
 
 ### Accessibility
 
