@@ -202,6 +202,20 @@ When generating reports for multiple cities, each city's Market Context section 
 2. **Not copy-pasted identically** across cities -- adapt framing and emphasis per market
 3. **Limited to 1-2 shared items max** per city; prioritize local context (city-specific industry shifts, employer moves, policy impacts)
 
+### Source Geographic Relevance
+
+**Every external citation must be geographically relevant to the city being reported on.**
+
+| City | Acceptable Sources | NOT Acceptable |
+|------|--------------------|----------------|
+| London | UK-specific data (ONS, HMRC, UK recruiter reports) | US labor market data (Indeed Hiring Lab US, BLS) |
+| Singapore | Singapore/APAC data (MOM Singapore, regional reports) | US or UK labor market data |
+| NYC, Denver, SF | US national data (with "nationally" qualifier), city-specific data | UK or APAC data |
+
+- US-sourced stats (Indeed Hiring Lab, BLS) must **never** appear in London or Singapore market context
+- When using national US data for a US city, qualify with "nationally" or "across the US" -- do not present national aggregates as city-level findings
+- If no geographically relevant source exists for a market context item, **drop the item** rather than misapply a source from another geography
+
 ### Source Citation
 
 **Every external claim must include a source.**
