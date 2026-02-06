@@ -665,6 +665,21 @@
       "slug": "coinmarketcap",
       "instance": "global",
       "notes": "Crypto data"
+    },
+    "ShopBack": {
+      "slug": "shopback-2",
+      "instance": "global",
+      "notes": "Singapore cashback/rewards platform, 103 jobs"
+    },
+    "Adventus": {
+      "slug": "adventus",
+      "instance": "global",
+      "notes": "Singapore IT services"
+    },
+    "Amber Group": {
+      "slug": "ambergroup",
+      "instance": "global",
+      "notes": "Singapore crypto/digital asset trading"
     }
   },
   "_meta": {
@@ -673,8 +688,8 @@
       "cli",
       "migrated_from_company_ats_mapping"
     ],
-    "total_companies": 175,
-    "notes": "Added 6 Singapore/APAC companies: Ninja Van, PatSnap, Nium, GoTo Group, CoinGecko, CoinMarketCap",
-    "last_updated": "2026-02-03"
+    "total_companies": 178,
+    "notes": "Added ShopBack, Adventus, Amber Group (Singapore Lever companies)",
+    "last_updated": "2026-02-06"
   }
 }
