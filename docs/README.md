@@ -11,8 +11,10 @@ This directory contains all specifications, guides, and architectural documentat
 | Greenhouse | Mon/Tue/Thu/Fri 7AM UTC | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
 | Lever | Mon/Wed/Fri 6PM UTC | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
 | Ashby | Tue/Thu 6PM UTC | ![Ashby](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-ashby.yml/badge.svg) |
+| Workable | Wed/Sat 6PM UTC | ![Workable](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-workable.yml/badge.svg) |
 | Adzuna | Wed 7AM UTC | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
-| URL Validation | Mon-Fri 9AM UTC | ![Validation](https://github.com/RichJacobs69/job-analytics/actions/workflows/refresh-derived-tables.yml/badge.svg) |
+| URL Validation | Mon-Fri 9AM UTC | ![Validation](https://github.com/RichJacobs69/job-analytics/actions/workflows/url-validation-stats.yml/badge.svg) |
+| Employer Metadata | Sun 8AM UTC | ![Metadata](https://github.com/RichJacobs69/job-analytics/actions/workflows/refresh-employer-metadata.yml/badge.svg) |
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
@@ -68,23 +70,27 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
   - Blacklist maintenance process
   - Current effectiveness metrics
 
-- **pipeline_flow** - ASCII diagram of data pipeline flow
-
 ## Architecture Deep-Dives
 
 ### directory: `architecture/`
-- **DUAL_PIPELINE.md** - Detailed design of Adzuna + Greenhouse dual data sources
-  - How jobs are merged and deduplicated
-  - Why dual sources provide better coverage
+- **MULTI_SOURCE_PIPELINE.md** - Multi-source pipeline architecture (Adzuna, Greenhouse, Lever, Ashby, Workable)
+- **INCREMENTAL_UPSERT_DESIGN.md** - Upsert-based deduplication and incremental processing
+- **ADDING_NEW_LOCATIONS.md** - How to add new cities to the location system
+- **SECURITY_AUDIT_REPORT.md** - Security assessment of the platform
 
-## Analytics & Consumption Layer
+### directory: `architecture/In Progress/`
+- **EPIC_JOB_FEED.md** - Curated job feed (Phase 1-2 complete, Phase 3 TODO)
 
-- **epic5_analytics_layer_planning.md** - Job Market Dashboard delivery plan (ACTIVE)
-  - Status: **Phase 0 Complete** ✅ (2025-12-08)
-  - Building Next.js dashboard at `richjacobs.me/projects/job-market`
-  - Architecture: Next.js API Routes → Supabase (read-only)
-  - Chart library: Chart.js
-  - 6 phased delivery (Foundation → Launch)
+### directory: `architecture/Done/`
+- **EPIC_WORKABLE_INTEGRATION.md** - Workable ATS integration (complete)
+- **EPIC_EMPLOYER_ENRICHMENT.md** - Employer metadata enrichment (complete)
+
+## Design Specifications
+
+### directory: `design/`
+- **JOB_FEED_UX_DESIGN.md** - Job feed UX specification (v1.5)
+- **JOB_FEED_UX_REVIEW.md** - Design review and iteration log
+- **job-feed-mockup.html** - Interactive HTML mockup
 
 ## Database Documentation
 
@@ -98,39 +104,13 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ## Cost Tracking & Metrics
 
 ### directory: `costs/`
-- **COST_METRICS.md** - Classification cost analysis and optimization strategies
-  - Current cost per job: ~$0.006 per raw insert, ~$0.01 per classified job
-  - Token usage breakdowns
-  - Historical cost data
-  
-- **claude_api_cost_*.csv** - Daily cost exports from Anthropic dashboard
-- **claude_api_tokens_*.csv** - Hourly token usage exports
-
-**Key Metrics:**
-| Metric | Value | Timestamp |
-|--------|-------|-----------|
-| Cost per raw insert | $0.00567 | 2025-12-04 (point-in-time) |
-| Cost per classified job | $0.00976 | 2025-12-04 (point-in-time) |
-| Classification rate | 58% | 2025-12-04 (point-in-time) |
-| Model | Claude 3.5 Haiku | - |
-| **Current dataset size** | ~20,000 enriched jobs | 2026-01-01 (Supabase) |
-| **ATS jobs (Greenhouse/Lever/Ashby)** | 3,747 jobs | 2026-01-01 |
-| **Dead links detected** | 451 (12%) | 2026-01-01 |
-
-## Testing Documentation
-
-### directory: `testing/`
-- **GREENHOUSE_VALIDATION.md** - Results and methodology of Greenhouse scraper testing
-  - 24 verified companies with active Greenhouse presence
-  - 1,045 total job postings captured
-  - Validation metrics and coverage analysis
+- **COST_METRICS.md** - Historical classification cost analysis (point-in-time snapshot from Dec 2025, pre-Gemini migration)
+- CSV exports from early Claude Haiku era (archived for reference)
 
 ## Historical Archive
 
 ### directory: `archive/`
-See **archive/README.md** for documentation about previous iterations, analyses, and implementation decisions.
-
-This is valuable context for understanding how the system evolved, why certain decisions were made, and what was tried before.
+See **[archive/claude_archive.md](archive/claude_archive.md)** for documentation about previous iterations, analyses, and implementation decisions.
 
 ---
 
@@ -144,16 +124,16 @@ This is valuable context for understanding how the system evolved, why certain d
 **Understanding Architecture (Developers):**
 4. schema_taxonomy.yaml - How we classify jobs
 5. system_architecture.yaml - System design & interactions
-6. architecture/DUAL_PIPELINE.md - Adzuna + Greenhouse pipeline design
-7. **epic5_analytics_layer_planning.md** - Analytics dashboard architecture (active development)
+6. architecture/MULTI_SOURCE_PIPELINE.md - Multi-source pipeline design
+7. architecture/INCREMENTAL_UPSERT_DESIGN.md - Deduplication strategy
 
 **Implementation Details (When Needed):**
 8. database/SCHEMA_UPDATES.md - Database schema & changes
 9. blacklisting_process.md - Agency filtering & optimization
-10. Individual module docstrings in source code (../classifier.py, ../db_connection.py, etc.)
+10. Individual module docstrings in source code
 
 **Historical Context (Understanding Evolution):**
-- archive/README.md - Why we chose certain approaches
+- archive/claude_archive.md - Why we chose certain approaches
 
 ---
 
@@ -163,7 +143,7 @@ When updating documentation:
 - Keep YAML specs current with code changes
 - Document new features in appropriate section
 - Add migrations to `database/migrations/` with descriptive names
-- Update archive README if moving docs to historical reference
+- Update archive/claude_archive.md if moving docs to historical reference
 - Keep this index up-to-date
 
 ### Epic Naming Convention

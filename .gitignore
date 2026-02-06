@@ -39,5 +39,13 @@ logs/
 
 # OS
 .DS_Store
-Thumbs.db.venv/
+Thumbs.db
+
+# Virtual environments
 .venv/
+
+# Sibling project directories
+portfolio-site/
+
+# Pip artifacts
+*.whl
