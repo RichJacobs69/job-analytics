@@ -404,16 +404,107 @@
     },
     "Sofar Ocean": {
       "slug": "sofarocean"
+    },
+    "Snowflake": {
+      "slug": "snowflake"
+    },
+    "Lemonade": {
+      "slug": "lemonade"
+    },
+    "Gorgias": {
+      "slug": "gorgias"
+    },
+    "UiPath": {
+      "slug": "uipath"
+    },
+    "Deliveroo": {
+      "slug": "deliveroo"
+    },
+    "Reddit": {
+      "slug": "reddit"
+    },
+    "Mercury": {
+      "slug": "mercury"
+    },
+    "Alan": {
+      "slug": "alan"
+    },
+    "Aurora Solar": {
+      "slug": "aurorasolar"
+    },
+    "Boomi": {
+      "slug": "boomi"
+    },
+    "Coder": {
+      "slug": "coder"
+    },
+    "Dave": {
+      "slug": "dave"
+    },
+    "EightSleep": {
+      "slug": "eightsleep"
+    },
+    "Form Energy": {
+      "slug": "formenergy"
+    },
+    "FullStory": {
+      "slug": "fullstory"
+    },
+    "HackerOne": {
+      "slug": "hackerone"
+    },
+    "Marqeta": {
+      "slug": "marqeta"
+    },
+    "Monte Carlo": {
+      "slug": "montecarlodata"
+    },
+    "Multiverse": {
+      "slug": "multiverse"
+    },
+    "1Password": {
+      "slug": "1password"
+    },
+    "Modern Treasury": {
+      "slug": "moderntreasury"
+    },
+    "Stytch": {
+      "slug": "stytch"
+    },
+    "incident.io": {
+      "slug": "incident"
+    },
+    "Hopper": {
+      "slug": "hopper"
+    },
+    "Quora": {
+      "slug": "quora"
+    },
+    "Andela": {
+      "slug": "andela"
+    },
+    "Marshmallow": {
+      "slug": "marshmallow"
+    },
+    "Leapsome": {
+      "slug": "leapsome"
+    },
+    "Rula": {
+      "slug": "rula"
+    },
+    "Scribe": {
+      "slug": "scribe"
     }
   },
   "_meta": {
     "validated_at": "2025-12-30",
     "discovery_sources": [
       "epic_initial_list",
-      "company_curator_2025-12-30"
+      "company_curator_2025-12-30",
+      "ashby_customers_page_2026-02-06"
     ],
-    "total_companies": 134,
-    "notes": "Added ElevenLabs and Sofar Ocean from Singapore discovery",
-    "last_updated": "2026-02-03"
+    "total_companies": 164,
+    "notes": "Added 30 companies from ashbyhq.com/customers cross-reference",
+    "last_updated": "2026-02-06"
   }
 }
