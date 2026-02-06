@@ -95,7 +95,7 @@ def parse_smartrecruiters_job(job_data: Dict, company_slug: str) -> SmartRecruit
     Returns:
         SmartRecruitersJob object
 
-    API Response Structure:
+    API Response Structure (detail endpoint):
         - id: UUID string
         - name: job title
         - location: {city, region, country, remote}
@@ -106,6 +106,11 @@ def parse_smartrecruiters_job(job_data: Dict, company_slug: str) -> SmartRecruit
         - function: {id, label}
         - jobAd: {sections: {companyDescription, jobDescription, qualifications, additionalInformation}}
         - releasedDate: ISO timestamp
+        - applyUrl: application URL
+        - compensation: salary data (if available)
+
+    Note: The list endpoint does NOT include jobAd. Description must be
+    fetched from the detail endpoint (ref URL) separately.
     """
     # Build location string from nested location object
     loc = job_data.get('location', {}) or {}
@@ -315,6 +320,24 @@ def fetch_smartrecruiters_jobs(
                 if not location_matched:
                     stats['filtered_by_location'] += 1
                     continue
+
+            # Fetch detail endpoint to get jobAd (description)
+            # The list endpoint does NOT include description text
+            ref_url = job_data.get('ref')
+            if ref_url:
+                try:
+                    detail_response = requests.get(ref_url, headers=headers, timeout=30)
+                    if detail_response.status_code == 200:
+                        detail_data = detail_response.json()
+                        # Merge detail fields into job_data
+                        job_data['jobAd'] = detail_data.get('jobAd')
+                        job_data['applyUrl'] = detail_data.get('applyUrl')
+                        job_data['compensation'] = detail_data.get('compensation')
+                    else:
+                        logger.warning(f"Detail fetch failed for {title[:40]}: HTTP {detail_response.status_code}")
+                    time.sleep(rate_limit)
+                except Exception as e:
+                    logger.warning(f"Detail fetch error for {title[:40]}: {str(e)[:80]}")
 
             job = parse_smartrecruiters_job(job_data, company_slug)
             jobs.append(job)
