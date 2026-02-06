@@ -396,24 +396,145 @@
     "Weave": {
       "slug": "weave"
     },
-    "Zapier": {
-      "slug": "zapier"
-    },
     "ElevenLabs": {
       "slug": "elevenlabs"
     },
     "Sofar Ocean": {
       "slug": "sofarocean"
+    },
+    "Snowflake": {
+      "slug": "snowflake"
+    },
+    "Lemonade": {
+      "slug": "lemonade"
+    },
+    "Lime": {
+      "slug": "lime"
+    },
+    "Gorgias": {
+      "slug": "gorgias"
+    },
+    "UiPath": {
+      "slug": "uipath"
+    },
+    "Deliveroo": {
+      "slug": "deliveroo"
+    },
+    "Duolingo": {
+      "slug": "duolingo"
+    },
+    "Reddit": {
+      "slug": "reddit"
+    },
+    "Alan": {
+      "slug": "alan"
+    },
+    "Altura": {
+      "slug": "altura"
+    },
+    "amo": {
+      "slug": "amo"
+    },
+    "Aurora Solar": {
+      "slug": "aurorasolar"
+    },
+    "Avid4 Adventure": {
+      "slug": "avid4"
+    },
+    "Brightline": {
+      "slug": "hellobrightline"
+    },
+    "Coder": {
+      "slug": "coder"
+    },
+    "Convictional": {
+      "slug": "convictional"
+    },
+    "Dave": {
+      "slug": "dave"
+    },
+    "EightSleep": {
+      "slug": "eightsleep"
+    },
+    "Flock Safety": {
+      "slug": "Flock Safety"
+    },
+    "FullStory": {
+      "slug": "fullstory"
+    },
+    "HackerOne": {
+      "slug": "hackerone"
+    },
+    "Infinite Lambda": {
+      "slug": "Infinite Lambda"
+    },
+    "January": {
+      "slug": "january"
+    },
+    "Marqeta": {
+      "slug": "marqeta"
+    },
+    "Monte Carlo": {
+      "slug": "montecarlodata"
+    },
+    "Multiverse": {
+      "slug": "multiverse"
+    },
+    "NETGEAR": {
+      "slug": "netgear"
+    },
+    "Sequoia": {
+      "slug": "sequoia"
+    },
+    "Away": {
+      "slug": "away"
+    },
+    "Juniper Square": {
+      "slug": "junipersquare"
+    },
+    "Modern Treasury": {
+      "slug": "moderntreasury"
+    },
+    "Hopper": {
+      "slug": "hopper"
+    },
+    "Trainline": {
+      "slug": "trainline"
+    },
+    "hyperexponential": {
+      "slug": "hyperexponential"
+    },
+    "Cedar": {
+      "slug": "cedar"
+    },
+    "Hawk": {
+      "slug": "hawk"
+    },
+    "Luma AI": {
+      "slug": "luma-ai"
+    },
+    "incident.io": {
+      "slug": "incident"
+    },
+    "Rula": {
+      "slug": "rula"
+    },
+    "Sanity": {
+      "slug": "sanity"
+    },
+    "Nivoda": {
+      "slug": "nivoda"
     }
   },
   "_meta": {
     "validated_at": "2025-12-30",
     "discovery_sources": [
       "epic_initial_list",
-      "company_curator_2025-12-30"
+      "company_curator_2025-12-30",
+      "ashby_customers_page_2026-02-06"
     ],
-    "total_companies": 134,
-    "notes": "Added ElevenLabs and Sofar Ocean from Singapore discovery",
-    "last_updated": "2026-02-03"
+    "total_companies": 175,
+    "notes": "Added 41 companies from Ashby customers page (logo banner, case studies, testimonials). Removed duplicate Zapier entry.",
+    "last_updated": "2026-02-06"
   }
 }
