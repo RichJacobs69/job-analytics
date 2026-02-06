@@ -39,15 +39,232 @@
     "SmartRecruiters": {
       "slug": "Smartrecruiters",
       "notes": "ATS provider (eats own dogfood), 28 postings"
+    },
+    "Abercrombie & Fitch": {
+      "slug": "abercrombieandfitchco"
+    },
+    "ACI Group": {
+      "slug": "acigroup"
+    },
+    "Akuo": {
+      "slug": "akuo"
+    },
+    "AlgoBrain": {
+      "slug": "algobraininc"
+    },
+    "Ampol": {
+      "slug": "ampol"
+    },
+    "Arista Networks": {
+      "slug": "aristanetworks"
+    },
+    "BEUMER Group": {
+      "slug": "beumergroup1"
+    },
+    "Bibit": {
+      "slug": "bibitid"
+    },
+    "Boomtrain": {
+      "slug": "boomtrain"
+    },
+    "Cint": {
+      "slug": "cint"
+    },
+    "City and County of San Francisco": {
+      "slug": "cityandcountyofsanfrancisco1"
+    },
+    "City of Americus": {
+      "slug": "cityofamericus"
+    },
+    "Deloitte NZ": {
+      "slug": "deloittenz"
+    },
+    "Deutsche Telekom IT Solutions": {
+      "slug": "deutschetelekomitsolutions"
+    },
+    "Deutsche Telekom IT Solutions Slovakia": {
+      "slug": "deutschetelekomitsolutionsslovakia"
+    },
+    "Dexterra": {
+      "slug": "dexterra"
+    },
+    "Domino's": {
+      "slug": "dominos"
+    },
+    "EMCO Corporation": {
+      "slug": "emcocorporation"
+    },
+    "Enero": {
+      "slug": "enero"
+    },
+    "Enpal": {
+      "slug": "enpalbv"
+    },
+    "Entertainment Benefits Group": {
+      "slug": "entertainmentbenefitsgroup"
+    },
+    "Equinox": {
+      "slug": "equinox"
+    },
+    "Eurofins": {
+      "slug": "eurofins"
+    },
+    "Experian": {
+      "slug": "experian"
+    },
+    "Federato": {
+      "slug": "federatotechnologies"
+    },
+    "Flink": {
+      "slug": "flink3"
+    },
+    "Flint Corp": {
+      "slug": "flintcorp1"
+    },
+    "Forbes Advisor": {
+      "slug": "forbesadvisor"
+    },
+    "Genuine Parts Company": {
+      "slug": "gpc2"
+    },
+    "Headmasters": {
+      "slug": "headmasters"
+    },
+    "Ignition": {
+      "slug": "ignition1"
+    },
+    "IntegriChain": {
+      "slug": "integrichain1"
+    },
+    "IWI": {
+      "slug": "iwi1"
+    },
+    "J.S. Held": {
+      "slug": "jsheldllc"
+    },
+    "KordaMentha": {
+      "slug": "kordamentha"
+    },
+    "KPMG Australia": {
+      "slug": "kpmgaustralia1"
+    },
+    "Lever": {
+      "slug": "lever1"
+    },
+    "LinkedIn": {
+      "slug": "linkedin3"
+    },
+    "MedTrainer": {
+      "slug": "medtrainer"
+    },
+    "Metasys": {
+      "slug": "metasys"
+    },
+    "MET Group": {
+      "slug": "metgroup"
+    },
+    "MicroStrategy": {
+      "slug": "microstrategy1"
+    },
+    "Minor International": {
+      "slug": "minorinternational"
+    },
+    "Mirantis": {
+      "slug": "mirantis"
+    },
+    "NBCUniversal": {
+      "slug": "nbcuniversal3"
+    },
+    "NCS": {
+      "slug": "ncs3"
+    },
+    "NDC": {
+      "slug": "ndc2"
+    },
+    "Nearmap": {
+      "slug": "nearmap"
+    },
+    "NEC SWS": {
+      "slug": "necsws"
+    },
+    "New York Life": {
+      "slug": "newyorklifeinsurancecompany3"
+    },
+    "NielsenIQ": {
+      "slug": "nielseniq"
+    },
+    "NYTEC": {
+      "slug": "nytecinc"
+    },
+    "Orion Health": {
+      "slug": "orionhealth2"
+    },
+    "Patient Funding Alternatives": {
+      "slug": "patientfundingalternatives"
+    },
+    "PayNearMe": {
+      "slug": "paynearme"
+    },
+    "QAD": {
+      "slug": "qadinc"
+    },
+    "Red Wing Shoes": {
+      "slug": "redwingshoecompany"
+    },
+    "RELX": {
+      "slug": "reedbusinessinformationlimited"
+    },
+    "Scalable Capital": {
+      "slug": "scalablegmbh"
+    },
+    "SIXT": {
+      "slug": "sixt"
+    },
+    "Smit Lamnalco": {
+      "slug": "smitlamnalco"
+    },
+    "Trove Brands": {
+      "slug": "trovebrands"
+    },
+    "Turnitin": {
+      "slug": "turnitinllc"
+    },
+    "Umdasch Group": {
+      "slug": "umdaschgroup"
+    },
+    "USM": {
+      "slug": "usm2"
+    },
+    "Vattenfall": {
+      "slug": "vattenfall"
+    },
+    "Vuori": {
+      "slug": "vuoriinc"
+    },
+    "VusionGroup": {
+      "slug": "vusiongroupsa"
+    },
+    "Wix": {
+      "slug": "wix2"
+    },
+    "Xplor": {
+      "slug": "xplor"
+    },
+    "moomoo": {
+      "slug": "moomoo"
+    },
+    "Duke Corporate Education": {
+      "slug": "duke-corporate-education"
     }
   },
   "_meta": {
     "validated_at": "2026-02-06",
     "discovery_sources": [
-      "manual_api_testing"
+      "manual_api_testing",
+      "google_cse_2026-02-06"
     ],
-    "total_companies": 10,
-    "notes": "Initial seed via API validation. Slugs are case-sensitive (e.g., 'Visa' not 'visa'). Expand via discover_ats_companies.py.",
+    "total_companies": 81,
+    "notes": "Discovered 88 via Google CSE, removed 17 staffing agencies, cleaned display names",
     "last_updated": "2026-02-06"
   }
 }

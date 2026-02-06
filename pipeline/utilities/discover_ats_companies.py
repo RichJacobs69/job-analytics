@@ -459,7 +459,7 @@ def main():
 
     parser.add_argument(
         'platform',
-        choices=['greenhouse', 'lever', 'ashby', 'workable', 'all'],
+        choices=['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'all'],
         help='ATS platform to discover (or "all" for all platforms)'
     )
 
@@ -492,7 +492,7 @@ def main():
 
     # Determine platforms to run
     if args.platform == 'all':
-        platforms = ['greenhouse', 'lever', 'ashby', 'workable']
+        platforms = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
     else:
         platforms = [args.platform]
 
