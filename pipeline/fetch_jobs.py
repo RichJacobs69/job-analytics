@@ -281,11 +281,12 @@ async def fetch_from_lever(companies: Optional[List[str]] = None) -> List:
         return []
 
 
-async def get_recently_processed_companies(hours: int = 24) -> List[str]:
+async def get_recently_processed_companies(hours: int = 24, source: str = 'greenhouse') -> List[str]:
     """Get list of companies processed in the last N hours
 
     Args:
         hours: Look back window in hours (default: 24)
+        source: ATS source to check (default: 'greenhouse')
 
     Returns:
         List of company slugs that have been processed recently
@@ -297,11 +298,11 @@ async def get_recently_processed_companies(hours: int = 24) -> List[str]:
     cutoff_str = cutoff_time.isoformat()
 
     try:
-        # Query raw_jobs for Greenhouse jobs last seen after cutoff
+        # Query raw_jobs for jobs last seen after cutoff
         # Uses 'last_seen' (updated on every scrape) instead of 'scraped_at' (first discovery)
         result = supabase.table('raw_jobs') \
             .select('metadata') \
-            .eq('source', 'greenhouse') \
+            .eq('source', source) \
             .gte('last_seen', cutoff_str) \
             .execute()
 
@@ -1012,7 +1013,7 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
     return stats
 
 
-async def process_lever_incremental(companies: Optional[List[str]] = None) -> Dict:
+async def process_lever_incremental(companies: Optional[List[str]] = None, resume_hours: int = 0) -> Dict:
     """Process Lever jobs incrementally with per-company database writes
 
     This function implements the incremental architecture (same as Greenhouse):
@@ -1024,6 +1025,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
 
     Args:
         companies: Optional list of company slugs to process. If None, processes all from mapping.
+        resume_hours: If > 0, skip companies processed in the last N hours
 
     Returns:
         Dict with processing statistics
@@ -1054,6 +1056,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
     stats = {
         'companies_processed': 0,
         'companies_with_jobs': 0,
+        'companies_skipped': 0,
         'total_jobs_fetched': 0,
         'total_jobs_kept': 0,
         'total_filtered_by_title': 0,
@@ -1090,6 +1093,22 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
         }
     else:
         companies_to_process = lever_companies
+
+    # Resume mode: skip recently processed companies
+    if resume_hours > 0:
+        recently_processed = await get_recently_processed_companies(resume_hours, source='lever')
+        if recently_processed:
+            before = len(companies_to_process)
+            companies_to_process = {
+                name: data for name, data in companies_to_process.items()
+                if data.get('slug') not in recently_processed
+            }
+            skipped = before - len(companies_to_process)
+            stats['companies_skipped'] = skipped
+            logger.info(f"Resume mode: skipping {skipped} companies processed in last {resume_hours}h, {len(companies_to_process)} remaining")
+            if not companies_to_process:
+                logger.info("All companies already processed - nothing to do!")
+                return stats
 
     logger.info(f"Processing {len(companies_to_process)} Lever companies...\n")
 
@@ -1376,7 +1395,7 @@ async def process_lever_incremental(companies: Optional[List[str]] = None) -> Di
     return stats
 
 
-async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Dict:
+async def process_ashby_incremental(companies: Optional[List[str]] = None, resume_hours: int = 0) -> Dict:
     """Process Ashby jobs incrementally with per-company database writes
 
     This function implements the incremental architecture (same as Lever):
@@ -1394,6 +1413,7 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
 
     Args:
         companies: Optional list of company slugs to process. If None, processes all from mapping.
+        resume_hours: If > 0, skip companies processed in the last N hours
 
     Returns:
         Dict with processing statistics
@@ -1424,6 +1444,7 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
     stats = {
         'companies_processed': 0,
         'companies_with_jobs': 0,
+        'companies_skipped': 0,
         'total_jobs_fetched': 0,
         'total_jobs_kept': 0,
         'total_filtered_by_title': 0,
@@ -1461,6 +1482,22 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
         }
     else:
         companies_to_process = ashby_companies
+
+    # Resume mode: skip recently processed companies
+    if resume_hours > 0:
+        recently_processed = await get_recently_processed_companies(resume_hours, source='ashby')
+        if recently_processed:
+            before = len(companies_to_process)
+            companies_to_process = {
+                name: data for name, data in companies_to_process.items()
+                if data.get('slug') not in recently_processed
+            }
+            skipped = before - len(companies_to_process)
+            stats['companies_skipped'] = skipped
+            logger.info(f"Resume mode: skipping {skipped} companies processed in last {resume_hours}h, {len(companies_to_process)} remaining")
+            if not companies_to_process:
+                logger.info("All companies already processed - nothing to do!")
+                return stats
 
     logger.info(f"Processing {len(companies_to_process)} Ashby companies...\n")
 
@@ -1763,7 +1800,7 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None) -> Di
     return stats
 
 
-async def process_workable_incremental(companies: Optional[List[str]] = None) -> Dict:
+async def process_workable_incremental(companies: Optional[List[str]] = None, resume_hours: int = 0) -> Dict:
     """Process Workable jobs incrementally with per-company database writes
 
     This function implements the incremental architecture (same as Ashby):
@@ -1781,6 +1818,7 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
 
     Args:
         companies: Optional list of company slugs to process. If None, processes all from mapping.
+        resume_hours: If > 0, skip companies processed in the last N hours
 
     Returns:
         Dict with processing statistics
@@ -1811,6 +1849,7 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
     stats = {
         'companies_processed': 0,
         'companies_with_jobs': 0,
+        'companies_skipped': 0,
         'total_jobs_fetched': 0,
         'total_jobs_kept': 0,
         'total_filtered_by_title': 0,
@@ -1849,6 +1888,22 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
         }
     else:
         companies_to_process = workable_companies
+
+    # Resume mode: skip recently processed companies
+    if resume_hours > 0:
+        recently_processed = await get_recently_processed_companies(resume_hours, source='workable')
+        if recently_processed:
+            before = len(companies_to_process)
+            companies_to_process = {
+                name: data for name, data in companies_to_process.items()
+                if data.get('slug') not in recently_processed
+            }
+            skipped = before - len(companies_to_process)
+            stats['companies_skipped'] = skipped
+            logger.info(f"Resume mode: skipping {skipped} companies processed in last {resume_hours}h, {len(companies_to_process)} remaining")
+            if not companies_to_process:
+                logger.info("All companies already processed - nothing to do!")
+                return stats
 
     logger.info(f"Processing {len(companies_to_process)} Workable companies...\n")
 
@@ -2167,7 +2222,7 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
     return stats
 
 
-async def process_smartrecruiters_incremental(companies: Optional[List[str]] = None) -> Dict:
+async def process_smartrecruiters_incremental(companies: Optional[List[str]] = None, resume_hours: int = 0) -> Dict:
     """Process SmartRecruiters jobs incrementally with per-company database writes
 
     This function implements the incremental architecture (same as Workable):
@@ -2185,6 +2240,7 @@ async def process_smartrecruiters_incremental(companies: Optional[List[str]] = N
 
     Args:
         companies: Optional list of company slugs to process. If None, processes all from mapping.
+        resume_hours: If > 0, skip companies processed in the last N hours
 
     Returns:
         Dict with processing statistics
@@ -2215,6 +2271,7 @@ async def process_smartrecruiters_incremental(companies: Optional[List[str]] = N
     stats = {
         'companies_processed': 0,
         'companies_with_jobs': 0,
+        'companies_skipped': 0,
         'total_jobs_fetched': 0,
         'total_jobs_kept': 0,
         'total_filtered_by_title': 0,
@@ -2253,6 +2310,22 @@ async def process_smartrecruiters_incremental(companies: Optional[List[str]] = N
         }
     else:
         companies_to_process = sr_companies
+
+    # Resume mode: skip recently processed companies
+    if resume_hours > 0:
+        recently_processed = await get_recently_processed_companies(resume_hours, source='smartrecruiters')
+        if recently_processed:
+            before = len(companies_to_process)
+            companies_to_process = {
+                name: data for name, data in companies_to_process.items()
+                if data.get('slug') not in recently_processed
+            }
+            skipped = before - len(companies_to_process)
+            stats['companies_skipped'] = skipped
+            logger.info(f"Resume mode: skipping {skipped} companies processed in last {resume_hours}h, {len(companies_to_process)} remaining")
+            if not companies_to_process:
+                logger.info("All companies already processed - nothing to do!")
+                return stats
 
     logger.info(f"Processing {len(companies_to_process)} SmartRecruiters companies...\n")
 
@@ -3293,9 +3366,11 @@ Examples:
 
         logger.info("\n" + "="*80)
         logger.info("STARTING LEVER INCREMENTAL PIPELINE")
+        if args.resume_hours > 0:
+            logger.info(f"Resume Mode: Enabled ({args.resume_hours} hour window)")
         logger.info("="*80 + "\n")
 
-        lever_stats = await process_lever_incremental(lever_companies)
+        lever_stats = await process_lever_incremental(lever_companies, resume_hours=args.resume_hours)
         total_stats['lever'] = lever_stats
 
     # ASHBY PIPELINE: Incremental processing (same pattern as Lever)
@@ -3307,9 +3382,11 @@ Examples:
 
         logger.info("\n" + "="*80)
         logger.info("STARTING ASHBY INCREMENTAL PIPELINE")
+        if args.resume_hours > 0:
+            logger.info(f"Resume Mode: Enabled ({args.resume_hours} hour window)")
         logger.info("="*80 + "\n")
 
-        ashby_stats = await process_ashby_incremental(ashby_companies)
+        ashby_stats = await process_ashby_incremental(ashby_companies, resume_hours=args.resume_hours)
         total_stats['ashby'] = ashby_stats
 
     # WORKABLE PIPELINE: Incremental processing (same pattern as Ashby)
@@ -3321,9 +3398,11 @@ Examples:
 
         logger.info("\n" + "="*80)
         logger.info("STARTING WORKABLE INCREMENTAL PIPELINE")
+        if args.resume_hours > 0:
+            logger.info(f"Resume Mode: Enabled ({args.resume_hours} hour window)")
         logger.info("="*80 + "\n")
 
-        workable_stats = await process_workable_incremental(workable_companies)
+        workable_stats = await process_workable_incremental(workable_companies, resume_hours=args.resume_hours)
         total_stats['workable'] = workable_stats
 
     # SMARTRECRUITERS PIPELINE: Incremental processing (same pattern as Workable)
@@ -3335,9 +3414,11 @@ Examples:
 
         logger.info("\n" + "="*80)
         logger.info("STARTING SMARTRECRUITERS INCREMENTAL PIPELINE")
+        if args.resume_hours > 0:
+            logger.info(f"Resume Mode: Enabled ({args.resume_hours} hour window)")
         logger.info("="*80 + "\n")
 
-        sr_stats = await process_smartrecruiters_incremental(sr_companies)
+        sr_stats = await process_smartrecruiters_incremental(sr_companies, resume_hours=args.resume_hours)
         total_stats['smartrecruiters'] = sr_stats
 
     # CUSTOM CONFIG PIPELINE: Google XML + Playwright scrapers (FAANG, banks, etc.)
