@@ -247,12 +247,10 @@ def fetch_workable_jobs(
                 # Check location string
                 location_matched = matches_target_location(location_str, location_patterns)
 
-                # Also check telecommuting for remote jobs
-                if not location_matched:
-                    telecommuting = job_data.get('telecommuting', False)
-                    if telecommuting:
-                        # Remote jobs match all locations
-                        location_matched = True
+                # Note: telecommuting flag intentionally NOT used as auto-pass here.
+                # Remote jobs in non-target cities should be filtered out. The
+                # location_patterns already include "remote" as a keyword, so jobs
+                # with "Remote" in their location string still pass.
 
                 # Also check description for location keywords (catches multi-location roles)
                 if not location_matched:

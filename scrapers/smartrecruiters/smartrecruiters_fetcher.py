@@ -296,11 +296,10 @@ def fetch_smartrecruiters_jobs(
                 # Check location string
                 location_matched = matches_target_location(location_str, location_patterns)
 
-                # Also check remote flag
-                if not location_matched:
-                    is_remote = loc.get('remote', False)
-                    if is_remote:
-                        location_matched = True
+                # Note: remote flag intentionally NOT used as auto-pass here.
+                # Remote jobs in non-target cities (Sydney, Beijing, etc.) should be
+                # filtered out. The location_patterns already include "remote" as a
+                # keyword, so jobs with "Remote" in their location string still pass.
 
                 # Also check description for location keywords (catches multi-location roles)
                 if not location_matched:
