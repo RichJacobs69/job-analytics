@@ -45,6 +45,8 @@ programming:
   - powershell
   - groovy
   - solidity
+  - linux
+  - unix
 
   # SQL variants
   - pl/sql
@@ -100,8 +102,6 @@ programming:
   - matplotlib
   - seaborn
   - plotly
-  - scikit-learn
-  - sklearn
   - statsmodels
 
   # Other frameworks
@@ -115,21 +115,11 @@ programming:
   - jupyter notebook
   - jupyter notebooks
   - cython
-  - pyspark
   - sqlalchemy
   - beautifulsoup
   - dash
   - streamlit
   - gradio
-
-  # Version control
-  - git
-  - github
-  - gitlab
-  - bitbucket
-  - gitops
-  - github actions
-  - gitlab ci
 
 # =============================================================================
 # CLOUD PLATFORMS & SERVICES
@@ -150,8 +140,6 @@ cloud:
   - aws emr
   - emr
   - aws emr serverless
-  - aws kinesis
-  - kinesis
   - aws sagemaker
   - sagemaker
   - amazon sagemaker
@@ -163,11 +151,9 @@ cloud:
   - quicksight
   - aws kms
   - cloudwatch
-  - cloudformation
   - step functions
   - step function
   - fargate
-  - eks
   - aws rds
   - amazon eventbridge
   - lake formation
@@ -214,7 +200,6 @@ cloud:
   - google vertex ai
   - gcp vertex ai
   - google cloud ai
-  - pub/sub
   - google pub/sub
   - dataflow
   - gcp kms
@@ -290,7 +275,6 @@ databases:
   - postgresql
   - postgres
   - postgres sql
-  - postgresql
   - mysql
   - sql server
   - mongodb
@@ -312,6 +296,7 @@ databases:
   - nosql
   - relational database
   - database
+  - databases
   - database design
   - database engineering
   - database management
@@ -350,10 +335,10 @@ pipelines_orchestration:
   - celigo
   - data integration
   - real-time data integration
+  - data engineering
   - workflow orchestration
   - workflow automation
   - argo
-  - argocd
   - temporal
 
 # =============================================================================
@@ -377,6 +362,8 @@ data_modeling:
   - semantic technologies
   - data transforms
   - data transformation
+  - data architecture
+  - data models
 
 # =============================================================================
 # BIG DATA & DISTRIBUTED COMPUTING
@@ -404,7 +391,7 @@ big_data:
   - distributed system
   - distributed data stores
   - distributed storage
-  - feature stores
+  - big data
 
 # =============================================================================
 # STREAMING & REAL-TIME
@@ -478,6 +465,8 @@ deep_learning:
   - perception models
   - video analysis
   - video technology
+  - cuda
+  - gpu
 
 # =============================================================================
 # CLASSICAL MACHINE LEARNING
@@ -527,6 +516,9 @@ classical_ml:
   - econometrics
   - optimization
   - optimization algorithms
+  - data science
+  - ai/ml
+  - model evaluation
 
 # =============================================================================
 # LLM & GENERATIVE AI
@@ -687,6 +679,15 @@ ci_cd:
   - gitops
 
 # =============================================================================
+# VERSION CONTROL
+# =============================================================================
+version_control:
+  - git
+  - github
+  - gitlab
+  - bitbucket
+
+# =============================================================================
 # MONITORING & OBSERVABILITY
 # =============================================================================
 monitoring:
@@ -699,7 +700,7 @@ monitoring:
   - observability
   - observability platforms
   - logging
-  - metrics
+  - monitoring
   - dynatrace
   - opentelemetry
 
@@ -733,6 +734,9 @@ visualization:
   - data visualisation
   - dashboard design
   - dashboards
+  - reporting
+  - business intelligence
+  - bi
 
 # =============================================================================
 # ANALYTICS & STATISTICS
@@ -760,6 +764,10 @@ analytics_stats:
   - biostatistics
   - spatial statistics
   - pymc
+  - analytics
+  - data analytics
+  - a/b tests
+  - forecasting
 
 # =============================================================================
 # BUSINESS INTELLIGENCE & ANALYTICS TOOLS
@@ -785,6 +793,8 @@ business_tools:
   - alteryx
   - knime
   - sas
+  - power automate
+  - power apps
 
 # =============================================================================
 # PRODUCT & PROJECT TOOLS
@@ -893,6 +903,23 @@ security:
   - fedramp
 
 # =============================================================================
+# COMPLIANCE & REGULATION
+# =============================================================================
+compliance_regulation:
+  - aml
+  - anti-money laundering
+  - kyc
+  - know your customer
+  - sox
+  - sarbanes-oxley
+  - regulatory compliance
+  - regulatory reporting
+  - audit logging
+  - regulatory
+  - financial regulations
+  - banking regulations
+
+# =============================================================================
 # CRM & MARKETING PLATFORMS
 # =============================================================================
 crm_marketing:
@@ -915,6 +942,7 @@ crm_marketing:
   - dv360
   - the trade desk
   - programmatic advertising
+  - crm
 
 # =============================================================================
 # ERP & BUSINESS SYSTEMS
@@ -930,6 +958,7 @@ erp_systems:
   - microsoft dynamics
   - erp
   - peoplesoft
+  - servicenow
 
 # =============================================================================
 # DATA GOVERNANCE & QUALITY
@@ -989,11 +1018,11 @@ execution_delivery:
   - agile
   - scrum
   - kanban
-  - safe
-  - waterfall
   - sprint planning
   - backlog management
   - roadmapping
+  - roadmap
+  - roadmaps
   - product roadmap
   - product roadmapping
   - product strategy
@@ -1016,6 +1045,7 @@ stakeholder_mgmt:
   - change management
   - customer collaboration
   - client services
+  - executive communication
 
 # =============================================================================
 # TESTING & QA
@@ -1055,6 +1085,22 @@ geospatial:
   - geospatial
   - geospatial data
   - remote sensing
+
+# =============================================================================
+# BLOCKCHAIN & WEB3
+# =============================================================================
+blockchain:
+  - blockchain
+  - blockchain technology
+  - web3
+  - defi
+  - decentralized finance
+  - ethereum
+  - solana
+  - smart contracts
+  - smart contract
+  - cryptocurrency
+  - crypto
 
 # =============================================================================
 # DELIVERY METHODOLOGIES & FRAMEWORKS
@@ -1127,7 +1173,6 @@ certifications:
 delivery_tools:
   - ms project
   - microsoft project
-  - smartsheet
   - rally
   - planview
   - clarity
@@ -1153,9 +1198,7 @@ governance:
   - risk mitigation
   - raid log
   - raid management
-  - change management
   - change control
-  - stakeholder management
   - stakeholder engagement
   - budget management
   - budget tracking

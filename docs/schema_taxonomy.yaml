@@ -488,7 +488,7 @@ skills_ontology:
     - family: {code: experimentation, label: "Experimentation"}
       names: ["A/B testing", "Experiment design", "Statistical significance", "Hypothesis testing", "Multivariate testing"]
     
-    - family: {code: analytics_pm, label: "Analytics for PMs"}
+    - family: {code: product_usage, label: "Product Usage & Metrics"}
       names: ["SQL", "Data analysis", "Metrics", "KPIs", "Dashboards", "Amplitude", "Mixpanel", "Google Analytics", "Product analytics"]
 
     - family: {code: stakeholder_mgmt, label: "Stakeholder Management"}
@@ -543,6 +543,9 @@ skills_ontology:
     - family: {code: visualization, label: "Data Visualization"}
       names: ["Tableau", "Power BI", "Looker", "Metabase", "Superset", "Plotly", "Matplotlib", "Seaborn", "D3.js"]
 
+    - family: {code: data_governance, label: "Data Governance & Quality"}
+      names: ["Data governance", "Data quality", "Data lineage", "Data catalog", "Metadata management", "Master data management", "Collibra", "Alation", "Atlan", "Great Expectations"]
+
   platform_infra:
     - family: {code: deployment, label: "Deployment"}
       names: ["Docker", "Kubernetes", "Helm", "Container orchestration", "K8s"]
@@ -561,6 +564,28 @@ skills_ontology:
 
     - family: {code: apis_integration, label: "APIs & Integration"}
       names: ["REST", "REST API", "GraphQL", "API", "APIs", "Webhooks", "FastAPI", "API Design", "Microservices", "gRPC", "OpenAPI"]
+
+    - family: {code: testing, label: "Testing & QA"}
+      names: ["Selenium", "Cypress", "Playwright", "pytest", "Unit testing", "Integration testing", "Performance testing", "Test automation", "BDD"]
+
+    - family: {code: blockchain, label: "Blockchain & Web3"}
+      names: ["Blockchain", "Web3", "DeFi", "Ethereum", "Solana", "Smart contracts", "Cryptocurrency"]
+
+  enterprise:
+    - family: {code: security, label: "Security & Identity"}
+      names: ["Security", "Cybersecurity", "Encryption", "IAM", "OAuth", "SSO", "RBAC", "GDPR", "HIPAA", "SOC2"]
+
+    - family: {code: crm_marketing, label: "CRM & Marketing"}
+      names: ["Salesforce", "HubSpot", "Marketo", "Braze", "Segment", "Google Tag Manager", "Adobe Analytics", "Programmatic advertising"]
+
+    - family: {code: erp_systems, label: "ERP & Business Systems"}
+      names: ["SAP", "NetSuite", "Workday", "Oracle", "Microsoft Dynamics", "PeopleSoft", "ServiceNow"]
+
+    - family: {code: geospatial, label: "Geospatial & GIS"}
+      names: ["GIS", "QGIS", "PostGIS", "Geospatial data", "Remote sensing"]
+
+    - family: {code: compliance_regulation, label: "Compliance & Regulation"}
+      names: ["AML", "KYC", "SOX", "Regulatory compliance", "Regulatory reporting", "Audit logging", "Financial regulations"]
 
   delivery:
     - family: {code: methodologies, label: "Methodologies & Frameworks"}

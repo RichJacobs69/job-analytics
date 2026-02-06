@@ -52,6 +52,8 @@ development:
     - programming
     - apis_integration
     - testing
+    - version_control
+    - blockchain
 
 product_collaboration:
   label: "Product & Collaboration"
@@ -61,6 +63,14 @@ product_collaboration:
     - stakeholder_mgmt
     - product_tools
 
+delivery_governance:
+  label: "Delivery & Governance"
+  families:
+    - methodologies
+    - certifications
+    - delivery_tools
+    - governance
+
 enterprise_systems:
   label: "Enterprise Systems"
   families:
@@ -68,3 +78,4 @@ enterprise_systems:
     - erp_systems
     - security
     - geospatial
+    - compliance_regulation
