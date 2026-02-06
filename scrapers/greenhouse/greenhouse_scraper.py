@@ -69,7 +69,7 @@ def load_title_patterns(config_path: Optional[Path] = None) -> List[str]:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
             patterns = config.get('relevant_title_patterns', [])
-            logger.info(f"Loaded {len(patterns)} title filter patterns from {config_path}")
+            logger.debug(f"Loaded {len(patterns)} title filter patterns from {config_path}")
             return patterns
     except FileNotFoundError:
         logger.warning(f"Title patterns config not found at {config_path}. Filtering disabled.")
@@ -98,7 +98,7 @@ def load_location_patterns(config_path: Optional[Path] = None) -> List[str]:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
             patterns = config.get('target_locations', [])
-            logger.info(f"Loaded {len(patterns)} location filter patterns from {config_path}")
+            logger.debug(f"Loaded {len(patterns)} location filter patterns from {config_path}")
             return patterns
     except FileNotFoundError:
         logger.warning(f"Location patterns config not found at {config_path}. Location filtering disabled.")

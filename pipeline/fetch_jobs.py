@@ -71,6 +71,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress noisy third-party loggers
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("google_genai").setLevel(logging.WARNING)
+
 
 async def fetch_from_adzuna(city: str, max_jobs_per_query: int, max_days_old: int = 30) -> List:
     """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects
@@ -3349,138 +3353,6 @@ Examples:
         custom_stats = await process_custom_incremental(custom_employers)
         total_stats['custom'] = custom_stats
 
-    # FINAL SUMMARY
-    logger.info("\n" + "="*80)
-    logger.info("MULTI-SOURCE PIPELINE COMPLETE")
-    logger.info("="*80)
-
-    if total_stats['greenhouse']:
-        logger.info("\nGreenhouse Pipeline:")
-        gh_effective_total = total_stats['greenhouse'].get(
-            'companies_total_effective',
-            total_stats['greenhouse']['companies_total']
-        )
-        logger.info(f"  Companies processed: {total_stats['greenhouse']['companies_processed']}/{gh_effective_total}")
-        logger.info(f"  Companies skipped (resume): {total_stats['greenhouse']['companies_skipped']}")
-        if total_stats['greenhouse'].get('companies_total') != gh_effective_total:
-            logger.info(f"  Companies in original list: {total_stats['greenhouse']['companies_total']}")
-        logger.info(f"  Jobs scraped: {total_stats['greenhouse']['jobs_scraped']}")
-        logger.info(f"  Jobs kept after filtering: {total_stats['greenhouse']['jobs_kept']}")
-        logger.info(f"  Jobs written to raw_jobs: {total_stats['greenhouse']['jobs_written_raw']}")
-        logger.info(f"  Jobs classified: {total_stats['greenhouse']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['greenhouse']['jobs_written_enriched']}")
-        logger.info(f"  Duplicates skipped: {total_stats['greenhouse']['jobs_duplicate']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['greenhouse']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['greenhouse']['cost_classification']:.2f}")
-
-    if total_stats['adzuna']:
-        logger.info("\nAdzuna Pipeline:")
-        logger.info(f"  Jobs fetched: {total_stats['adzuna']['jobs_fetched']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['adzuna']['jobs_written_raw']}")
-        logger.info(f"  Duplicates (last_seen updated): {total_stats['adzuna']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['adzuna']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['adzuna']['jobs_written_enriched']}")
-        logger.info(f"  Cost of classification: ${total_stats['adzuna']['cost_classification']:.2f}")
-        logger.info(f"  Cost saved (duplicates): ${total_stats['adzuna']['cost_saved_duplicates']:.2f}")
-
-    if total_stats['lever']:
-        logger.info("\nLever Pipeline:")
-        logger.info(f"  Companies processed: {total_stats['lever']['companies_processed']}")
-        logger.info(f"  Companies with jobs: {total_stats['lever']['companies_with_jobs']}")
-        logger.info(f"  Jobs fetched: {total_stats['lever']['total_jobs_fetched']}")
-        logger.info(f"  Filtered (title): {total_stats['lever']['total_filtered_by_title']}")
-        logger.info(f"  Filtered (location): {total_stats['lever']['total_filtered_by_location']}")
-        logger.info(f"  Jobs kept: {total_stats['lever']['total_jobs_kept']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['lever']['jobs_written_raw']}")
-        logger.info(f"  Duplicates skipped: {total_stats['lever']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['lever']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['lever']['jobs_written_enriched']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['lever']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['lever']['cost_classification']:.2f}")
-
-    if total_stats['ashby']:
-        logger.info("\nAshby Pipeline:")
-        logger.info(f"  Companies processed: {total_stats['ashby']['companies_processed']}")
-        logger.info(f"  Companies with jobs: {total_stats['ashby']['companies_with_jobs']}")
-        logger.info(f"  Jobs fetched: {total_stats['ashby']['total_jobs_fetched']}")
-        logger.info(f"  Filtered (title): {total_stats['ashby']['total_filtered_by_title']}")
-        logger.info(f"  Filtered (location): {total_stats['ashby']['total_filtered_by_location']}")
-        logger.info(f"  Jobs kept: {total_stats['ashby']['total_jobs_kept']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['ashby']['jobs_written_raw']}")
-        logger.info(f"  Duplicates skipped: {total_stats['ashby']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['ashby']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['ashby']['jobs_written_enriched']}")
-        logger.info(f"  Jobs with structured salary: {total_stats['ashby']['jobs_with_salary']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['ashby']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['ashby']['cost_classification']:.2f}")
-
-    if total_stats['workable']:
-        logger.info("\nWorkable Pipeline:")
-        logger.info(f"  Companies processed: {total_stats['workable']['companies_processed']}")
-        logger.info(f"  Companies with jobs: {total_stats['workable']['companies_with_jobs']}")
-        logger.info(f"  Jobs fetched: {total_stats['workable']['total_jobs_fetched']}")
-        logger.info(f"  Filtered (title): {total_stats['workable']['total_filtered_by_title']}")
-        logger.info(f"  Filtered (location): {total_stats['workable']['total_filtered_by_location']}")
-        logger.info(f"  Jobs kept: {total_stats['workable']['total_jobs_kept']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['workable']['jobs_written_raw']}")
-        logger.info(f"  Duplicates skipped: {total_stats['workable']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['workable']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['workable']['jobs_written_enriched']}")
-        logger.info(f"  Jobs with structured salary: {total_stats['workable']['jobs_with_salary']}")
-        logger.info(f"  Jobs with workplace_type: {total_stats['workable']['jobs_with_workplace_type']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['workable']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['workable']['cost_classification']:.2f}")
-
-    if total_stats['smartrecruiters']:
-        logger.info("\nSmartRecruiters Pipeline:")
-        logger.info(f"  Companies processed: {total_stats['smartrecruiters']['companies_processed']}")
-        logger.info(f"  Companies with jobs: {total_stats['smartrecruiters']['companies_with_jobs']}")
-        logger.info(f"  Jobs fetched: {total_stats['smartrecruiters']['total_jobs_fetched']}")
-        logger.info(f"  Filtered (title): {total_stats['smartrecruiters']['total_filtered_by_title']}")
-        logger.info(f"  Filtered (location): {total_stats['smartrecruiters']['total_filtered_by_location']}")
-        logger.info(f"  Jobs kept: {total_stats['smartrecruiters']['total_jobs_kept']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['smartrecruiters']['jobs_written_raw']}")
-        logger.info(f"  Duplicates skipped: {total_stats['smartrecruiters']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['smartrecruiters']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['smartrecruiters']['jobs_written_enriched']}")
-        logger.info(f"  Jobs with location_type: {total_stats['smartrecruiters']['jobs_with_location_type']}")
-        logger.info(f"  Jobs with experience_level: {total_stats['smartrecruiters']['jobs_with_experience_level']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['smartrecruiters']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['smartrecruiters']['cost_classification']:.2f}")
-
-    if total_stats['custom']:
-        logger.info("\nCustom Config Pipeline:")
-        logger.info(f"  Employers processed: {total_stats['custom']['employers_processed']}")
-        logger.info(f"  Employers with jobs: {total_stats['custom']['employers_with_jobs']}")
-        logger.info(f"  Jobs fetched: {total_stats['custom']['total_jobs_fetched']}")
-        logger.info(f"  Filtered (title): {total_stats['custom']['total_filtered_by_title']}")
-        logger.info(f"  Filtered (location): {total_stats['custom']['total_filtered_by_location']}")
-        logger.info(f"  Jobs kept: {total_stats['custom']['total_jobs_kept']}")
-        logger.info(f"  New jobs (written to raw): {total_stats['custom']['jobs_written_raw']}")
-        logger.info(f"  Duplicates skipped: {total_stats['custom']['jobs_duplicate']}")
-        logger.info(f"  Jobs classified: {total_stats['custom']['jobs_classified']}")
-        logger.info(f"  Jobs written to enriched_jobs: {total_stats['custom']['jobs_written_enriched']}")
-        logger.info(f"  Cost saved from filtering: ${total_stats['custom']['cost_saved_filtering']:.2f}")
-        logger.info(f"  Cost of classification: ${total_stats['custom']['cost_classification']:.2f}")
-
-    total_jobs = 0
-    if total_stats['greenhouse']:
-        total_jobs += total_stats['greenhouse']['jobs_written_enriched']
-    if total_stats['adzuna']:
-        total_jobs += total_stats['adzuna']['jobs_written_enriched']
-    if total_stats['lever']:
-        total_jobs += total_stats['lever']['jobs_written_enriched']
-    if total_stats['ashby']:
-        total_jobs += total_stats['ashby']['jobs_written_enriched']
-    if total_stats['workable']:
-        total_jobs += total_stats['workable']['jobs_written_enriched']
-    if total_stats['smartrecruiters']:
-        total_jobs += total_stats['smartrecruiters']['jobs_written_enriched']
-    if total_stats['custom']:
-        total_jobs += total_stats['custom']['jobs_written_enriched']
-
-    logger.info(f"\nTotal jobs processed: {total_jobs}")
-    logger.info("="*80)
 
 
 if __name__ == "__main__":
