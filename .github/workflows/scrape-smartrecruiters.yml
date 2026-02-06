@@ -1,0 +1,62 @@
+name: Scrape SmartRecruiters (Thu/Sun 8PM UTC)
+
+on:
+  schedule:
+    # Evening slots - no conflicts with existing workflows
+    - cron: '0 20 * * 4'  # Thursday at 8:00 PM UTC
+    - cron: '0 20 * * 0'  # Sunday at 8:00 PM UTC
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  smartrecruiters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # API-based fetching + Gemini classification
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run SmartRecruiters scraper
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          LLM_PROVIDER: gemini
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python wrappers/fetch_jobs.py --sources smartrecruiters
+
+      - name: Summary
+        if: always()
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          from datetime import datetime
+
+          # Load company count from config
+          try:
+              with open('config/smartrecruiters/company_mapping.json') as f:
+                  data = json.load(f)
+              company_count = len(data.get('smartrecruiters', {}))
+          except:
+              company_count = "Unknown"
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(f"## SmartRecruiters Scrape Complete\n\n")
+              f.write(f"| Metric | Value |\n")
+              f.write(f"|--------|-------|\n")
+              f.write(f"| **Companies** | {company_count} |\n")
+              f.write(f"| **Config** | config/smartrecruiters/company_mapping.json |\n")
+              f.write(f"| **Timestamp** | {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} |\n")
+          EOF

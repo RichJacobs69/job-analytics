@@ -50,8 +50,9 @@ python wrappers/fetch_jobs.py --sources greenhouse           # Greenhouse only
 python wrappers/fetch_jobs.py --sources lever                # Lever only
 python wrappers/fetch_jobs.py --sources ashby                # Ashby only (best salary data)
 python wrappers/fetch_jobs.py --sources workable             # Workable only (workplace_type)
+python wrappers/fetch_jobs.py --sources smartrecruiters      # SmartRecruiters only (locationType, experienceLevel)
 python wrappers/fetch_jobs.py lon 100 --sources adzuna       # Adzuna only
-python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable  # All sources
+python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters  # All sources
 
 # With resume capability
 python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
@@ -95,7 +96,7 @@ SUPABASE_KEY=<key>
 ## Architecture
 
 ```
-Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby/Workable Scrapers
+Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby/Workable/SmartRecruiters Scrapers
                 │                    │
                 v                    v
          unified_job_ingester.py (merge & dedupe)
@@ -138,11 +139,13 @@ job-analytics/
 ├── wrappers/          # Entry points (thin wrappers)
 ├── pipeline/          # Core production code
 │   └── utilities/     # Backfill & maintenance
-├── scrapers/          # Adzuna, Greenhouse, Lever, Ashby
+├── scrapers/          # Adzuna, Greenhouse, Lever, Ashby, Workable, SmartRecruiters
 ├── config/            # YAML/JSON configs
 │   ├── greenhouse/    # Greenhouse-specific
 │   ├── lever/         # Lever-specific
-│   └── ashby/         # Ashby-specific
+│   ├── ashby/         # Ashby-specific
+│   ├── workable/      # Workable-specific
+│   └── smartrecruiters/ # SmartRecruiters-specific
 ├── docs/              # Documentation
 └── tests/             # Test suite
 ```
@@ -164,6 +167,7 @@ job-analytics/
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
 | `scrapers/ashby/ashby_fetcher.py` | Ashby API client (structured compensation) |
 | `scrapers/workable/workable_fetcher.py` | Workable API client (workplace_type, salary) |
+| `scrapers/smartrecruiters/smartrecruiters_fetcher.py` | SmartRecruiters API client (locationType, experienceLevel) |
 
 ## Config Structure
 
@@ -183,6 +187,10 @@ config/
 │   └── location_patterns.yaml
 ├── workable/
 │   ├── company_mapping.json        # Workable companies
+│   ├── title_patterns.yaml
+│   └── location_patterns.yaml
+├── smartrecruiters/
+│   ├── company_mapping.json        # SmartRecruiters companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── location_mapping.yaml           # Master location config
@@ -234,6 +242,7 @@ Located in `.github/workflows/`:
 - `scrape-lever.yml` - Mon/Wed/Fri 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
 - `scrape-workable.yml` - Wed/Sat 6PM UTC (evening slot)
+- `scrape-smartrecruiters.yml` - Thu/Sun 8PM UTC (evening slot)
 - `url-validation-stats.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
 - `refresh-employer-metadata.yml` - Sun 8AM UTC (seed, enrich, backfill)
 

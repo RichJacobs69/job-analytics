@@ -102,6 +102,9 @@ ATS_URL_TEMPLATES = {
     'workable': {
         'default': 'https://apply.workable.com/{slug}',
     },
+    'smartrecruiters': {
+        'default': 'https://jobs.smartrecruiters.com/{slug}',
+    },
 }
 
 CONFIG_PATHS = {
@@ -109,6 +112,7 @@ CONFIG_PATHS = {
     'lever': 'config/lever/company_mapping.json',
     'ashby': 'config/ashby/company_mapping.json',
     'workable': 'config/workable/company_mapping.json',
+    'smartrecruiters': 'config/smartrecruiters/company_mapping.json',
     'adzuna': 'config/adzuna/all_employers.json',
 }
 
@@ -310,7 +314,7 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
     For Adzuna sources, slug will be None (no career page URL available).
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'adzuna']
 
     repo_root = Path(__file__).parent.parent.parent
     companies = []
@@ -877,7 +881,7 @@ def enrich_employer_metadata(
     Main enrichment function.
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'adzuna']
 
     print("=" * 70)
     print("EMPLOYER METADATA ENRICHMENT")

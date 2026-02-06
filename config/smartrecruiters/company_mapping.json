@@ -1,0 +1,53 @@
+{
+  "smartrecruiters": {
+    "Visa": {
+      "slug": "Visa",
+      "notes": "Enterprise payments, 1100+ postings"
+    },
+    "Bosch Group": {
+      "slug": "BoschGroup",
+      "notes": "Engineering/manufacturing, 3800+ postings"
+    },
+    "ServiceNow": {
+      "slug": "ServiceNow",
+      "notes": "Enterprise SaaS, 1100+ postings"
+    },
+    "Delivery Hero": {
+      "slug": "DeliveryHero",
+      "notes": "Food delivery, 780+ postings"
+    },
+    "Wise": {
+      "slug": "Wise",
+      "notes": "Fintech, 370+ postings, London/Singapore"
+    },
+    "Canva": {
+      "slug": "Canva",
+      "notes": "Design SaaS, 320+ postings"
+    },
+    "InPost": {
+      "slug": "InPost",
+      "notes": "Logistics/parcel lockers, 77+ postings"
+    },
+    "DocuSign": {
+      "slug": "Docusign",
+      "notes": "E-signature SaaS"
+    },
+    "LVMH": {
+      "slug": "LVMH",
+      "notes": "Luxury goods conglomerate"
+    },
+    "SmartRecruiters": {
+      "slug": "Smartrecruiters",
+      "notes": "ATS provider (eats own dogfood), 28 postings"
+    }
+  },
+  "_meta": {
+    "validated_at": "2026-02-06",
+    "discovery_sources": [
+      "manual_api_testing"
+    ],
+    "total_companies": 10,
+    "notes": "Initial seed via API validation. Slugs are case-sensitive (e.g., 'Visa' not 'visa'). Expand via discover_ats_companies.py.",
+    "last_updated": "2026-02-06"
+  }
+}

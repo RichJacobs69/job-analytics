@@ -64,7 +64,7 @@ class ReportGenerator:
     # ATS sources with full job descriptions (reliable for working arrangement extraction)
     # Adzuna is excluded because its 100-200 char truncated descriptions cause
     # unreliable working arrangement classification (tends to default to "onsite")
-    ATS_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable']
+    ATS_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 
     # City to country/region mapping for inclusive location filtering
     CITY_CONFIG = {

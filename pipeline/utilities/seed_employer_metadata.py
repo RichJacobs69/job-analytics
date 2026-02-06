@@ -192,6 +192,20 @@ def load_display_names_from_config() -> dict:
                     if canonical not in display_names:
                         display_names[canonical] = display_name
 
+    # SmartRecruiters: config/smartrecruiters/company_mapping.json
+    # Structure: {"smartrecruiters": {"Visa": {"slug": "visa"}, ...}}
+    sr_path = config_dir / 'smartrecruiters' / 'company_mapping.json'
+    if sr_path.exists():
+        with open(sr_path) as f:
+            data = json.load(f)
+            sr_companies = data.get('smartrecruiters', data)
+            for display_name, info in sr_companies.items():
+                if isinstance(info, dict) and 'slug' in info:
+                    canonical = info['slug'].lower().strip()
+                    # Don't overwrite if already set
+                    if canonical not in display_names:
+                        display_names[canonical] = display_name
+
     return display_names
 
 

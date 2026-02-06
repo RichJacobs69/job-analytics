@@ -2163,6 +2163,403 @@ async def process_workable_incremental(companies: Optional[List[str]] = None) ->
     return stats
 
 
+async def process_smartrecruiters_incremental(companies: Optional[List[str]] = None) -> Dict:
+    """Process SmartRecruiters jobs incrementally with per-company database writes
+
+    This function implements the incremental architecture (same as Workable):
+    1. Fetch jobs from SmartRecruiters API (with filtering)
+    2. Write to raw_jobs using insert_raw_job_upsert()
+    3. Classify jobs immediately
+    4. Write to enriched_jobs
+    5. Log progress clearly per company
+
+    SmartRecruiters Advantages:
+    - Structured locationType field (remote/onsite) - maps to working_arrangement
+    - Structured experienceLevel field - passed as classifier hint
+    - Pagination via offset + limit (max 100/page)
+    - Rich metadata: department, industry, function
+
+    Args:
+        companies: Optional list of company slugs to process. If None, processes all from mapping.
+
+    Returns:
+        Dict with processing statistics
+    """
+    from scrapers.smartrecruiters.smartrecruiters_fetcher import fetch_smartrecruiters_jobs, load_company_mapping
+    from pipeline.db_connection import (
+        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
+        ensure_employer_metadata
+    )
+    from pipeline.classifier import classify_job
+    from pipeline.agency_detection import is_agency_job, validate_agency_classification
+    from pipeline.unified_job_ingester import DataSource
+    from datetime import date
+    import json
+    import time
+
+    start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("="*80)
+    logger.info("SMARTRECRUITERS INCREMENTAL PROCESSING")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info("="*80)
+
+    # Time tracking
+    pipeline_start_time = time.time()
+
+    # Statistics tracking
+    stats = {
+        'companies_processed': 0,
+        'companies_with_jobs': 0,
+        'total_jobs_fetched': 0,
+        'total_jobs_kept': 0,
+        'total_filtered_by_title': 0,
+        'total_filtered_by_location': 0,
+        'jobs_written_raw': 0,
+        'jobs_duplicate': 0,
+        'jobs_classified': 0,
+        'jobs_agency_filtered': 0,
+        'jobs_written_enriched': 0,
+        'jobs_with_location_type': 0,  # Track SmartRecruiters' locationType
+        'jobs_with_experience_level': 0,  # Track experienceLevel
+        'cost_saved_filtering': 0.0,
+        'cost_classification': 0.0,
+        'errors': []
+    }
+
+    # Load company mapping
+    mapping = load_company_mapping()
+    sr_companies = mapping.get('smartrecruiters', {})
+
+    # Create slug -> display_name mapping for proper employer names
+    slug_to_display_name = {}
+    for display_name, info in sr_companies.items():
+        if isinstance(info, dict) and 'slug' in info:
+            slug_to_display_name[info['slug']] = display_name
+
+    if not sr_companies:
+        logger.warning("No companies in SmartRecruiters mapping")
+        return stats
+
+    # Filter to specified companies if provided
+    if companies:
+        companies_to_process = {
+            name: data for name, data in sr_companies.items()
+            if data.get('slug') in companies
+        }
+    else:
+        companies_to_process = sr_companies
+
+    logger.info(f"Processing {len(companies_to_process)} SmartRecruiters companies...\n")
+
+    # Cost per classification
+    cost_per_classification = 0.00388  # Haiku cost per job
+
+    for company_name, company_data in companies_to_process.items():
+        slug = company_data.get('slug', '')
+        if not slug:
+            logger.warning(f"No slug for company: {company_name}")
+            continue
+
+        company_start_time = time.time()
+
+        logger.info(f"\n{'='*80}")
+        logger.info(f"COMPANY: {company_name.upper()} ({slug})")
+        logger.info(f"{'='*80}")
+
+        # Fetch jobs for this company
+        jobs, fetch_stats = fetch_smartrecruiters_jobs(
+            company_slug=slug,
+            filter_titles=True,
+            filter_locations=True
+        )
+
+        # Update stats
+        stats['companies_processed'] += 1
+        stats['total_jobs_fetched'] += fetch_stats['jobs_fetched']
+        stats['total_jobs_kept'] += fetch_stats['jobs_kept']
+        stats['total_filtered_by_title'] += fetch_stats['filtered_by_title']
+        stats['total_filtered_by_location'] += fetch_stats['filtered_by_location']
+
+        # Calculate cost savings from filtering
+        filtered_count = fetch_stats['filtered_by_title'] + fetch_stats['filtered_by_location']
+        stats['cost_saved_filtering'] += filtered_count * cost_per_classification
+
+        logger.info(f"Fetch Summary:")
+        logger.info(f"  - Jobs fetched: {fetch_stats['jobs_fetched']}")
+        logger.info(f"  - Filtered (title): {fetch_stats['filtered_by_title']}")
+        logger.info(f"  - Filtered (location): {fetch_stats['filtered_by_location']}")
+        logger.info(f"  - Jobs to process: {len(jobs)}")
+        logger.info(f"  - Cost saved: ${filtered_count * cost_per_classification:.2f}")
+
+        if fetch_stats['error']:
+            stats['errors'].append(f"{slug}: {fetch_stats['error']}")
+            logger.warning(f"  Error: {fetch_stats['error']}")
+            continue
+
+        if not jobs:
+            logger.info(f"  No jobs to process for {company_name}")
+            continue
+
+        stats['companies_with_jobs'] += 1
+        logger.info(f"{'-'*80}")
+
+        # Process each job
+        company_jobs_written = 0
+        company_jobs_duplicate = 0
+        company_jobs_classified = 0
+        company_jobs_enriched = 0
+        company_agencies_blocked = 0
+        company_with_location_type = 0
+        company_with_experience_level = 0
+
+        for i, job in enumerate(jobs, 1):
+            try:
+                # Step 1: Write to raw_jobs using UPSERT
+                sr_location = job.location
+
+                upsert_result = insert_raw_job_upsert(
+                    source='smartrecruiters',
+                    posting_url=job.url,
+                    title=job.title,
+                    company=company_name,
+                    raw_text=job.description,
+                    city_code='unk',  # SmartRecruiters doesn't use city codes - location is in metadata
+                    source_job_id=job.id,
+                    metadata={
+                        'company_slug': job.company_slug,
+                        'smartrecruiters_location': sr_location,
+                        'smartrecruiters_city': job.city,
+                        'smartrecruiters_region': job.region,
+                        'smartrecruiters_country_code': job.country_code,
+                        'smartrecruiters_location_type': job.location_type,
+                        'smartrecruiters_department': job.department,
+                        'smartrecruiters_employment_type': job.employment_type,
+                        'smartrecruiters_experience_level': job.experience_level,
+                        'smartrecruiters_industry': job.industry,
+                        'smartrecruiters_function': job.function,
+                        'smartrecruiters_published_at': job.published_at
+                    }
+                )
+
+                raw_job_id = upsert_result['id']
+                was_duplicate = upsert_result['was_duplicate']
+
+                if was_duplicate:
+                    stats['jobs_duplicate'] += 1
+                    company_jobs_duplicate += 1
+                    logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {job.title[:50]}... (skipped)")
+                    continue
+
+                stats['jobs_written_raw'] += 1
+                company_jobs_written += 1
+
+                # Track jobs with location_type
+                if job.location_type:
+                    stats['jobs_with_location_type'] += 1
+                    company_with_location_type += 1
+
+                # Track jobs with experience_level
+                if job.experience_level:
+                    stats['jobs_with_experience_level'] += 1
+                    company_with_experience_level += 1
+
+                logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:50]}... (classifying...)")
+
+                # Step 2: Hard filter - check if agency before classification
+                if is_agency_job(company_name):
+                    stats['jobs_agency_filtered'] += 1
+                    company_agencies_blocked += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
+                    continue
+
+                # Step 3: Classify the job
+                try:
+                    structured_input = {
+                        'title': job.title,
+                        'company': company_name,
+                        'description': job.description,
+                        'location': None,  # Location extracted deterministically via extract_locations()
+                        'category': None,
+                        # Pass experience_level as hint for seniority classification
+                        'experience_level_hint': job.experience_level,
+                    }
+                    classification = classify_job(
+                        job_text=job.description,
+                        structured_input=structured_input,
+                        source="smartrecruiters"
+                    )
+                    stats['jobs_classified'] += 1
+                    company_jobs_classified += 1
+
+                    # Track classification cost
+                    if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
+                        cost = classification['_cost_data']['total_cost']
+                        stats['cost_classification'] += cost
+                        logger.info(f"  [{i}/{len(jobs)}] Classified (${cost:.4f})")
+                    else:
+                        logger.info(f"  [{i}/{len(jobs)}] Classified")
+
+                except Exception as e:
+                    logger.warning(f"  [{i}/{len(jobs)}] Classification FAILED: {str(e)[:100]}")
+                    continue
+
+                # Step 4: Soft agency detection
+                is_agency, agency_conf = validate_agency_classification(
+                    employer_name=company_name,
+                    claude_is_agency=None,
+                    claude_confidence=None,
+                    job_description=job.description
+                )
+
+                if is_agency:
+                    stats['jobs_agency_filtered'] += 1
+                    logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
+
+                # Inject agency flags
+                if 'employer' not in classification:
+                    classification['employer'] = {}
+                classification['employer']['is_agency'] = is_agency
+                classification['employer']['agency_confidence'] = agency_conf
+
+                # Step 5: Write to enriched_jobs
+                role = classification.get('role', {})
+                location = classification.get('location', {})
+                compensation = classification.get('compensation', {})
+                employer = classification.get('employer', {})
+
+                # Extract locations from SmartRecruiters job.location field
+                extracted_locations = extract_locations(
+                    sr_location,
+                    description_text=job.description
+                ) if sr_location else [{"type": "unknown"}]
+
+                # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
+                legacy_city_code = 'unk'
+                if extracted_locations and extracted_locations[0].get('type') == 'city':
+                    city_name = extracted_locations[0].get('city', '')
+                    city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
+                    legacy_city_code = city_to_code.get(city_name, 'unk')
+                elif extracted_locations and extracted_locations[0].get('type') == 'remote':
+                    legacy_city_code = 'remote'
+
+                # Derive working arrangement: classifier > location_type=='remote' > employer metadata > unknown
+                working_arrangement = 'unknown'
+                classifier_wa = location.get('working_arrangement')
+                if classifier_wa and classifier_wa != 'unknown':
+                    # Classifier inferred from description (can detect hybrid, remote, on_site)
+                    working_arrangement = classifier_wa
+                elif job.location_type == 'remote':
+                    # SmartRecruiters remote flag is a reliable signal
+                    working_arrangement = 'remote'
+                else:
+                    # Fall back to employer metadata
+                    wa_fallback = get_working_arrangement_fallback(company_name)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+
+                enriched_job_id = insert_enriched_job(
+                    raw_job_id=raw_job_id,
+                    employer_name=company_name,
+                    title_display=job.title,
+                    job_family=role.get('job_family') or 'out_of_scope',
+                    city_code=legacy_city_code,  # DEPRECATED - use locations instead
+                    working_arrangement=working_arrangement,
+                    position_type=role.get('position_type') or 'full_time',
+                    last_seen_date=date.today(),
+                    job_subfamily=role.get('job_subfamily'),
+                    seniority=role.get('seniority'),
+                    track=role.get('track'),
+                    experience_range=role.get('experience_range'),
+                    employer_department=employer.get('department'),
+                    is_agency=employer.get('is_agency'),
+                    agency_confidence=employer.get('agency_confidence'),
+                    currency=compensation.get('currency'),
+                    salary_min=compensation.get('base_salary_range', {}).get('min'),
+                    salary_max=compensation.get('base_salary_range', {}).get('max'),
+                    equity_eligible=compensation.get('equity_eligible'),
+                    skills=classification.get('skills', []),
+                    summary=classification.get('summary'),
+                    data_source='smartrecruiters',
+                    description_source='smartrecruiters',
+                    locations=extracted_locations,
+                    deduplicated=False,
+                    display_name_hint=company_name  # From config key
+                )
+
+                stats['jobs_written_enriched'] += 1
+                company_jobs_enriched += 1
+                logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
+
+            except Exception as e:
+                logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
+                continue
+
+        # Company summary
+        company_elapsed = time.time() - company_start_time
+        logger.info(f"{'-'*80}")
+        logger.info(f"Company Summary:")
+        logger.info(f"  - New jobs written: {company_jobs_written}")
+        logger.info(f"  - Duplicates skipped: {company_jobs_duplicate}")
+        logger.info(f"  - Agencies blocked: {company_agencies_blocked}")
+        logger.info(f"  - Jobs classified: {company_jobs_classified}")
+        logger.info(f"  - Jobs enriched: {company_jobs_enriched}")
+        logger.info(f"  - Jobs with location_type: {company_with_location_type}")
+        logger.info(f"  - Jobs with experience_level: {company_with_experience_level}")
+        logger.info(f"  - Processing time: {company_elapsed:.1f}s")
+        logger.info(f"{'='*80}")
+
+    # Final summary
+    total_elapsed = time.time() - pipeline_start_time
+    end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    logger.info("\n" + "="*80)
+    logger.info("SMARTRECRUITERS INCREMENTAL PROCESSING COMPLETE")
+    logger.info(f"Started: {start_timestamp}")
+    logger.info(f"Ended: {end_timestamp}")
+    logger.info(f"Total time: {total_elapsed/60:.1f} min ({total_elapsed:.1f}s)")
+    logger.info("="*80)
+
+    logger.info(f"\nCompany Processing:")
+    logger.info(f"  - Companies processed: {stats['companies_processed']}")
+    logger.info(f"  - Companies with jobs: {stats['companies_with_jobs']}")
+
+    logger.info(f"\nJob Fetching & Filtering:")
+    logger.info(f"  - Jobs fetched: {stats['total_jobs_fetched']}")
+    logger.info(f"  - Filtered (title): {stats['total_filtered_by_title']}")
+    logger.info(f"  - Filtered (location): {stats['total_filtered_by_location']}")
+    logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
+
+    logger.info(f"\nDatabase Writes:")
+    logger.info(f"  - New raw jobs: {stats['jobs_written_raw']}")
+    logger.info(f"  - Duplicates skipped: {stats['jobs_duplicate']}")
+    logger.info(f"  - Jobs classified: {stats['jobs_classified']}")
+    logger.info(f"  - Enriched jobs: {stats['jobs_written_enriched']}")
+    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
+
+    logger.info(f"\nSmartRecruiters Data Quality:")
+    logger.info(f"  - Jobs with location_type: {stats['jobs_with_location_type']}")
+    logger.info(f"  - Jobs with experience_level: {stats['jobs_with_experience_level']}")
+    if stats['jobs_written_enriched'] > 0:
+        location_type_rate = (stats['jobs_with_location_type'] / stats['jobs_written_enriched'] * 100)
+        exp_rate = (stats['jobs_with_experience_level'] / stats['jobs_written_enriched'] * 100)
+        logger.info(f"  - Location type rate: {location_type_rate:.1f}%")
+        logger.info(f"  - Experience level rate: {exp_rate:.1f}%")
+
+    logger.info(f"\nCost Analysis:")
+    logger.info(f"  - Saved from filtering: ${stats['cost_saved_filtering']:.2f}")
+    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
+    logger.info(f"  - Net cost: ${stats['cost_classification']:.2f}")
+
+    if stats['errors']:
+        logger.info(f"\nErrors:")
+        for error in stats['errors']:
+            logger.info(f"  - {error}")
+
+    logger.info("="*80)
+
+    return stats
+
+
 async def process_custom_incremental(employers: Optional[List[str]] = None) -> Dict:
     """Process custom config jobs incrementally (Google XML + Playwright scrapers)
 
@@ -2772,7 +3169,7 @@ Examples:
     parser.add_argument(
         '--sources',
         required=True,
-        help='Comma-separated sources: adzuna, greenhouse, lever, ashby, workable, custom (required). Example: --sources adzuna,greenhouse,ashby,custom'
+        help='Comma-separated sources: adzuna, greenhouse, lever, ashby, workable, smartrecruiters, custom (required). Example: --sources adzuna,greenhouse,ashby,smartrecruiters,custom'
     )
 
     parser.add_argument(
@@ -2854,6 +3251,7 @@ Examples:
         'lever': None,
         'ashby': None,
         'workable': None,
+        'smartrecruiters': None,
         'custom': None
     }
 
@@ -2923,6 +3321,20 @@ Examples:
 
         workable_stats = await process_workable_incremental(workable_companies)
         total_stats['workable'] = workable_stats
+
+    # SMARTRECRUITERS PIPELINE: Incremental processing (same pattern as Workable)
+    # Public Posting API with structured locationType and experienceLevel
+    if 'smartrecruiters' in sources:
+        sr_companies = None
+        if args.companies:
+            sr_companies = [c.strip() for c in args.companies.split(',')]
+
+        logger.info("\n" + "="*80)
+        logger.info("STARTING SMARTRECRUITERS INCREMENTAL PIPELINE")
+        logger.info("="*80 + "\n")
+
+        sr_stats = await process_smartrecruiters_incremental(sr_companies)
+        total_stats['smartrecruiters'] = sr_stats
 
     # CUSTOM CONFIG PIPELINE: Google XML + Playwright scrapers (FAANG, banks, etc.)
     if 'custom' in sources:
@@ -3019,6 +3431,23 @@ Examples:
         logger.info(f"  Cost saved from filtering: ${total_stats['workable']['cost_saved_filtering']:.2f}")
         logger.info(f"  Cost of classification: ${total_stats['workable']['cost_classification']:.2f}")
 
+    if total_stats['smartrecruiters']:
+        logger.info("\nSmartRecruiters Pipeline:")
+        logger.info(f"  Companies processed: {total_stats['smartrecruiters']['companies_processed']}")
+        logger.info(f"  Companies with jobs: {total_stats['smartrecruiters']['companies_with_jobs']}")
+        logger.info(f"  Jobs fetched: {total_stats['smartrecruiters']['total_jobs_fetched']}")
+        logger.info(f"  Filtered (title): {total_stats['smartrecruiters']['total_filtered_by_title']}")
+        logger.info(f"  Filtered (location): {total_stats['smartrecruiters']['total_filtered_by_location']}")
+        logger.info(f"  Jobs kept: {total_stats['smartrecruiters']['total_jobs_kept']}")
+        logger.info(f"  New jobs (written to raw): {total_stats['smartrecruiters']['jobs_written_raw']}")
+        logger.info(f"  Duplicates skipped: {total_stats['smartrecruiters']['jobs_duplicate']}")
+        logger.info(f"  Jobs classified: {total_stats['smartrecruiters']['jobs_classified']}")
+        logger.info(f"  Jobs written to enriched_jobs: {total_stats['smartrecruiters']['jobs_written_enriched']}")
+        logger.info(f"  Jobs with location_type: {total_stats['smartrecruiters']['jobs_with_location_type']}")
+        logger.info(f"  Jobs with experience_level: {total_stats['smartrecruiters']['jobs_with_experience_level']}")
+        logger.info(f"  Cost saved from filtering: ${total_stats['smartrecruiters']['cost_saved_filtering']:.2f}")
+        logger.info(f"  Cost of classification: ${total_stats['smartrecruiters']['cost_classification']:.2f}")
+
     if total_stats['custom']:
         logger.info("\nCustom Config Pipeline:")
         logger.info(f"  Employers processed: {total_stats['custom']['employers_processed']}")
@@ -3045,6 +3474,8 @@ Examples:
         total_jobs += total_stats['ashby']['jobs_written_enriched']
     if total_stats['workable']:
         total_jobs += total_stats['workable']['jobs_written_enriched']
+    if total_stats['smartrecruiters']:
+        total_jobs += total_stats['smartrecruiters']['jobs_written_enriched']
     if total_stats['custom']:
         total_jobs += total_stats['custom']['jobs_written_enriched']
 

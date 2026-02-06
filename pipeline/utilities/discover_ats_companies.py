@@ -105,6 +105,17 @@ ATS_CONFIG = {
             'https://www.workable.com/api/accounts/{slug}',
         ],
     },
+    'smartrecruiters': {
+        'slug_patterns': [
+            r'jobs\.smartrecruiters\.com/([a-zA-Z0-9_-]+)',
+        ],
+        'search_query': 'site:jobs.smartrecruiters.com',
+        'config_path': Path('config/smartrecruiters/company_mapping.json'),
+        'config_key': 'smartrecruiters',
+        'validate_urls': [
+            'https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1',
+        ],
+    },
 }
 
 # Role queries by job family (from schema_taxonomy.yaml)

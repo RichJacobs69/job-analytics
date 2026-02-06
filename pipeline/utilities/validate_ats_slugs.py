@@ -27,6 +27,7 @@ CONFIG_PATHS = {
     'greenhouse': 'config/greenhouse/company_ats_mapping.json',
     'lever': 'config/lever/company_mapping.json',
     'ashby': 'config/ashby/company_mapping.json',
+    'smartrecruiters': 'config/smartrecruiters/company_mapping.json',
 }
 
 # Validation endpoints
@@ -50,6 +51,12 @@ VALIDATION_CONFIG = {
     'ashby': {
         'urls': [
             'https://api.ashbyhq.com/posting-api/job-board/{slug}',
+        ],
+        'method': 'get',
+    },
+    'smartrecruiters': {
+        'urls': [
+            'https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1',
         ],
         'method': 'get',
     },
@@ -188,7 +195,7 @@ def main():
 
     parser.add_argument(
         'source',
-        choices=['greenhouse', 'lever', 'ashby'],
+        choices=['greenhouse', 'lever', 'ashby', 'smartrecruiters'],
         help='ATS platform to validate'
     )
 
