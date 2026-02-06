@@ -66,6 +66,13 @@ python pipeline/url_validator.py --limit=100   # Check for 404 dead links
 python wrappers/check_pipeline_status.py
 python wrappers/backfill_missing_enriched.py --dry-run
 
+# Skills taxonomy
+python pipeline/utilities/audit_skills_taxonomy.py              # Audit unmapped skills, duplicates, gaps
+python pipeline/utilities/audit_skills_taxonomy.py --output-csv  # Also save to CSV
+python pipeline/utilities/backfill_skill_families.py --dry-run   # Preview family code updates
+python pipeline/utilities/backfill_skill_families.py             # Apply family code updates
+python pipeline/utilities/backfill_skill_families.py --stats-only # Mapper stats without DB query
+
 # ATS Company Discovery & Validation
 python pipeline/utilities/discover_ats_companies.py all        # Discover new companies (Google CSE)
 python pipeline/utilities/validate_ats_slugs.py greenhouse     # Validate all slugs for a source
@@ -158,10 +165,13 @@ job-analytics/
 | `pipeline/classifier.py` | Gemini LLM integration, extracts structured data |
 | `pipeline/db_connection.py` | Supabase client, deduplication, employer metadata cache |
 | `pipeline/location_extractor.py` | Pattern-based location extraction |
+| `pipeline/skill_family_mapper.py` | Skill name -> family_code mapping (exact + normalized fuzzy) |
 | `pipeline/agency_detection.py` | Agency filtering (hard + soft) |
 | `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
 | `pipeline/summary_generator.py` | Backfill utility for summaries (new jobs get inline via classifier) |
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
+| `pipeline/utilities/audit_skills_taxonomy.py` | Audit unmapped skills, duplicates, coverage gaps |
+| `pipeline/utilities/backfill_skill_families.py` | Backfill skill family codes from current mapping |
 | `pipeline/utilities/seed_employer_metadata.py` | Seed employer_metadata from ATS config files |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |

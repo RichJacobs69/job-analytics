@@ -44,7 +44,7 @@ pipeline/
 ├── run_all_cities.py          # Parallel orchestration
 ├── location_extractor.py      # Location extraction from job postings (pattern-based)
 ├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
-├── skill_family_mapper.py     # Skill name → skill_family → skill_domain mapping
+├── skill_family_mapper.py     # Skill name → skill_family mapping (exact + normalized fuzzy)
 ├── employer_stats.py          # Compute median fill times per employer (Epic 8)
 ├── summary_generator.py       # Backfill utility for summaries (new jobs get inline)
 └── url_validator.py           # HTTP 404 detection for dead link filtering (Epic 8)
@@ -60,7 +60,8 @@ pipeline/utilities/
 ├── backfill_missing_enriched.py    # Job recovery
 ├── backfill_agency_flags.py        # Agency flag updates
 ├── backfill_reclassify.py          # Re-classify jobs (supports all families)
-├── backfill_skill_families.py      # Skill family backfill
+├── audit_skills_taxonomy.py        # Skills taxonomy audit (unmapped skills, duplicates, gaps)
+├── backfill_skill_families.py      # Skill family backfill (with --dry-run, --stats-only)
 ├── backfill_skill_family_rename.py # Skill family rename backfill
 ├── backfill_source_job_id.py       # Source job ID backfill
 ├── backfill_working_arrangement.py # Working arrangement backfill

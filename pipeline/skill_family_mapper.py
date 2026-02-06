@@ -2,13 +2,21 @@
 Skill Family Mapper
 ====================
 Maps skill names to family codes using deterministic lookup.
-LLM extracts skill names only; Python assigns families.
+LLM (Gemini) extracts skill names; Python assigns family codes.
+
+Two-stage matching:
+  1. Exact match (case-insensitive) against skill_family_mapping.yaml
+  2. Normalized match -- reduces plurals and UK/US spelling variants
+     (e.g., "Databases" -> "database", "Data Visualisation" -> "data visualization")
+
+Short names (<=3 chars) skip normalization to protect "R", "Go", "C", etc.
 
 Usage:
-    from skill_family_mapper import get_skill_family, enrich_skills_with_families
+    from pipeline.skill_family_mapper import get_skill_family, enrich_skills_with_families
 
     # Single skill
-    family = get_skill_family("Python")  # Returns "programming"
+    family = get_skill_family("Python")      # Returns "programming"
+    family = get_skill_family("Databases")   # Returns "databases" (normalized)
 
     # Batch enrichment
     skills = [{"name": "Python"}, {"name": "Snowflake"}]
@@ -22,11 +30,51 @@ from pathlib import Path
 from typing import Optional
 
 # =============================================================================
+# Normalization
+# =============================================================================
+
+# Skills too short to safely stem (would create false matches)
+_SHORT_SKILL_MIN_LEN = 4
+
+def _normalize(name: str) -> str:
+    """Normalize a skill name: lowercase, strip, reduce plurals/spelling variants.
+
+    Only applied to words longer than 3 chars to protect short names like
+    R, Go, C, SQL, SAS, etc.
+    """
+    n = name.lower().strip()
+    if len(n) < _SHORT_SKILL_MIN_LEN:
+        return n
+
+    # UK -> US spelling
+    n = n.replace("modelling", "modeling")
+    n = n.replace("visualisation", "visualization")
+    n = n.replace("organisation", "organization")
+    n = n.replace("optimisation", "optimization")
+    n = n.replace("cataloguing", "cataloging")
+
+    # Plural -> singular (ordered from most specific to least)
+    if n.endswith("ies") and len(n) > 5:
+        n = n[:-3] + "y"          # technologies -> technology
+    elif n.endswith("ses") and len(n) > 5:
+        n = n[:-2]                # databases -> database
+    elif n.endswith("s") and not n.endswith("ss") and not n.endswith("us"):
+        n = n[:-1]                # roadmaps -> roadmap
+
+    return n
+
+
+# =============================================================================
 # Load Mapping
 # =============================================================================
 
-def _load_skill_mapping() -> dict[str, str]:
-    """Load skill -> family mapping from YAML config."""
+def _load_skill_mapping() -> tuple[dict[str, str], dict[str, str]]:
+    """Load skill -> family mapping from YAML config.
+
+    Returns:
+        (exact_map, normalized_map) -- exact for direct lookup,
+        normalized as fallback for fuzzy matching.
+    """
     config_path = Path(__file__).parent.parent / "config" / "skill_family_mapping.yaml"
 
     if not config_path.exists():
@@ -36,20 +84,22 @@ def _load_skill_mapping() -> dict[str, str]:
         raw_mapping = yaml.safe_load(f)
 
     # Invert: family -> [skills] becomes skill -> family
-    skill_to_family: dict[str, str] = {}
+    exact_map: dict[str, str] = {}
+    normalized_map: dict[str, str] = {}
 
     for family_code, skill_list in raw_mapping.items():
         if not isinstance(skill_list, list):
             continue
         for skill in skill_list:
-            normalized = skill.lower().strip()
-            skill_to_family[normalized] = family_code
+            lower = skill.lower().strip()
+            exact_map[lower] = family_code
+            normalized_map[_normalize(lower)] = family_code
 
-    return skill_to_family
+    return exact_map, normalized_map
 
 
-# Global mapping loaded once at module import
-SKILL_TO_FAMILY: dict[str, str] = _load_skill_mapping()
+# Global mappings loaded once at module import
+SKILL_TO_FAMILY, SKILL_TO_FAMILY_NORMALIZED = _load_skill_mapping()
 
 
 # =============================================================================
@@ -60,6 +110,9 @@ def get_skill_family(skill_name: str) -> Optional[str]:
     """
     Get family code for a skill name.
 
+    Tries exact match first (case-insensitive), then falls back to
+    normalized matching (plurals, UK/US spelling).
+
     Args:
         skill_name: The skill name (case-insensitive)
 
@@ -69,14 +122,16 @@ def get_skill_family(skill_name: str) -> Optional[str]:
     if not skill_name:
         return None
 
-    normalized = skill_name.lower().strip()
+    lower = skill_name.lower().strip()
 
-    # Direct match
-    if normalized in SKILL_TO_FAMILY:
-        return SKILL_TO_FAMILY[normalized]
+    # 1. Exact match (fast path)
+    if lower in SKILL_TO_FAMILY:
+        return SKILL_TO_FAMILY[lower]
 
-    # Try without special characters (e.g., "C++" -> "c++")
-    # Already handled by normalization
+    # 2. Normalized match (plural/spelling fallback)
+    normalized = _normalize(lower)
+    if normalized in SKILL_TO_FAMILY_NORMALIZED:
+        return SKILL_TO_FAMILY_NORMALIZED[normalized]
 
     return None
 
@@ -112,6 +167,7 @@ def get_mapping_stats() -> dict:
 
     return {
         "total_skills_mapped": len(SKILL_TO_FAMILY),
+        "total_normalized": len(SKILL_TO_FAMILY_NORMALIZED),
         "families": len(families),
         "skills_per_family": families,
     }
@@ -126,7 +182,8 @@ if __name__ == "__main__":
     print("=" * 50)
 
     stats = get_mapping_stats()
-    print(f"Total skills mapped: {stats['total_skills_mapped']}")
+    print(f"Total skills mapped (exact): {stats['total_skills_mapped']}")
+    print(f"Total skills mapped (normalized): {stats['total_normalized']}")
     print(f"Number of families: {stats['families']}")
     print()
     print("Skills per family:")
@@ -144,8 +201,13 @@ if __name__ == "__main__":
         "LangChain",
         "Kubernetes",
         "Unknown Skill XYZ",
-        "TENSORFLOW",  # Test case insensitivity
-        "power bi",    # Test lowercase
+        "TENSORFLOW",       # case insensitivity
+        "power bi",         # lowercase
+        "Databases",        # plural -> database
+        "Roadmaps",         # plural -> roadmap
+        "Data Visualisation",  # UK spelling
+        "R",                # short name, must not false match
+        "Go",               # short name, must not false match
     ]
     for skill in test_skills:
         family = get_skill_family(skill)

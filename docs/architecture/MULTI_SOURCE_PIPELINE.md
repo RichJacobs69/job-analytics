@@ -35,10 +35,17 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
                |
                v
     classifier.py (Gemini 2.5 Flash)
-        |- Builds structured prompt from taxonomy
+        |- Builds structured prompt from schema_taxonomy.yaml
         |- Extracts: function, level, skills, remote status
         |- Generates 2-3 sentence role summary (INLINE)
         |- Returns JSON classification + summary
+               |
+               v
+    skill_family_mapper.py (Deterministic)
+        |- Overwrites LLM family_code with exact lookup
+        |- Fallback: normalized matching (plurals, UK/US spelling)
+        |- Source: config/skill_family_mapping.yaml (997 skills, 39 families)
+        |- Domains: config/skill_domain_mapping.yaml (9 domains)
                |
                v
     [Soft Detection - Agency Pattern Matching]
