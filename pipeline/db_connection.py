@@ -3,6 +3,7 @@ Database connection and helper functions for Supabase
 """
 import os
 import hashlib
+import logging
 from datetime import date, datetime
 from typing import Optional, Dict, List
 from dotenv import load_dotenv
@@ -21,6 +22,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+logger = logging.getLogger(__name__)
 
 # ============================================
 # Helper Functions
@@ -434,7 +437,7 @@ def update_raw_job_full_text(
         result = supabase.table("raw_jobs").update(data).eq("id", raw_job_id).execute()
         return len(result.data) > 0
     except Exception as e:
-        print(f"Error updating raw job {raw_job_id}: {e}")
+        logger.error(f"Error updating raw job {raw_job_id}: {e}")
         return False
 
 
@@ -452,7 +455,7 @@ def get_raw_job_by_id(raw_job_id: int) -> Optional[Dict]:
         result = supabase.table("raw_jobs").select("*").eq("id", raw_job_id).execute()
         return result.data[0] if result.data else None
     except Exception as e:
-        print(f"Error retrieving raw job {raw_job_id}: {e}")
+        logger.error(f"Error retrieving raw job {raw_job_id}: {e}")
         return None
 
 
@@ -506,12 +509,12 @@ def _load_employer_metadata_cache():
 
         _employer_metadata_loaded = True
         if _employer_metadata_cache:
-            print(f"[OK] Loaded {len(_employer_metadata_cache)} employer metadata entries into cache")
+            logger.debug(f"Loaded {len(_employer_metadata_cache)} employer metadata entries into cache")
 
     except Exception as e:
         # Table may not exist yet - that's OK
         if 'does not exist' not in str(e).lower():
-            print(f"[WARN] Failed to load employer metadata cache: {e}")
+            logger.warning(f"Failed to load employer metadata cache: {e}")
         _employer_metadata_loaded = True  # Mark as loaded to avoid retry spam
 
 
@@ -595,7 +598,7 @@ def upsert_employer_metadata(
         return True
 
     except Exception as e:
-        print(f"[ERROR] Failed to upsert employer metadata: {e}")
+        logger.error(f"Failed to upsert employer metadata: {e}")
         return False
 
 
@@ -695,7 +698,7 @@ def update_employer_working_arrangement_if_confident(
         )
 
     except Exception as e:
-        print(f"[WARN] Failed to compute working arrangement for '{employer_name}': {e}")
+        logger.warning(f"Failed to compute working arrangement for '{employer_name}': {e}")
         return False
 
 

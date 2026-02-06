@@ -393,6 +393,12 @@
     "Funding Societies": {
       "slug": "fundingsocieties",
       "notes": "Singapore fintech"
+    },
+    "moomoo": {
+      "slug": "moomoo"
+    },
+    "Duke Corporate Education": {
+      "slug": "duke-corporate-education"
     }
   },
   "_meta": {
@@ -401,8 +407,8 @@
       "manual_testing",
       "google_cse"
     ],
-    "total_companies": 128,
-    "notes": "Added 10 Singapore companies: Activate Interactive, Cornspring, Fifty Five, PeopleCert, Royal Ocean Marine, Tiger Analytics, Tyme, Unison Consulting, WeLoveSuperMom, Funding Societies",
-    "last_updated": "2026-02-03"
+    "total_companies": 130,
+    "notes": "Added moomoo (fintech) and Duke Corporate Education",
+    "last_updated": "2026-02-06"
   }
 }
