@@ -1,4 +1,4 @@
-# Repository Structure (Updated 2025-12-30)
+# Repository Structure (Updated 2026-02-07)
 
 > **Single Source of Truth for Directory Organization**
 >
@@ -37,7 +37,7 @@ These are the production components of the job analytics pipeline:
 ```
 pipeline/
 ├── fetch_jobs.py              # Main orchestrator with INCREMENTAL UPSERTS per company
-├── classifier.py              # Claude LLM integration
+├── classifier.py              # Gemini 2.5 Flash LLM integration (default; Claude fallback)
 ├── db_connection.py           # Supabase PostgreSQL client (insert_raw_job_upsert)
 ├── agency_detection.py        # Agency filtering logic
 ├── unified_job_ingester.py    # Merge & deduplication
@@ -45,6 +45,7 @@ pipeline/
 ├── location_extractor.py      # Location extraction from job postings (pattern-based)
 ├── job_family_mapper.py       # Deterministic job_subfamily → job_family mapping
 ├── skill_family_mapper.py     # Skill name → skill_family mapping (exact + normalized fuzzy)
+├── report_generator.py        # Flexible report builder (city/family/date filters, portfolio output)
 ├── employer_stats.py          # Compute median fill times per employer (Epic 8)
 ├── summary_generator.py       # Backfill utility for summaries (new jobs get inline)
 └── url_validator.py           # HTTP 404 detection for dead link filtering (Epic 8)
@@ -55,37 +56,49 @@ Maintenance, diagnostic, and backfill tools:
 
 ```
 pipeline/utilities/
-├── check_pipeline_status.py        # Quick status checks
-├── analyze_db_results.py           # Database analysis
-├── backfill_missing_enriched.py    # Job recovery
-├── backfill_agency_flags.py        # Agency flag updates
-├── backfill_reclassify.py          # Re-classify jobs (supports all families)
-├── audit_skills_taxonomy.py        # Skills taxonomy audit (unmapped skills, duplicates, gaps)
-├── backfill_skill_families.py      # Skill family backfill (with --dry-run, --stats-only)
-├── backfill_skill_family_rename.py # Skill family rename backfill
-├── backfill_source_job_id.py       # Source job ID backfill
-├── backfill_working_arrangement.py # Working arrangement backfill
-├── migrate_locations.py            # Migrate city_code to locations JSONB (one-time)
-├── seed_employer_metadata.py       # Seed employer_metadata from config files
-├── discover_greenhouse_slugs.py    # Greenhouse company slug discovery
-├── discover_ats_companies.py       # Multi-ATS company discovery (Google CSE)
-└── validate_ats_slugs.py           # Unified ATS slug validation
+├── check_pipeline_status.py                # Quick status checks
+├── analyze_db_results.py                   # Database analysis
+├── backfill_missing_enriched.py            # Job recovery
+├── backfill_agency_flags.py                # Agency flag updates
+├── backfill_locations.py                   # Location data backfill
+├── backfill_global_scope.py                # Global remote scope backfill
+├── backfill_track_seniority.py             # Track + seniority backfill (IC/Manager + level)
+├── backfill_working_arrangement_defaults.py # Working arrangement defaults backfill
+├── audit_skills_taxonomy.py                # Skills taxonomy audit (unmapped skills, duplicates, gaps)
+├── backfill_skill_families.py              # Skill family backfill (with --dry-run, --stats-only)
+├── seed_employer_metadata.py               # Seed employer_metadata from config files
+├── enrich_employer_metadata.py             # Enrich employer_metadata (industry, HQ, etc.)
+├── discover_ats_companies.py               # Multi-ATS company discovery (Google CSE)
+└── validate_ats_slugs.py                   # Unified ATS slug validation
 ```
+
+Archived utilities (one-time or superseded scripts) live in `pipeline/utilities/archive/` (17 files).
+See `pipeline/utilities/archive/DEPRECATION.md` for details.
 
 ### 3. **`scrapers/` Directory** (Data Source Integrations)
 
 ```
 scrapers/
-├── adzuna/                    # Adzuna Jobs API client
-│   └── fetch_adzuna_jobs.py   # Paginated API fetcher
+├── adzuna/                           # Adzuna Jobs API client
+│   └── fetch_adzuna_jobs.py          # Paginated API fetcher
 │
-├── greenhouse/                # Greenhouse ATS scraper
-│   └── greenhouse_scraper.py  # Browser automation (Playwright)
+├── greenhouse/                       # Greenhouse ATS scraper
+│   └── greenhouse_scraper.py         # Browser automation (Playwright)
 │
-└── lever/                     # Lever ATS scraper
-    ├── __init__.py
-    ├── lever_fetcher.py           # Main Lever job fetcher
-    └── discover_lever_companies.py # Company discovery utility
+├── lever/                            # Lever ATS fetcher
+│   └── lever_fetcher.py              # Public JSON API client
+│
+├── ashby/                            # Ashby ATS fetcher
+│   └── ashby_fetcher.py              # Public JSON API client (structured compensation)
+│
+├── workable/                         # Workable ATS fetcher
+│   └── workable_fetcher.py           # Public JSON API client (workplace_type, salary)
+│
+├── smartrecruiters/                   # SmartRecruiters ATS fetcher
+│   └── smartrecruiters_fetcher.py    # Public JSON API client (locationType, experienceLevel)
+│
+└── custom/                           # Custom career site scrapers
+    └── google_rss_fetcher.py         # Google RSS job feed fetcher
 ```
 
 ### 4. **`config/` Directory** (Configuration Files)
@@ -93,24 +106,36 @@ scrapers/
 ```
 config/
 ├── greenhouse/                        # Greenhouse-specific configs
-│   ├── company_ats_mapping.json       # Company → ATS slug mapping (348 companies, with url_type)
+│   ├── company_ats_mapping.json       # Company → ATS slug mapping (452 companies, with url_type)
 │   ├── checked_companies.json         # Validated Greenhouse companies
 │   ├── title_patterns.yaml            # Title patterns for Greenhouse filtering
 │   └── location_patterns.yaml         # Location patterns for Greenhouse filtering
 ├── lever/                             # Lever-specific configs
-│   ├── company_mapping.json           # Lever company configurations
+│   ├── company_mapping.json           # Lever company configurations (182 companies)
 │   ├── title_patterns.yaml            # Title patterns for Lever filtering
 │   └── location_patterns.yaml         # Location patterns for Lever filtering
+├── ashby/                             # Ashby-specific configs
+│   ├── company_mapping.json           # Ashby company configurations (169 companies)
+│   ├── title_patterns.yaml            # Title patterns for Ashby filtering
+│   └── location_patterns.yaml         # Location patterns for Ashby filtering
+├── workable/                          # Workable-specific configs
+│   ├── company_mapping.json           # Workable company configurations (135 companies)
+│   ├── title_patterns.yaml            # Title patterns for Workable filtering
+│   └── location_patterns.yaml         # Location patterns for Workable filtering
+├── smartrecruiters/                   # SmartRecruiters-specific configs
+│   ├── company_mapping.json           # SmartRecruiters company configurations (35 companies)
+│   ├── title_patterns.yaml            # Title patterns for SmartRecruiters filtering
+│   └── location_patterns.yaml         # Location patterns for SmartRecruiters filtering
 ├── agency_blacklist.yaml              # Agency names for hard filtering
 ├── location_mapping.yaml              # Master location config (cities, countries, regions)
 ├── job_family_mapping.yaml            # job_subfamily → job_family mapping (strict)
-├── skill_family_mapping.yaml          # skill → skill_family mapping (849 skills)
-├── skill_domain_mapping.yaml          # skill_family → domain mapping (32 families, 8 domains)
+├── skill_family_mapping.yaml          # skill → skill_family mapping (997 skills, 40 families)
+├── skill_domain_mapping.yaml          # skill_family → domain mapping (40 families, 9 domains)
 └── supported_ats.yaml                 # Supported ATS platforms
 ```
 
 ### 5. **`migrations/` Directory** (Database Migrations)
-SQL scripts for database schema changes:
+SQL scripts for database schema changes (32 migration files):
 
 ```
 migrations/
@@ -138,7 +163,15 @@ migrations/
 ├── 021_add_employer_name_fk.sql           # FK constraint on enriched_jobs.employer_name
 ├── 022_simplify_view_joins.sql            # Remove LOWER() from view JOINs
 ├── 023_drop_aliases_column.sql            # Remove unused aliases column
-└── 024_drop_enriched_jobs_employer_size.sql # Remove employer_size from enriched_jobs
+├── 024_drop_enriched_jobs_employer_size.sql # Remove employer_size from enriched_jobs
+├── 025_extend_employer_metadata.sql       # Extend employer_metadata with industry, HQ, etc.
+├── 025b_update_view_with_industry.sql     # Add industry to jobs_with_employer_context view
+├── 025c_add_financial_services_industry.sql # Add financial_services industry value
+├── 025c_add_parent_company_to_view.sql    # Add parent_company to view
+├── 026_standardize_headquarters.sql       # Standardize headquarters values
+├── 027_add_productivity_industry.sql      # Add productivity industry value
+├── 028_add_careers_url.sql                # Add careers_url to employer_metadata
+└── 029_posted_date_default.sql            # Default value for posted_date
 ```
 
 ### 6. **`docs/` Directory** (Documentation)
@@ -147,24 +180,25 @@ migrations/
 docs/
 ├── README.md                           # Documentation index
 ├── REPOSITORY_STRUCTURE.md             # This file
+├── PRODUCT_BRIEF.md                    # Product requirements
 ├── architecture/                       # Architecture design docs
-│   ├── DUAL_PIPELINE.md               # Adzuna + Greenhouse dual sources
+│   ├── MULTI_SOURCE_PIPELINE.md       # 6-source pipeline architecture
 │   ├── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
-│   └── ADDING_NEW_LOCATIONS.md        # Guide for adding new cities/countries/regions
+│   ├── ADDING_NEW_LOCATIONS.md        # Guide for adding new cities/countries/regions
+│   ├── SECURITY_AUDIT_REPORT.md       # Security assessment
+│   ├── In Progress/                   # Active epic documents
+│   └── Done/                          # Completed epic documents
+├── design/                             # UX design specifications
+│   ├── JOB_FEED_UX_DESIGN.md         # Job feed UX spec (v1.5)
+│   └── job-feed-mockup.html           # Interactive HTML mockup
 ├── costs/                              # Cost tracking and metrics
-│   ├── COST_METRICS.md                # Cost analysis & optimization
+│   ├── COST_METRICS.md                # Historical cost analysis (pre-Gemini migration)
 │   └── claude_api_*.csv               # Anthropic usage exports
 ├── database/
 │   └── SCHEMA_UPDATES.md              # Database schema changelog
 ├── archive/                            # Historical docs and completed epics
-│   ├── GLOBAL_LOCATION_EXPANSION_EPIC.md # Completed location system epic (2025-12-22)
-│   └── prod_run_plan_output/          # Production run guides
 ├── blacklisting_process.md            # Agency detection methodology
-├── CASE_STUDY_MVP_REPORT.md           # Project case study
-├── employer_size_canonicalization_epic.md # Future epic planning
-├── epic5_analytics_layer_planning.md  # Dashboard delivery plan
 ├── marketplace_questions.md           # Business questions spec
-├── product_brief.md                   # Product requirements
 ├── schema_taxonomy.yaml               # Classification taxonomy
 └── system_architecture.yaml           # System design spec
 ```
@@ -174,16 +208,27 @@ docs/
 ```
 tests/
 ├── TESTING_GUIDE.md                    # Consolidated testing guide
+├── eval_gemini.py                      # Gemini classifier evaluation script
+├── test_agency_detection.py            # Agency filtering tests
+├── test_ashby_fetcher.py               # Ashby fetcher tests
 ├── test_db_upsert.py                   # Database upsert logic
 ├── test_e2e_greenhouse_filtered.py     # E2E pipeline tests
-├── test_end_to_end.py                  # Full pipeline integration
+├── test_embed_extraction.py            # Embed URL extraction tests
 ├── test_greenhouse_scraper_filtered.py # Scraper integration tests
-├── test_greenhouse_scraper_simple.py   # Basic scraper tests
 ├── test_greenhouse_title_filter_unit.py # Title filter unit tests
 ├── test_incremental_pipeline.py        # Incremental upsert tests
+├── test_inline_summary.py             # Inline summary generation tests
+├── test_job_family_mapper.py           # Job family mapping tests
+├── test_lever_fetcher.py               # Lever fetcher tests
 ├── test_location_extractor.py          # Location extraction tests (50+ cases)
+├── test_pipeline_integration.py        # Simulated pipeline integration tests (all sources)
 ├── test_resume_capability.py           # Resume capability tests
-└── test_two_companies.py               # Multi-company scraping
+├── test_skill_family_mapper.py         # Skill family mapping tests
+├── test_smartrecruiters_fetcher.py     # SmartRecruiters fetcher tests
+├── test_summary_retry_large.py         # Summary retry/large input tests
+├── test_url_validator.py               # URL validator tests
+├── test_workable_fetcher.py            # Workable fetcher tests
+└── fixtures/                           # Test data (CSV/JSON evaluation datasets)
 ```
 
 ## Usage Examples
@@ -200,11 +245,14 @@ python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
 # Specific companies
 python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
 
-# Dual pipeline (Adzuna batch + Greenhouse incremental)
-python wrappers/fetch_jobs.py lon 100 --sources adzuna,greenhouse
+# All 6 sources
+python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters
 
 # Adzuna only (batch mode)
 python wrappers/fetch_jobs.py lon 100 --sources adzuna
+
+# Reports
+python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
 ```
 
 ### Utilities
@@ -272,44 +320,49 @@ main()
 
 | Area | Count | Type |
 |------|-------|------|
-| Root wrappers | 8 | Python scripts |
-| Core pipeline | 12 | Python scripts (incl. 3 Epic 8 scripts) |
-| Utilities | 13 | Python scripts (incl. seed_employer_metadata.py) |
-| Scrapers | 6 | Python scripts (across 3 ATS integrations) |
-| Migrations | 24 | SQL scripts (incl. employer_metadata, views, cleanup) |
-| Config files | 12 | YAML/JSON files (6 shared + 3 greenhouse + 3 lever) |
-| Test files | 10 | Python scripts |
-| **Total active** | **80** | **Scripts + configs** |
+| Root wrappers | 8 | Python scripts (7 scripts + __init__) |
+| Core pipeline | 13 | Python scripts (incl. report_generator, 3 Epic 8 scripts) |
+| Utilities (active) | 14 | Python scripts |
+| Utilities (archived) | 17 | Python scripts (pipeline/utilities/archive/) |
+| Scrapers | 12 | Python scripts (across 7 directories) |
+| Migrations | 32 | SQL scripts (001-029 incl. sub-versions) |
+| Config files | 23 | YAML/JSON (6 shared + 3x5 ATS-specific + 2 greenhouse extras) |
+| Test files | 20 | Python scripts |
+| **Total active** | **122** | **Scripts + configs** |
 
 ## Current Status
 
 ### Implemented Features
+- **6-Source Pipeline:** Adzuna + Greenhouse + Lever + Ashby + Workable + SmartRecruiters
 - **Incremental Upserts:** Per-company database writes (no more 3-hour batch failures)
 - **Resume Capability:** `--resume-hours N` skips recently processed companies
 - **Hash-based Deduplication:** UPSERT by company+title+city hash
 - **Last Seen Tracking:** Distinguishes first discovery from most recent scrape
-- **Multi-ATS Support:** Greenhouse, Lever, and Adzuna integrations
 - **Deterministic Mapping:** Job family and skill family derived from mappings (not LLM)
+- **Gemini 2.5 Flash Classifier:** ~88% cheaper than previous Claude Haiku classifier
+- **Report Generator:** Flexible reports by city/family/date with portfolio output
 
 ### Completed Epics
 - **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
 - **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
-- **Epic 7: Automation & Operational** - GitHub Actions for daily Greenhouse/Lever/Adzuna scraping
-- **Global Location Expansion Epic** - JSONB location system supporting 14 cities, 9 countries, 3 regions (archived: docs/archive/GLOBAL_LOCATION_EXPANSION_EPIC.md)
-
-### In Progress
-- **Epic 8: Curated Job Feed** (Phase 1 Complete)
+- **Epic 7: Automation & Operational** - GitHub Actions for all 6 ATS sources + Adzuna
+- **Ashby Integration** - 169 companies, structured compensation data
+- **Workable Integration** - 135 companies, workplace_type and salary data
+- **SmartRecruiters Integration** - 35 companies, locationType and experienceLevel
+- **Employer Metadata & Enrichment** - industry, HQ, display names, working arrangement defaults
+- **Global Location Expansion** - JSONB location system supporting 14 cities, 9 countries, 3 regions
+- **Epic 8: Curated Job Feed** (Phase 2 complete)
   - [DONE] Infrastructure: migrations, pipeline scripts, API endpoints
-  - [TODO] Frontend: job feed page, filter components, expandable cards
-  - See: `docs/architecture/Future Ideas/EPIC_JOB_FEED.md`
+  - [DONE] Frontend: job feed page, filter components, API integration
+  - See: `docs/architecture/In Progress/EPIC_JOB_FEED.md`
 
 ### Maintaining Cleanliness
-- Archive diagnostic scripts after use in `docs/archive/session_YYYY-MM-DD/`
+- Archive diagnostic scripts after use in `pipeline/utilities/archive/`
 - Keep `pipeline/` and root directory clean
 - Document major changes in session summary files
 
 ---
 
-**Last Updated:** 2026-01-04
-**Changes:** employer_size cleanup - removed from enriched_jobs (now employer_metadata only), fixed dead code in seed_employer_metadata.py and backfill_missing_enriched.py, added migrations 021-024.
-**Status:** Clean structure, employer_metadata is source of truth for employer attributes
+**Last Updated:** 2026-02-07
+**Changes:** Comprehensive documentation refresh -- updated all file counts, added SmartRecruiters/Workable/Ashby throughout, updated migrations to 029, test files to 20, updated classifier to Gemini 2.5 Flash.
+**Status:** Clean structure, 6-source pipeline, employer_metadata is source of truth for employer attributes

@@ -1,29 +1,29 @@
-# Multi-Source Pipeline Architecture: Adzuna + Greenhouse + Lever + Ashby
+# Multi-Source Pipeline Architecture: Adzuna + Greenhouse + Lever + Ashby + Workable + SmartRecruiters
 
 ## Overview
 
-Four-source job ingestion strategy combining mass-market coverage (Adzuna) with premium company depth via browser automation (Greenhouse) and public APIs (Lever, Ashby) before unified classification and analysis.
+Six-source job ingestion strategy combining mass-market coverage (Adzuna) with premium company depth via browser automation (Greenhouse) and public APIs (Lever, Ashby, Workable, SmartRecruiters) before unified classification and analysis.
 
 ---
 
 ## The Pipeline
 
 ```
-PIPELINE A: Adzuna     PIPELINE B: Greenhouse    PIPELINE C: Lever    PIPELINE D: Ashby
-(Mass market)          (Browser automation)      (Public API)         (Public API)
+PIPELINE A: Adzuna   PIPELINE B: Greenhouse  PIPELINE C: Lever  PIPELINE D: Ashby  PIPELINE E: Workable  PIPELINE F: SmartRecruiters
+(Mass market)        (Browser automation)    (Public API)       (Public API)       (Public API)          (Public API)
 
-Adzuna Job API         Greenhouse Pages          Lever API            Ashby API
-    |                      |                         |                    |
-fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetcher.py
-|- Paginated results   |- Playwright browser     |- JSON API          |- JSON API
-|- Deduplication       |- Full descriptions      |- EU + Global       |- Structured compensation
-    |                  |- Title/location filter       |                    |
-    |                      |                         |                    |
-    +----------+-----------+------------+------------+--------------------+
-               |
-               v
+Adzuna Job API       Greenhouse Pages        Lever API          Ashby API          Workable API          SmartRecruiters API
+    |                    |                       |                  |                  |                      |
+fetch_adzuna_jobs.py greenhouse_scraper.py   lever_fetcher.py   ashby_fetcher.py   workable_fetcher.py   smartrecruiters_fetcher.py
+|- Paginated results |- Playwright browser   |- JSON API        |- JSON API        |- JSON API            |- JSON API
+|- Deduplication     |- Full descriptions    |- EU + Global     |- Structured comp  |- workplace_type      |- locationType
+    |                |- Title/location filter     |                  |              |- salary               |- experienceLevel
+    |                    |                       |                  |                  |                      |
+    +--------+-----------+-----------+-----------+------------------+----------------------+
+             |
+             v
      UNIFIED JOB INGESTION LAYER
-     |- Combines all 4 sources
+     |- Combines all 6 sources
      |- Deduplicates by: (company + title + location) MD5
      |- Prefers full descriptions over truncated
      |- Tracks data source for each job
@@ -78,23 +78,23 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
 
 ## Data Source Comparison
 
-| Aspect | Adzuna API | Greenhouse Scraper | Lever API | Ashby API |
-|--------|------------|-------------------|-----------|-----------|
-| **Coverage** | 1,500+ jobs/month | 400+ companies | 120+ companies | 70+ companies |
-| **Employers in metadata** | 5,586 total (all sources combined, FK enforced) | | | |
-| **Description Length** | 100-200 chars | 9,000-15,000+ chars | 5,000-15,000+ chars | 5,000-15,000+ chars |
-| **Content Sections** | Basic summary only | Full posting | Full posting | Full posting |
-| **Technology** | REST API | Browser (Playwright) | Public JSON API | Public JSON API |
-| **Update Frequency** | Continuous daily | On-demand | On-demand | On-demand |
-| **Cost** | API calls (minimal) | Browser (moderate) | API calls (minimal) | API calls (minimal) |
-| **Speed** | Fast (~50 jobs/min) | Slow (~1 job/2 sec) | Fast (~10 jobs/sec) | Fast (~10 jobs/sec) |
-| **Quality/Depth** | Wide but shallow | Narrow but deep | Narrow but deep | Narrow but deep |
-| **Salary Data** | Sometimes | Rarely in text | Rarely in text | Structured (best) |
-| **Best For** | Market trends | Premium analysis | Premium analysis | Premium + salary |
+| Aspect | Adzuna API | Greenhouse Scraper | Lever API | Ashby API | Workable API | SmartRecruiters API |
+|--------|------------|-------------------|-----------|-----------|-------------|---------------------|
+| **Coverage** | 1,500+ jobs/month | 452 companies | 182 companies | 169 companies | 135 companies | 35 companies |
+| **Description Length** | 100-200 chars | 9,000-15,000+ chars | 5,000-15,000+ chars | 5,000-15,000+ chars | 5,000-15,000+ chars | 5,000-15,000+ chars |
+| **Content Sections** | Basic summary only | Full posting | Full posting | Full posting | Full posting | Full posting |
+| **Technology** | REST API | Browser (Playwright) | Public JSON API | Public JSON API | Public JSON API | Public JSON API |
+| **Update Frequency** | Continuous daily | On-demand | On-demand | On-demand | On-demand | On-demand |
+| **Cost** | API calls (minimal) | Browser (moderate) | API calls (minimal) | API calls (minimal) | API calls (minimal) | API calls (minimal) |
+| **Speed** | Fast (~50 jobs/min) | Slow (~1 job/2 sec) | Fast (~10 jobs/sec) | Fast (~10 jobs/sec) | Fast (~10 jobs/sec) | Fast (~10 jobs/sec) |
+| **Quality/Depth** | Wide but shallow | Narrow but deep | Narrow but deep | Narrow but deep | Narrow but deep | Narrow but deep |
+| **Salary Data** | Sometimes | Rarely in text | Rarely in text | Structured (best) | Structured | Rarely |
+| **Unique Data** | Broad market | Full descriptions | EU support | Compensation | workplace_type | locationType, experienceLevel |
+| **Best For** | Market trends | Premium analysis | Premium analysis | Premium + salary | Workplace context | Structured metadata |
 
 ---
 
-## Why Four Sources?
+## Why Six Sources?
 
 ### Adzuna Strengths
 - **Coverage:** 1,500+ jobs per month across all companies
@@ -109,7 +109,7 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
 
 ### Greenhouse Strengths
 - **Quality:** Complete job postings (9,000+ chars)
-- **Curation:** 400+ premium tech companies configured
+- **Curation:** 452 premium tech companies configured
 - **Depth:** All job sections captured
 - **Reliability:** Direct from company source
 
@@ -140,20 +140,41 @@ fetch_adzuna_jobs.py   greenhouse_scraper.py     lever_fetcher.py     ashby_fetc
 - **Scale:** Smaller market share than Greenhouse/Lever
 - **Discovery:** Need to identify Ashby-using companies
 
+### Workable Strengths
+- **Quality:** Complete job postings (5,000-15,000+ chars)
+- **Workplace Type:** Structured `workplace_type` field (remote/hybrid/onsite)
+- **Salary Data:** Structured salary ranges in many postings
+- **Speed:** Public JSON API, no browser needed
+
+### Workable Limitations
+- **Scale:** Medium market share among ATS platforms
+- **Discovery:** Need to identify Workable-using companies
+
+### SmartRecruiters Strengths
+- **Quality:** Complete job postings with structured metadata
+- **Location Type:** Structured `locationType` field
+- **Experience Level:** Structured `experienceLevel` field
+- **Speed:** Public JSON API, no browser needed
+
+### SmartRecruiters Limitations
+- **Scale:** Smaller company universe (35 companies currently)
+- **Discovery:** Need to identify SmartRecruiters-using companies
+
 ### Combined Strategy
 
 ```
-Adzuna + Greenhouse + Lever + Ashby = Complete Coverage
+Adzuna + Greenhouse + Lever + Ashby + Workable + SmartRecruiters = Complete Coverage
 
-Volume (Adzuna)      Quality (Greenhouse)    Quality (Lever)     Quality (Ashby)
-1,500 jobs/month  +  400+ companies       +  120+ companies   +  70+ companies
-100-200 chars        9,000-15,000 chars      5,000-15,000 chars   Full + structured salary
-All companies        Browser automation      JSON API             JSON API
-Daily updates        On-demand scraping      On-demand fetch      On-demand fetch
+Volume (Adzuna)      Quality (GH)     Quality (Lever)    Quality (Ashby)    Quality (Workable)   Quality (SR)
+1,500 jobs/month  +  452 companies +  182 companies  +  169 companies  +  135 companies     +  35 companies
+100-200 chars        9K-15K chars     5K-15K chars       Full + salary      Full + workplace     Full + metadata
+All companies        Browser auto     JSON API           JSON API           JSON API             JSON API
+Daily updates        On-demand        On-demand          On-demand          On-demand            On-demand
 
-Result: Deep analysis of premium companies (Greenhouse + Lever + Ashby)
+Result: Deep analysis of ~970+ premium companies (5 ATS sources)
       + Broad market trend tracking (Adzuna)
-      + Best salary data (Ashby)
+      + Best salary data (Ashby + Workable)
+      + Best workplace metadata (Workable + SmartRecruiters)
 ```
 
 ---
@@ -165,9 +186,9 @@ Result: Deep analysis of premium companies (Greenhouse + Lever + Ashby)
 - **Config:** N/A (API-based, no company mapping)
 - **Status:** Production-ready, running daily
 
-### Pipeline B: Greenhouse - COMPLETE ✓
+### Pipeline B: Greenhouse - COMPLETE
 - **File:** `scrapers/greenhouse/greenhouse_scraper.py`
-- **Config:** `config/greenhouse/company_ats_mapping.json` (348 companies)
+- **Config:** `config/greenhouse/company_ats_mapping.json` (452 companies)
 - **Filtering:** `config/greenhouse/title_patterns.yaml`, `config/greenhouse/location_patterns.yaml`
 - **Status:** Production-ready, 94.7% filter rate achieved
 
@@ -204,28 +225,41 @@ Companies use different Greenhouse URL patterns depending on their setup. The sc
 - If redirect detected, logs: `"Consider adding url_type=embed to config"`
 - Optionally add `url_type` for faster resolution
 
-### Pipeline C: Lever - COMPLETE ✓
+### Pipeline C: Lever - COMPLETE
 - **File:** `scrapers/lever/lever_fetcher.py`
-- **Discovery:** `scrapers/lever/discover_lever_companies.py`
 - **Validation:** `pipeline/utilities/validate_ats_slugs.py lever`
-- **Config:** `config/lever/company_mapping.json` (120+ companies)
+- **Config:** `config/lever/company_mapping.json` (182 companies)
 - **Filtering:** `config/lever/title_patterns.yaml`, `config/lever/location_patterns.yaml`
 - **Status:** Production-ready
 
-### Pipeline D: Ashby - COMPLETE ✓
+### Pipeline D: Ashby - COMPLETE
 - **File:** `scrapers/ashby/ashby_fetcher.py`
-- **Config:** `config/ashby/company_mapping.json` (70+ companies)
+- **Config:** `config/ashby/company_mapping.json` (169 companies)
 - **Filtering:** `config/ashby/title_patterns.yaml`, `config/ashby/location_patterns.yaml`
 - **Status:** Production-ready, best structured salary data
 
-### Unified Ingester - COMPLETE ✓
+### Pipeline E: Workable - COMPLETE
+- **File:** `scrapers/workable/workable_fetcher.py`
+- **Config:** `config/workable/company_mapping.json` (135 companies)
+- **Filtering:** `config/workable/title_patterns.yaml`, `config/workable/location_patterns.yaml`
+- **Status:** Production-ready, workplace_type and salary data
+- **See:** `docs/architecture/Done/EPIC_WORKABLE_INTEGRATION.md`
+
+### Pipeline F: SmartRecruiters - COMPLETE
+- **File:** `scrapers/smartrecruiters/smartrecruiters_fetcher.py`
+- **Config:** `config/smartrecruiters/company_mapping.json` (35 companies)
+- **Filtering:** `config/smartrecruiters/title_patterns.yaml`, `config/smartrecruiters/location_patterns.yaml`
+- **Status:** Production-ready, locationType and experienceLevel data
+- **See:** `docs/architecture/In Progress/EPIC_SMARTRECRUITERS_INTEGRATION.md`
+
+### Unified Ingester - COMPLETE
 - **File:** `pipeline/unified_job_ingester.py`
-- **Merges:** All four sources with MD5 deduplication
+- **Merges:** All six sources with MD5 deduplication
 - **Status:** Production-ready
 
-### Orchestrator - COMPLETE ✓
+### Orchestrator - COMPLETE
 - **File:** `pipeline/fetch_jobs.py`
-- **Supports:** `--sources adzuna,greenhouse,lever,ashby`
+- **Supports:** `--sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters`
 - **Status:** Production-ready
 
 ---
@@ -291,63 +325,62 @@ def build_full_description(job_data: Dict) -> str:
 
 ## Configuration Files
 
-### Lever-Specific
-| File | Purpose |
-|------|---------|
-| `config/lever/company_mapping.json` | Company slug → API instance mapping |
-| `config/lever/title_patterns.yaml` | Title patterns for filtering |
-| `config/lever/location_patterns.yaml` | Location patterns for filtering |
-
-### Greenhouse-Specific
-| File | Purpose |
-|------|---------|
-| `config/greenhouse/company_ats_mapping.json` | Company → Greenhouse slug mapping |
-| `config/greenhouse/title_patterns.yaml` | Title patterns for filtering |
-| `config/greenhouse/location_patterns.yaml` | Location patterns for filtering |
-| `config/greenhouse/checked_companies.json` | Validated company slugs |
+### Per-ATS Configuration (each has 3 files)
+| ATS | Company Config | Companies | Title Patterns | Location Patterns |
+|-----|---------------|-----------|----------------|-------------------|
+| Greenhouse | `config/greenhouse/company_ats_mapping.json` | 452 | `title_patterns.yaml` | `location_patterns.yaml` |
+| Lever | `config/lever/company_mapping.json` | 182 | `title_patterns.yaml` | `location_patterns.yaml` |
+| Ashby | `config/ashby/company_mapping.json` | 169 | `title_patterns.yaml` | `location_patterns.yaml` |
+| Workable | `config/workable/company_mapping.json` | 135 | `title_patterns.yaml` | `location_patterns.yaml` |
+| SmartRecruiters | `config/smartrecruiters/company_mapping.json` | 35 | `title_patterns.yaml` | `location_patterns.yaml` |
 
 ### Shared
 | File | Purpose |
 |------|---------|
 | `config/agency_blacklist.yaml` | Agency names for hard filtering |
 | `config/supported_ats.yaml` | Supported ATS platforms |
+| `config/skill_family_mapping.yaml` | Skill name to family mapping (997 skills, 40 families) |
+| `config/skill_domain_mapping.yaml` | Skill family to domain mapping (40 families, 9 domains) |
 
 ---
 
 ## Quality Metrics
 
-| Metric | Adzuna Only | With Greenhouse | With Lever | Combined |
-|--------|------------|-----------------|------------|----------|
+| Metric | Adzuna Only | With Greenhouse | With All ATS | Combined |
+|--------|------------|-----------------|--------------|----------|
 | Avg chars per job | 150 | 8,500+ | 7,000+ | 6,000+ |
 | Skills extraction F1 | 0.29 | 0.85+ | 0.85+ | 0.80+ |
 | Remote status F1 | 0.565 | 0.85+ | 0.85+ | 0.80+ |
-| Coverage | 1,500 jobs/mo | +348 companies | +50 companies | Full |
+| Coverage | 1,500 jobs/mo | +452 companies | +970+ companies | Full |
 
 ### Classification Confidence
 
-- **Full descriptions (Greenhouse/Lever):** F1 ≥0.85 (high confidence)
+- **Full descriptions (Greenhouse/Lever/Ashby/Workable/SmartRecruiters):** F1 >=0.85 (high confidence)
 - **Truncated descriptions (Adzuna):** F1 ~0.30-0.56 (low confidence)
-- **Combined (all sources):** F1 ≥0.80 (good confidence)
+- **Combined (all sources):** F1 >=0.80 (good confidence)
 
 ---
 
 ## Usage Examples
 
 ```bash
-# Full three-source pipeline
-python wrappers/fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever
+# All six sources
+python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters
 
-# Premium companies only (Greenhouse + Lever)
-python wrappers/fetch_jobs.py --sources greenhouse,lever
+# Premium companies only (all ATS sources)
+python wrappers/fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
 
 # Specific source only
-python wrappers/fetch_jobs.py --sources lever
+python wrappers/fetch_jobs.py --sources workable
 
 # With resume capability (skip recently processed)
 python wrappers/fetch_jobs.py --sources greenhouse,lever --resume-hours 24
 
 # Specific companies
 python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
+
+# Adzuna with city and limit
+python wrappers/fetch_jobs.py lon 100 --sources adzuna
 ```
 
 ---
@@ -388,7 +421,7 @@ python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
 
 ### What the Classifier Receives
 
-All sources call `classify_job(job_text, structured_input)` which routes to Gemini 2.0 Flash (default, 88% cheaper) or Claude Haiku based on `LLM_PROVIDER` env var. Data quality varies by source:
+All sources call `classify_job(job_text, structured_input)` which routes to Gemini 2.5 Flash (default, ~88% cheaper than Claude Haiku) or Claude Haiku based on `LLM_PROVIDER` env var. Data quality varies by source:
 
 #### Adzuna Jobs (83% of dataset)
 
@@ -542,17 +575,17 @@ a hybrid work model with 3 days per week in the office.
 
 ### Data Quality Comparison
 
-| Field | Adzuna | Greenhouse | Lever |
-|-------|--------|------------|-------|
-| **Title** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Company** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Description** | ⚠️ Truncated (~200 chars) | ✅ Full (9K-15K chars) | ✅ Full |
-| **Location Metadata** | ✅ Yes | ❌ No | ✅ Yes |
-| **Category Metadata** | ✅ Yes ("IT Jobs") | ❌ No | ❌ No |
-| **Salary Metadata** | ⚠️ Sometimes | ❌ No | ❌ No |
-| **Working Arr. in Text** | ❌ Usually cut off | ✅ Present | ✅ Present |
-| **Skills in Text** | ⚠️ Partial | ✅ Detailed | ✅ Detailed |
-| **Requirements in Text** | ❌ Cut off | ✅ Complete | ✅ Complete |
+| Field | Adzuna | Greenhouse | Lever | Ashby | Workable | SmartRecruiters |
+|-------|--------|------------|-------|-------|----------|-----------------|
+| **Title** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **Company** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **Description** | Truncated (~200 chars) | Full (9K-15K chars) | Full | Full | Full | Full |
+| **Location Metadata** | Yes | No | Yes | Yes | Yes | Yes |
+| **Category Metadata** | Yes ("IT Jobs") | No | No | No | No | No |
+| **Salary Metadata** | Sometimes | No | No | Structured (best) | Structured | No |
+| **Working Arr. in Text** | Usually cut off | Present | Present | Present | Structured field | No |
+| **Skills in Text** | Partial | Detailed | Detailed | Detailed | Detailed | Detailed |
+| **Experience Level** | No | No | No | No | No | Structured field |
 
 ### Classification Accuracy Impact
 
@@ -568,19 +601,22 @@ a hybrid work model with 3 days per week in the office.
 
 ## Future Expansion
 
-Potential additional ATS platforms:
+All major ATS platforms are now integrated. Potential future additions:
 
 ```python
-# Current + planned scrapers
+# Current scrapers (all IMPLEMENTED)
 class ATSScraperOrchestrator:
     scrapers = {
-        'greenhouse': GreenhouseScraper(),  # IMPLEMENTED
-        'lever': LeverFetcher(),            # IMPLEMENTED
-        'ashby': AshbyFetcher(),            # IMPLEMENTED (2025-12)
-        'workable': WorkableScraper(),      # Future
-        'custom': CustomCareersScraper()    # For custom career sites
+        'greenhouse': GreenhouseScraper(),       # IMPLEMENTED (452 companies)
+        'lever': LeverFetcher(),                  # IMPLEMENTED (182 companies)
+        'ashby': AshbyFetcher(),                  # IMPLEMENTED (169 companies)
+        'workable': WorkableFetcher(),            # IMPLEMENTED (135 companies)
+        'smartrecruiters': SmartRecruitersFetcher(), # IMPLEMENTED (35 companies)
+        'custom': GoogleRSSFetcher()              # For custom career sites (experimental)
     }
 ```
+
+Potential future sources: BambooHR, iCIMS, Jobvite, or direct company RSS feeds.
 
 ---
 
@@ -589,18 +625,20 @@ class ATSScraperOrchestrator:
 The multi-source architecture provides:
 
 - **Breadth** - 1,500+ jobs/month from Adzuna (market trends)
-- **Depth (Greenhouse)** - 400+ premium companies via browser automation
-- **Depth (Lever)** - 120+ premium companies via public API
-- **Depth (Ashby)** - 70+ premium companies via public API + best salary data
+- **Depth (Greenhouse)** - 452 premium companies via browser automation
+- **Depth (Lever)** - 182 premium companies via public API
+- **Depth (Ashby)** - 169 premium companies via public API + best salary data
+- **Depth (Workable)** - 135 companies via public API + workplace_type
+- **Depth (SmartRecruiters)** - 35 companies via public API + structured metadata
 - **Quality** - Complete 5,000-15,000+ char descriptions (vs 100-200 char truncation)
-- **Inline Summaries** - AI-generated role summaries during classification (single Gemini call)
-- **Flexibility** - Can enable/disable sources independently
-- **Cost-effective** - Mix of cheap API + moderate automation
-- **Scalable** - Can expand to other ATS platforms
+- **Inline Summaries** - AI-generated role summaries during classification (single Gemini 2.5 Flash call)
+- **Flexibility** - Can enable/disable sources independently via `--sources` flag
+- **Cost-effective** - Mix of cheap API + moderate automation, ~88% cheaper with Gemini vs Claude
+- **Complete** - All major ATS platforms integrated (~970+ companies)
 
-**Current Status:** All four pipelines operational, unified ingestion working, dashboard + job feed live at richjacobs.me/projects/hiring-market.
+**Current Status:** All six pipelines operational, unified ingestion working, dashboard + job feed live at richjacobs.me/projects/hiring-market.
 
 ---
 
-**Last Updated:** 2026-01-04
-**Changes:** Added employer_metadata system with FK constraint, jobs_with_employer_context view, 5,586 employers
+**Last Updated:** 2026-02-07
+**Changes:** Updated from 4-source to 6-source architecture. Added Workable (135 companies) and SmartRecruiters (35 companies). Updated all company counts: Greenhouse 452, Lever 182, Ashby 169. Fixed Gemini model reference to 2.5 Flash.

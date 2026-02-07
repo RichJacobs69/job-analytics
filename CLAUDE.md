@@ -38,7 +38,7 @@ LLM-powered job market intelligence platform that fetches, classifies, and analy
 
 **Status:**
 - [DONE] Epics 1-7: Full pipeline operational, dashboard live, GitHub Actions automation
-- [IN PROGRESS] Epic 8: Curated Job Feed (Phase 1 infrastructure complete)
+- [IN PROGRESS] Epic 8: Curated Job Feed (Phase 2 API integration complete, frontend live; remaining: localStorage, analytics CTA)
 
 **Dataset:** ~18,000+ enriched jobs across London, NYC, Denver, SF, Singapore
 
@@ -62,6 +62,10 @@ python pipeline/employer_stats.py              # Compute employer fill stats
 python pipeline/summary_generator.py --limit=50 # Backfill summaries (new jobs get inline)
 python pipeline/url_validator.py --limit=100   # Check for 404 dead links
 
+# Reports
+python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
+python pipeline/report_generator.py --city lon --family data --output portfolio --save report.json
+
 # Utilities
 python wrappers/check_pipeline_status.py
 python wrappers/backfill_missing_enriched.py --dry-run
@@ -72,6 +76,10 @@ python pipeline/utilities/audit_skills_taxonomy.py --output-csv  # Also save to 
 python pipeline/utilities/backfill_skill_families.py --dry-run   # Preview family code updates
 python pipeline/utilities/backfill_skill_families.py             # Apply family code updates
 python pipeline/utilities/backfill_skill_families.py --stats-only # Mapper stats without DB query
+
+# Track & seniority backfill
+python pipeline/utilities/backfill_track_seniority.py --dry-run   # Preview track/seniority updates
+python pipeline/utilities/backfill_track_seniority.py             # Apply updates
 
 # ATS Company Discovery & Validation
 python pipeline/utilities/discover_ats_companies.py all        # Discover new companies (Google CSE)
@@ -95,7 +103,8 @@ Required in `.env`:
 ```
 ADZUNA_APP_ID=<app_id>
 ADZUNA_API_KEY=<api_key>
-ANTHROPIC_API_KEY=<key>
+GOOGLE_API_KEY=<key>              # Gemini 2.5 Flash (default classifier)
+ANTHROPIC_API_KEY=<key>           # Claude fallback (set LLM_PROVIDER=anthropic)
 SUPABASE_URL=<url>
 SUPABASE_KEY=<key>
 ```
@@ -167,9 +176,11 @@ job-analytics/
 | `pipeline/location_extractor.py` | Pattern-based location extraction |
 | `pipeline/skill_family_mapper.py` | Skill name -> family_code mapping (exact + normalized fuzzy) |
 | `pipeline/agency_detection.py` | Agency filtering (hard + soft) |
+| `pipeline/report_generator.py` | Flexible report builder (city/family/date filters, portfolio output) |
 | `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
 | `pipeline/summary_generator.py` | Backfill utility for summaries (new jobs get inline via classifier) |
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
+| `pipeline/utilities/backfill_track_seniority.py` | Backfill track (IC/Manager) and seniority level |
 | `pipeline/utilities/audit_skills_taxonomy.py` | Audit unmapped skills, duplicates, coverage gaps |
 | `pipeline/utilities/backfill_skill_families.py` | Backfill skill family codes from current mapping |
 | `pipeline/utilities/seed_employer_metadata.py` | Seed employer_metadata from ATS config files |
@@ -184,23 +195,23 @@ job-analytics/
 ```
 config/
 ├── greenhouse/
-│   ├── company_ats_mapping.json    # 401 companies (with url_type for embed/eu)
+│   ├── company_ats_mapping.json    # 452 companies (with url_type for embed/eu)
 │   ├── title_patterns.yaml         # Role filtering
 │   └── location_patterns.yaml      # City filtering
 ├── lever/
-│   ├── company_mapping.json        # 121 companies
+│   ├── company_mapping.json        # 182 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── ashby/
-│   ├── company_mapping.json        # 69 companies
+│   ├── company_mapping.json        # 169 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── workable/
-│   ├── company_mapping.json        # Workable companies
+│   ├── company_mapping.json        # 135 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── smartrecruiters/
-│   ├── company_mapping.json        # SmartRecruiters companies
+│   ├── company_mapping.json        # 35 companies
 │   ├── title_patterns.yaml
 │   └── location_patterns.yaml
 ├── location_mapping.yaml           # Master location config
@@ -221,7 +232,7 @@ Uses JSONB array for flexible multi-location support:
 ## Cost Optimization
 
 - **Pre-filters:** Title + location filtering achieves 94.7% reduction before LLM
-- **Cost per job:** $0.00388 (Claude Haiku)
+- **Classifier:** Gemini 2.5 Flash (default), ~88% cheaper than previous Claude Haiku
 - **Agency blocklist:** Blocks 10-15% before classification
 
 ## Current Work: Epic 8 Job Feed
@@ -230,17 +241,18 @@ Uses JSONB array for flexible multi-location support:
 - Database: `employer_fill_stats`, `enriched_jobs.summary` column, `url_status` column
 - Pipeline: Summaries generated inline during classification (not batch)
 - API: `/api/hiring-market/jobs/feed`, `/api/hiring-market/jobs/[id]/context`
-- GitHub Actions: `refresh-derived-tables.yml` (URL validation + employer stats only)
+- GitHub Actions: `url-validation-stats.yml` (URL validation + employer stats)
+
+**Phase 2 (API + Frontend) - COMPLETE:**
+- Job feed page at `/projects/hiring-market/jobs`
+- Filter components, API integration
+- Remaining: localStorage persistence, analytics CTA
 
 **Employer Metadata System - COMPLETE:**
 - Database: `employer_metadata` table, `jobs_with_employer_context` view
 - Pipeline: `working_arrangement_default` fallback in fetch_jobs.py
 - API: Uses view for proper `display_name` (e.g., "Figma" not "figma")
 - **See:** `docs/architecture/In Progress/EPIC_EMPLOYER_METADATA.md`
-
-**Phase 2 (Frontend) - TODO:**
-- Job feed page at `/projects/hiring-market/jobs`
-- Filter components, expandable job cards
 
 **See:** `docs/architecture/In Progress/EPIC_JOB_FEED.md`
 
@@ -265,7 +277,8 @@ Located in `.github/workflows/`:
 | `docs/architecture/MULTI_SOURCE_PIPELINE.md` | Full pipeline architecture |
 | `docs/schema_taxonomy.yaml` | Classification rules |
 | `docs/architecture/ADDING_NEW_LOCATIONS.md` | Location system guide |
-| `docs/architecture/Future Ideas/EPIC_JOB_FEED.md` | Job feed epic (current work) |
+| `docs/architecture/In Progress/EPIC_JOB_FEED.md` | Job feed epic (current work) |
+| `docs/architecture/In Progress/EPIC_SMARTRECRUITERS_INTEGRATION.md` | SmartRecruiters integration |
 
 ## Troubleshooting
 

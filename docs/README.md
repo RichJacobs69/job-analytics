@@ -8,10 +8,11 @@ This directory contains all specifications, guides, and architectural documentat
 
 | Pipeline | Schedule | Status |
 |----------|----------|--------|
-| Greenhouse | Mon/Tue/Thu/Fri 7AM UTC | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
-| Lever | Mon/Wed/Fri 6PM UTC | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
-| Ashby | Tue/Thu 6PM UTC | ![Ashby](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-ashby.yml/badge.svg) |
-| Workable | Wed/Sat 6PM UTC | ![Workable](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-workable.yml/badge.svg) |
+| Greenhouse (452 companies) | Mon/Tue/Thu/Fri 7AM UTC | ![Greenhouse](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-greenhouse.yml/badge.svg) |
+| Lever (182 companies) | Mon/Wed/Fri 6PM UTC | ![Lever](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-lever.yml/badge.svg) |
+| Ashby (169 companies) | Tue/Thu 6PM UTC | ![Ashby](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-ashby.yml/badge.svg) |
+| Workable (135 companies) | Wed/Sat 6PM UTC | ![Workable](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-workable.yml/badge.svg) |
+| SmartRecruiters (35 companies) | Thu/Sun 8PM UTC | ![SmartRecruiters](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-smartrecruiters.yml/badge.svg) |
 | Adzuna | Wed 7AM UTC | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
 | URL Validation | Mon-Fri 9AM UTC | ![Validation](https://github.com/RichJacobs69/job-analytics/actions/workflows/url-validation-stats.yml/badge.svg) |
 | Employer Metadata | Sun 8AM UTC | ![Metadata](https://github.com/RichJacobs69/job-analytics/actions/workflows/refresh-employer-metadata.yml/badge.svg) |
@@ -45,9 +46,9 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
   - 35 questions across 7 categories (market demand, skills, compensation, location, etc.)
   - Guides all development priorities
 
-- **product_brief.md** - Product specification & requirements
-  - Scope: 3 cities (London, NYC, Denver)
-  - 12 job titles across Data & Product families
+- **PRODUCT_BRIEF.md** - Product specification & requirements
+  - Scope: 5 cities (London, NYC, Denver, SF, Singapore), 6 data sources
+  - Data & Product role families with detailed subfamilies
   - Success metrics: coverage, freshness, reliability, latency
 
 ### Technical Specifications
@@ -60,7 +61,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 - **system_architecture.yaml** - System design document
   - High-level architecture diagram
   - Module responsibilities & interactions
-  - Data flow: Adzuna → Greenhouse → Classifier → Database → Analytics
+  - Data flow: Adzuna/Greenhouse/Lever/Ashby/Workable/SmartRecruiters → Classifier (Gemini 2.5 Flash) → Database → Analytics
   - Cost optimization strategies
 
 ## Reference Guides
@@ -73,13 +74,14 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ## Architecture Deep-Dives
 
 ### directory: `architecture/`
-- **MULTI_SOURCE_PIPELINE.md** - Multi-source pipeline architecture (Adzuna, Greenhouse, Lever, Ashby, Workable)
+- **MULTI_SOURCE_PIPELINE.md** - Multi-source pipeline architecture (Adzuna, Greenhouse, Lever, Ashby, Workable, SmartRecruiters)
 - **INCREMENTAL_UPSERT_DESIGN.md** - Upsert-based deduplication and incremental processing
 - **ADDING_NEW_LOCATIONS.md** - How to add new cities to the location system
 - **SECURITY_AUDIT_REPORT.md** - Security assessment of the platform
 
 ### directory: `architecture/In Progress/`
 - **EPIC_JOB_FEED.md** - Curated job feed (Phase 1-2 complete, Phase 3 TODO)
+- **EPIC_SMARTRECRUITERS_INTEGRATION.md** - SmartRecruiters ATS integration
 
 ### directory: `architecture/Done/`
 - **EPIC_WORKABLE_INTEGRATION.md** - Workable ATS integration (complete)
@@ -95,9 +97,10 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ## Database Documentation
 
 ### directory: `database/`
-- **migrations/** - SQL schema migrations (version controlled)
+- **migrations/** - SQL schema migrations (32 files, version controlled)
 - **SCHEMA_UPDATES.md** - Changelog of database schema changes
-  - Current tables: raw_jobs, enriched_jobs
+  - Current tables: raw_jobs, enriched_jobs, employer_metadata, employer_fill_stats
+  - Views: jobs_with_employer_context
   - Column definitions & constraints
   - Indexes for query performance
 
@@ -106,6 +109,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ### directory: `costs/`
 - **COST_METRICS.md** - Historical classification cost analysis (point-in-time snapshot from Dec 2025, pre-Gemini migration)
 - CSV exports from early Claude Haiku era (archived for reference)
+- **Note:** Classifier migrated to Gemini 2.5 Flash in Jan 2026 (~88% cheaper). See `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md` for migration details.
 
 ## Historical Archive
 

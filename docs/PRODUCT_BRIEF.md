@@ -1,7 +1,7 @@
 # Product Brief: Hiring Market Intelligence Platform
 
-**Version:** 3.0  
-**Last Updated:** 2025-12-28  
+**Version:** 4.0
+**Last Updated:** 2026-02-07
 **Product Manager:** Rich
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
@@ -82,13 +82,16 @@ Competitive intelligence on hiring patterns, compensation benchmarking, talent a
 | San Francisco | USA | ~70%+ (California law) |
 | Singapore | SG | Variable |
 
-### Data Sources
+### Data Sources (6 sources)
 
 | Source | Type | Coverage | Description Quality | Use in Job Feed |
 |--------|------|----------|---------------------|-----------------|
-| Greenhouse | Scraper | 302 companies | Full (9,000-15,000 chars) | ✅ Yes |
-| Lever | Scraper | 61 companies | Full | ✅ Yes |
-| Adzuna | API | Broad aggregator | Truncated (100-200 chars) | ❌ No (poor UX) |
+| Greenhouse | Scraper (Playwright) | 452 companies | Full (9,000-15,000 chars) | Yes |
+| Lever | API | 182 companies | Full | Yes |
+| Ashby | API | 169 companies | Full + structured salary (best) | Yes |
+| Workable | API | 135 companies | Full + workplace_type | Yes |
+| SmartRecruiters | API | 35 companies | Full + locationType, experienceLevel | Yes |
+| Adzuna | API | Broad aggregator | Truncated (100-200 chars) | No (poor UX) |
 
 **Why no Adzuna in job feed:** Candidates would land on Adzuna, hit a registration gate, then redirect to the actual company page. 3-4 clicks vs. 1 for direct ATS links. Violates our "verified, direct apply" promise.
 
@@ -158,34 +161,36 @@ Competitive intelligence on hiring patterns, compensation benchmarking, talent a
 ### Data Pipeline
 
 ```
-Adzuna API --------+
-                   |
-Greenhouse --------+---> unified_job_ingester.py ---> Agency Filter
-                   |              |
-Lever -------------+              v
-                          classifier.py (Claude Haiku)
-                                  |
-                                  v
-                          Supabase PostgreSQL
-                                  |
-                    +-------------+-------------+
-                    |                           |
-                    v                           v
-          Market Trends Dashboard      Curated Job Feed
-           (all sources)            (Greenhouse/Lever only)
+Adzuna API ---------+
+                    |
+Greenhouse ---------+
+                    |
+Lever --------------+---> unified_job_ingester.py ---> Agency Filter
+                    |              |
+Ashby --------------+              v
+                    |     classifier.py (Gemini 2.5 Flash)
+Workable -----------+              |
+                    |              v
+SmartRecruiters ----+     Supabase PostgreSQL
+                                   |
+                     +-------------+-------------+
+                     |                           |
+                     v                           v
+           Market Trends Dashboard      Curated Job Feed
+            (all sources)            (ATS sources only)
 ```
 
 ### Core Capabilities
 
 **Data Layer:**
-- **Ingestion:** Adzuna API + Greenhouse/Lever scrapers with incremental updates
+- **Ingestion:** Adzuna API + 5 ATS scrapers (Greenhouse/Lever/Ashby/Workable/SmartRecruiters) with incremental updates
 - **Extraction:** Titles, locations, compensation, skills, seniority from raw descriptions
 - **Storage:** Raw and enriched layers in Supabase PostgreSQL with JSONB for flexible schema
 - **Derived tables:** `employer_fill_stats` (median time-to-fill by company)
 
 **AI Layer:**
-- **Classification:** Claude 3.5 Haiku for structured extraction with confidence scores
-- **Role Summary:** Haiku-generated 2-3 sentence summaries (~$0.001/job)
+- **Classification:** Gemini 2.5 Flash for structured extraction (~88% cheaper than previous Claude Haiku)
+- **Role Summary:** Gemini-generated 2-3 sentence summaries inline during classification
 - **Taxonomy Mapping:** Rule-based pre-filtering + LLM classification
 - **Cost Optimization:** Pre-classification filtering achieves 94.7% cost reduction
 
@@ -202,10 +207,10 @@ Lever -------------+              v
 
 | KPI | Definition | Target | Actual |
 |-----|------------|--------|--------|
-| Data Coverage | Enriched jobs in database | 5,000+ | 6,000+ |
-| Companies Tracked | Greenhouse + Lever companies | 300+ | 363 |
-| Classification Cost | Cost per classified job | <$0.005 | $0.00388 |
-| Data Freshness | Pipeline runs successfully | Daily | Automated via GitHub Actions |
+| Data Coverage | Enriched jobs in database | 5,000+ | 18,000+ |
+| Companies Tracked | All ATS sources combined | 300+ | 970+ |
+| Classification Cost | Cost per classified job | <$0.005 | ~$0.0005 (Gemini 2.5 Flash) |
+| Data Freshness | Pipeline runs successfully | Daily | Automated via GitHub Actions (6 ATS + Adzuna) |
 
 ### Job Feed Metrics (New)
 
@@ -233,15 +238,20 @@ Lever -------------+              v
 
 - [DONE] Epic 1: Data model & taxonomy design
 - [DONE] Epic 2: Adzuna API integration
-- [DONE] Epic 3: Greenhouse scraper (302 companies)
+- [DONE] Epic 3: Greenhouse scraper (452 companies)
 - [DONE] Epic 4: Cost tracking & validation
 - [DONE] Epic 5: Next.js dashboard (5 visualizations)
-- [DONE] Epic 6: Lever integration (61 companies)
+- [DONE] Epic 6: Lever integration (182 companies)
 - [DONE] Epic 7: GitHub Actions automation
+- [DONE] Ashby integration (169 companies, structured compensation)
+- [DONE] Workable integration (135 companies, workplace_type + salary)
+- [DONE] SmartRecruiters integration (35 companies, locationType + experienceLevel)
+- [DONE] Employer metadata & enrichment system
+- [DONE] LLM migration: Claude Haiku to Gemini 2.5 Flash (~88% cost reduction)
 
 ### In Progress
 
-- [IN PROGRESS] Epic 8: Curated Job Feed (6-7 days)
+- [IN PROGRESS] Epic 8: Curated Job Feed (Phase 2 complete; remaining: localStorage, analytics CTA)
 
 ### Future Considerations
 
@@ -261,7 +271,7 @@ Lever -------------+              v
 | "Still Hiring" signal is ambiguous | Seniority-aware caveats; link to Glassdoor |
 | "Scaling Teams" could mean turnover | Explicit caveat: "Check reviews for context" |
 | Salary data gaps outside US | Only show Top Compensation group for US cities |
-| 363 companies feels limited vs LinkedIn | Position as "curated quality" not "comprehensive coverage" |
+| 970+ companies feels limited vs LinkedIn | Position as "curated quality" not "comprehensive coverage" |
 | Users want more than 7 per group | "Show more" expansion; "View all" escape hatch |
 
 ---
