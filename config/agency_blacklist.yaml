@@ -401,6 +401,9 @@ hard_filter:
   - iconvergence
   - universal technology solutions
 
+  # Added 2026-02-07: Hiring platform (aggregates jobs from other employers)
+  - fuku
+
 # =========================
 # PATTERN DETECTION
 # =========================

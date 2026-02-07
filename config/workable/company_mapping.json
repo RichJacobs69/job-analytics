@@ -159,9 +159,6 @@
     "Kaseware": {
       "slug": "kaseware-inc"
     },
-    "1915 South Ashley": {
-      "slug": "1915-south-ashley"
-    },
     "Aktlondon": {
       "slug": "aktlondon"
     },
@@ -174,9 +171,6 @@
     "Angkas": {
       "slug": "angkas"
     },
-    "Aristo Sourcing": {
-      "slug": "aristo-sourcing"
-    },
     "Aristotle": {
       "slug": "aristotle"
     },
@@ -185,9 +179,6 @@
     },
     "Atec Spine": {
       "slug": "atec-spine"
-    },
-    "Bacr": {
-      "slug": "bacr"
     },
     "Bailey Abbott": {
       "slug": "bailey-abbott"
@@ -204,20 +195,11 @@
     "Chemin": {
       "slug": "chemin"
     },
-    "Chesapeake Contracting Group": {
-      "slug": "chesapeake-contracting-group"
-    },
-    "Church Of The City New York": {
-      "slug": "church-of-the-city-new-york"
-    },
     "Credence": {
       "slug": "credence"
     },
     "Decathlon Sg": {
       "slug": "decathlon-sg"
-    },
-    "Edgility Search": {
-      "slug": "edgility-search"
     },
     "Esr Group": {
       "slug": "esr-group"
@@ -231,12 +213,6 @@
     "Fiq": {
       "slug": "fiq"
     },
-    "Fridababy": {
-      "slug": "fridababy"
-    },
-    "Fuku": {
-      "slug": "fuku"
-    },
     "Geodelphi": {
       "slug": "geodelphi"
     },
@@ -246,14 +222,8 @@
     "Gumption": {
       "slug": "gumption"
     },
-    "Heartstrings Pet Hospice In Home Euthanasiaand Aftercare": {
-      "slug": "heartstrings-pet-hospice-in-home-euthanasiaand-aftercare"
-    },
     "Helprise 1": {
       "slug": "helprise-1"
-    },
-    "Icarda": {
-      "slug": "icarda"
     },
     "Infosys Singaporeand Australia": {
       "slug": "infosys-singaporeand-australia"
@@ -267,20 +237,8 @@
     "Knok": {
       "slug": "knok"
     },
-    "Leading Path Consulting": {
-      "slug": "leading-path-consulting"
-    },
-    "Lonerockpoint": {
-      "slug": "lonerockpoint"
-    },
-    "Lotte Travel Retail Singapore": {
-      "slug": "lotte-travel-retail-singapore"
-    },
     "Lvis Team": {
       "slug": "lvis-team"
-    },
-    "Maxrte": {
-      "slug": "maxrte"
     },
     "Methods": {
       "slug": "methods"
@@ -288,20 +246,11 @@
     "Morrow Health": {
       "slug": "morrow-health"
     },
-    "National Western Center": {
-      "slug": "national-western-center"
-    },
-    "Nawy Real Estate": {
-      "slug": "nawy-real-estate"
-    },
     "Netguru": {
       "slug": "netguru"
     },
     "Owlet Baby Care 1": {
       "slug": "owlet-baby-care-1"
-    },
-    "Pacificaviation": {
-      "slug": "pacificaviation"
     },
     "Prismplus": {
       "slug": "prismplus"
@@ -330,20 +279,11 @@
     "Targetsmart Communications": {
       "slug": "targetsmart-communications"
     },
-    "Texashealthaction": {
-      "slug": "texashealthaction"
-    },
-    "Therapeutic Learning Consultants": {
-      "slug": "therapeutic-learning-consultants"
-    },
     "Thisisgain": {
       "slug": "thisisgain"
     },
     "Threenitas": {
       "slug": "threenitas"
-    },
-    "Tutor Me Education 1": {
-      "slug": "tutor-me-education-1"
     },
     "V4C": {
       "slug": "v4c"
@@ -404,7 +344,7 @@
       "manual_testing",
       "google_cse"
     ],
-    "total_companies": 130,
+    "total_companies": 109,
     "notes": "Added moomoo (fintech) and Duke Corporate Education",
     "last_updated": "2026-02-06"
   }
