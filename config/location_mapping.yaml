@@ -331,6 +331,12 @@ remote_patterns:
       - emea remote
       - remote (emea)
       - remote, emea
+      - remote - europe
+      - remote (europe)
+      - europe remote
+      - remote, europe
+      - european remote
+      - remote - european
 
   # APAC remote
   apac:
@@ -342,6 +348,11 @@ remote_patterns:
       - remote (apac)
       - remote - asia
       - asia remote
+      - remote (asia)
+      - remote, asia
+      - asia-pacific remote
+      - remote - asia-pacific
+      - remote (asia-pacific)
 
   # Americas remote
   americas:
@@ -353,6 +364,14 @@ remote_patterns:
       - remote (americas)
       - remote - amer
       - amer remote
+      - remote, latam
+      - remote - latam
+      - remote (latam)
+      - latam remote
+      - remote - latin america
+      - remote (latin america)
+      - latin america remote
+      - remote, latin america
 
 # =============================================================================
 # ADZUNA ENDPOINT MAPPING

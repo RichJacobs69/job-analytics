@@ -34,6 +34,7 @@ import os
 import re
 from typing import Dict, List, Optional, Tuple
 import yaml
+import pycountry
 
 
 # =============================================================================
@@ -268,80 +269,46 @@ def split_multi_location(raw_location: str) -> List[str]:
 
 
 # =============================================================================
-# Country Name to ISO Code Mapping (Extended)
+# Country Name to ISO Code Mapping (Comprehensive via pycountry)
 # =============================================================================
-# Includes countries beyond our active cities for proper remote scoping
+# Built from pycountry for full coverage, with custom aliases for abbreviations
+# and informal names commonly found in job postings.
 # Used to detect "India - Remote", "Germany - Remote", etc.
 
-COUNTRY_NAME_TO_ISO = {
-    # Our active countries
-    'united states': 'US',
-    'usa': 'US',
-    'us': 'US',
-    'america': 'US',
-    'united kingdom': 'GB',
-    'uk': 'GB',
-    'great britain': 'GB',
-    'britain': 'GB',
-    'england': 'GB',
-    'singapore': 'SG',
+def _build_country_name_mapping() -> Dict[str, str]:
+    """Build country name to ISO code mapping from pycountry + custom aliases."""
+    mapping = {}
 
-    # Common countries in job postings (not in our active list)
-    'india': 'IN',
-    'germany': 'DE',
-    'france': 'FR',
-    'spain': 'ES',
-    'italy': 'IT',
-    'netherlands': 'NL',
-    'ireland': 'IE',
-    'canada': 'CA',
-    'australia': 'AU',
-    'japan': 'JP',
-    'brazil': 'BR',
-    'mexico': 'MX',
-    'poland': 'PL',
-    'portugal': 'PT',
-    'sweden': 'SE',
-    'norway': 'NO',
-    'denmark': 'DK',
-    'finland': 'FI',
-    'switzerland': 'CH',
-    'austria': 'AT',
-    'belgium': 'BE',
-    'israel': 'IL',
-    'south korea': 'KR',
-    'korea': 'KR',
-    'china': 'CN',
-    'hong kong': 'HK',
-    'taiwan': 'TW',
-    'philippines': 'PH',
-    'vietnam': 'VN',
-    'thailand': 'TH',
-    'indonesia': 'ID',
-    'malaysia': 'MY',
-    'new zealand': 'NZ',
-    'south africa': 'ZA',
-    'uae': 'AE',
-    'united arab emirates': 'AE',
-    'argentina': 'AR',
-    'chile': 'CL',
-    'colombia': 'CO',
-    'peru': 'PE',
-    'czech republic': 'CZ',
-    'czechia': 'CZ',
-    'romania': 'RO',
-    'ukraine': 'UA',
-    'hungary': 'HU',
-    'greece': 'GR',
-    'turkey': 'TR',
-    'russia': 'RU',
-    'egypt': 'EG',
-    'nigeria': 'NG',
-    'kenya': 'KE',
-    'pakistan': 'PK',
-    'bangladesh': 'BD',
-    'sri lanka': 'LK',
-}
+    for country in pycountry.countries:
+        mapping[country.name.lower()] = country.alpha_2
+        if hasattr(country, 'common_name'):
+            mapping[country.common_name.lower()] = country.alpha_2
+        if hasattr(country, 'official_name'):
+            mapping[country.official_name.lower()] = country.alpha_2
+
+    # Custom aliases not covered by pycountry
+    custom_aliases = {
+        'usa': 'US',
+        'us': 'US',
+        'u.s.': 'US',
+        'u.s.a.': 'US',
+        'america': 'US',
+        'uk': 'GB',
+        'u.k.': 'GB',
+        'great britain': 'GB',
+        'britain': 'GB',
+        'england': 'GB',
+        'korea': 'KR',
+        'uae': 'AE',
+        'czechia': 'CZ',
+        'holland': 'NL',
+    }
+    mapping.update(custom_aliases)
+
+    return mapping
+
+
+COUNTRY_NAME_TO_ISO = _build_country_name_mapping()
 
 
 # =============================================================================
@@ -394,6 +361,18 @@ COUNTRY_RESTRICTION_PATTERNS = {
         r'\b(?:california|texas|new\s+york|florida|washington|colorado|massachusetts|illinois|georgia|arizona|virginia|north\s+carolina|pennsylvania|ohio|michigan|tennessee)[,\s]+(?:usa|u\.?s\.?)[,\s]+remote\b',
         # City/state with (Remote) - like "Washington, D.C. (Remote)"
         r'\b(?:washington,?\s+d\.?c\.?|new\s+york\s+city|san\s+francisco|los\s+angeles|boston|chicago|austin|seattle|denver)\s*\(remote\)',
+        # "requires U.S. citizenship" (gov/defense contracts)
+        r'\brequires?\s+(?:u\.?s\.?|united\s+states|american)\s+citizenship\b',
+        # "must be a U.S. citizen" / "must be a US citizen"
+        r'\bmust\s+be\s+(?:a\s+)?(?:u\.?s\.?|united\s+states|american)\s+citizen\b',
+        # "U.S. citizens only" / "US citizens only"
+        r'\b(?:u\.?s\.?|united\s+states|american)\s+citizens?\s+only\b',
+        # "do not hire in the following states" (US state exclusion lists)
+        r'\b(?:do\s+not|don\'t|cannot)\s+hire\s+in\s+(?:the\s+)?following\s+states\b',
+        # "not available in the following states"
+        r'\bnot\s+(?:available|open)\s+in\s+(?:the\s+)?following\s+states\b',
+        # "excluding the following states" / "excludes the following states"
+        r'\bexclud(?:ing|es?)\s+(?:the\s+)?following\s+states\b',
     ],
     'CA': [
         # "based in Canada"
