@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       url_limit:
-        description: 'Limit for URL validation (blank = default 500)'
+        description: 'Limit for URL validation (blank = default 1000)'
         required: false
         default: ''
         type: string
@@ -55,10 +55,10 @@ jobs:
           echo "=========================================="
           echo "STEP 1: URL Validation"
           echo "=========================================="
-          # Default limit of 500 for scheduled runs to prevent runaway
+          # Default limit of 1000 for scheduled runs (covers all 6 ATS sources)
           LIMIT="${{ github.event.inputs.url_limit }}"
           if [ -z "$LIMIT" ]; then
-            LIMIT="500"
+            LIMIT="1000"
           fi
           echo "Checking up to $LIMIT URLs..."
           python pipeline/url_validator.py --limit=$LIMIT

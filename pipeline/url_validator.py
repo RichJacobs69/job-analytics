@@ -14,12 +14,72 @@ Purpose:
 import sys
 sys.path.insert(0, '.')
 
+import json
 import time
 import requests
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Tuple, Optional, List, Dict
 from pipeline.db_connection import supabase
+
+
+# ============================================
+# Greenhouse Config (loaded once)
+# ============================================
+
+def _load_greenhouse_slug_config() -> Dict[str, str]:
+    """Load Greenhouse company_ats_mapping.json and build slug -> url_type lookup.
+
+    Returns:
+        Dict mapping slug (lowercase) to url_type ('embed', 'eu', or 'standard')
+    """
+    config_path = Path(__file__).parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        slug_to_url_type = {}
+        greenhouse_data = data.get('greenhouse', {})
+        for company_name, config in greenhouse_data.items():
+            slug = config.get('slug', '').lower()
+            if slug:
+                url_type = config.get('url_type', 'standard')
+                slug_to_url_type[slug] = url_type
+        return slug_to_url_type
+    except Exception as e:
+        print(f"[WARN] Failed to load Greenhouse config: {e}")
+        return {}
+
+
+# Load once at module level
+GREENHOUSE_SLUG_TO_URL_TYPE = _load_greenhouse_slug_config()
+
+
+def build_canonical_greenhouse_url(source_job_id: str, company_slug: str) -> Optional[str]:
+    """Build canonical Greenhouse URL for reliable 404 detection.
+
+    Args:
+        source_job_id: Greenhouse job ID (e.g., '6690047003')
+        company_slug: Company slug (e.g., 'fivetran')
+
+    Returns:
+        Canonical URL, or None if inputs are missing
+    """
+    if not source_job_id or not company_slug:
+        return None
+
+    slug_lower = company_slug.lower()
+    url_type = GREENHOUSE_SLUG_TO_URL_TYPE.get(slug_lower, 'standard')
+
+    if url_type == 'embed':
+        return f"https://boards.greenhouse.io/embed/job_app?for={slug_lower}&token={source_job_id}"
+    elif url_type == 'eu':
+        return f"https://job-boards.eu.greenhouse.io/{slug_lower}/jobs/{source_job_id}"
+    else:
+        # standard (default)
+        return f"https://job-boards.greenhouse.io/{slug_lower}/jobs/{source_job_id}"
+
 
 # Playwright is optional - only needed for blocked URL verification
 try:
@@ -183,7 +243,7 @@ def check_url(url: str) -> Tuple[str, Optional[int], Optional[str]]:
 
 def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False):
     """
-    Validate posting URLs for Greenhouse/Lever jobs.
+    Validate posting URLs for all ATS sources (Greenhouse/Lever/Ashby/Workable/SmartRecruiters/Custom).
 
     Args:
         limit: Maximum jobs to check (None = all needing check)
@@ -213,8 +273,8 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
         while True:
             # Build query - skip confirmed dead jobs (404/410/soft_404 are terminal)
             query = supabase.table("enriched_jobs") \
-                .select("id, raw_job_id") \
-                .in_("data_source", ["greenhouse", "lever", "ashby"]) \
+                .select("id, raw_job_id, data_source") \
+                .in_("data_source", ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "custom"]) \
                 .not_.in_("url_status", ["404", "410", "soft_404"])
 
             if not force:
@@ -258,19 +318,23 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
     print("\n[DATA] Fetching posting URLs...")
 
     raw_job_ids = [job['raw_job_id'] for job in jobs_to_check]
-    url_map = {}  # raw_job_id -> posting_url
+    url_map = {}  # raw_job_id -> {posting_url, source_job_id, metadata}
 
     try:
         batch_fetch_size = 500
         for i in range(0, len(raw_job_ids), batch_fetch_size):
             batch_ids = raw_job_ids[i:i + batch_fetch_size]
             result = supabase.table("raw_jobs") \
-                .select("id, posting_url") \
+                .select("id, posting_url, source_job_id, metadata") \
                 .in_("id", batch_ids) \
                 .execute()
 
             for row in result.data:
-                url_map[row['id']] = row['posting_url']
+                url_map[row['id']] = {
+                    'posting_url': row['posting_url'],
+                    'source_job_id': row.get('source_job_id'),
+                    'metadata': row.get('metadata') or {},
+                }
 
         print(f"[OK] Retrieved {len(url_map)} URLs")
 
@@ -278,17 +342,63 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
         print(f"[ERROR] Failed to fetch URLs: {e}")
         return
 
-    # Step 3: Build job list with URLs
+    # Step 3: Build job list with URLs (canonical Greenhouse URLs where possible)
     jobs_with_urls = []
+    canonical_rewrites = []  # Track raw_job_ids that need posting_url updated
+
     for job in jobs_to_check:
-        url = url_map.get(job['raw_job_id'])
-        if url:
-            jobs_with_urls.append({
-                'enriched_job_id': job['id'],
-                'url': url
-            })
+        raw_info = url_map.get(job['raw_job_id'])
+        if not raw_info:
+            continue
+
+        url = raw_info['posting_url']
+        if not url:
+            continue
+
+        # For Greenhouse jobs: use canonical URL if stored URL is a custom career page
+        if job.get('data_source') == 'greenhouse':
+            is_already_canonical = (
+                'job-boards.greenhouse.io' in url
+                or 'job-boards.eu.greenhouse.io' in url
+                or 'boards.greenhouse.io' in url
+            )
+            if not is_already_canonical:
+                metadata = raw_info.get('metadata', {})
+                company_slug = metadata.get('company_slug') if isinstance(metadata, dict) else None
+                source_job_id = raw_info.get('source_job_id')
+
+                canonical = build_canonical_greenhouse_url(source_job_id, company_slug)
+                if canonical:
+                    url = canonical
+                    canonical_rewrites.append({
+                        'raw_job_id': job['raw_job_id'],
+                        'canonical_url': canonical,
+                    })
+
+        jobs_with_urls.append({
+            'enriched_job_id': job['id'],
+            'url': url,
+        })
 
     print(f"[OK] {len(jobs_with_urls)} jobs have valid URLs")
+
+    if canonical_rewrites:
+        print(f"[REWRITE] {len(canonical_rewrites)} Greenhouse URLs upgraded to canonical")
+
+    # Batch-update raw_jobs.posting_url for rewritten URLs
+    if canonical_rewrites and not dry_run:
+        print(f"[DATA] Updating {len(canonical_rewrites)} raw_jobs posting_url to canonical...")
+        rewrite_ok = 0
+        for rw in canonical_rewrites:
+            try:
+                supabase.table("raw_jobs") \
+                    .update({"posting_url": rw['canonical_url']}) \
+                    .eq("id", rw['raw_job_id']) \
+                    .execute()
+                rewrite_ok += 1
+            except Exception as e:
+                print(f"   [DB ERROR] raw_job {rw['raw_job_id']}: {e}")
+        print(f"[OK] Updated {rewrite_ok}/{len(canonical_rewrites)} posting URLs")
 
     if dry_run:
         print(f"\n[DRY RUN] Would check {len(jobs_with_urls)} URLs")
@@ -447,7 +557,7 @@ def verify_url_status():
         while True:
             result = supabase.table("enriched_jobs") \
                 .select("url_status") \
-                .in_("data_source", ["greenhouse", "lever", "ashby"]) \
+                .in_("data_source", ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "custom"]) \
                 .range(offset, offset + batch_size - 1) \
                 .execute()
 
@@ -464,7 +574,7 @@ def verify_url_status():
 
         total = sum(status_counts.values())
 
-        print(f"\nURL status distribution (Greenhouse/Lever/Ashby):")
+        print(f"\nURL status distribution (all ATS sources):")
         print("-" * 40)
 
         for status in ['active', '404', '410', 'soft_404', 'blocked', 'unverifiable', 'redirect', 'error', 'unknown']:

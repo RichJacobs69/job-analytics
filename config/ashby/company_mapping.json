@@ -1,5 +1,8 @@
 {
   "ashby": {
+    "Strava": {
+      "slug": "strava"
+    },
     "Notion": {
       "slug": "notion"
     },
