@@ -34,25 +34,6 @@ from typing import Optional
 from dotenv import load_dotenv
 
 
-# Skills that should preserve their exact casing (acronyms, brand names)
-SKILL_CASING_OVERRIDES = {
-    'jira': 'JIRA', 'prince2': 'PRINCE2', 'pmp': 'PMP', 'saas': 'SaaS',
-    'aws': 'AWS', 'sql': 'SQL', 'ai': 'AI', 'api': 'API', 'ci/cd': 'CI/CD',
-    'raid management': 'RAID Management', 'hpe': 'HPE', 'sap': 'SAP',
-    'erp': 'ERP', 'itil': 'ITIL', 'okr': 'OKR', 'kpi': 'KPI',
-}
-
-
-def normalize_skill_name(name: str) -> str:
-    """Normalize skill name to consistent Title Case, preserving known acronyms."""
-    if not name:
-        return name
-    lower = name.lower().strip()
-    if lower in SKILL_CASING_OVERRIDES:
-        return SKILL_CASING_OVERRIDES[lower]
-    return name.title()
-
-
 def normalize_employer_name(name: str) -> str:
     """Normalize employer name to match employer_metadata.canonical_name format."""
     if not name:
@@ -428,6 +409,13 @@ class ReportGenerator:
             'coverage': round(coverage * 100),
         }
 
+    def _get_display_name(self, canonical_name: str) -> str:
+        """Resolve employer display name from metadata, falling back to the raw name."""
+        meta = self._fetch_employer_metadata().get(canonical_name)
+        if meta and meta.get('display_name'):
+            return meta['display_name']
+        return canonical_name
+
     def _calculate_employer_metrics(self, jobs: list) -> dict:
         """
         Calculate employer-level metrics.
@@ -448,12 +436,12 @@ class ReportGenerator:
         # Sort by count descending
         sorted_employers = sorted(employer_counts.items(), key=lambda x: -x[1])
 
-        # Top employers
+        # Top employers (resolve display names from employer_metadata)
         top_employers = []
         for emp, count in sorted_employers[:15]:
             pct = count / total_jobs if total_jobs > 0 else 0
             top_employers.append({
-                'name': emp,
+                'name': self._get_display_name(emp),
                 'count': count,
                 'percentage': round(pct * 100),
             })
@@ -529,9 +517,9 @@ class ReportGenerator:
         for job in jobs_with_skills:
             for skill in job.get('skills', []):
                 if isinstance(skill, dict):
-                    name = normalize_skill_name(skill.get('name', 'unknown'))
+                    name = skill.get('name', 'unknown')
                 else:
-                    name = normalize_skill_name(str(skill))
+                    name = str(skill)
                 skill_counts[name] = skill_counts.get(name, 0) + 1
 
         # Top skills
@@ -551,9 +539,9 @@ class ReportGenerator:
             job_skills = []
             for s in job.get('skills', []):
                 if isinstance(s, dict):
-                    job_skills.append(normalize_skill_name(s.get('name', '')))
+                    job_skills.append(s.get('name', ''))
                 else:
-                    job_skills.append(normalize_skill_name(str(s)))
+                    job_skills.append(str(s))
             job_skills = sorted(set(job_skills))
 
             for i in range(len(job_skills)):
@@ -1015,11 +1003,11 @@ class ReportGenerator:
                 prev_pct = prev_lookup[name_lower]
                 change = round(curr_pct - prev_pct, 1)
                 changes.append({
-                    'label': emp['name'].title(),
+                    'label': emp['name'],
                     'change': change
                 })
             else:
-                new_entries.append(emp['name'].title())
+                new_entries.append(emp['name'])
 
         # Find biggest movers (min 0.5pp change for employers since values are smaller)
         significant = [c for c in changes if abs(c['change']) >= 0.5]
@@ -1093,7 +1081,7 @@ class ReportGenerator:
 
         # Helper to convert employers to {label, value} with raw job count as value
         def to_employer_chart_data(employers: list, top_n: int = 15) -> list:
-            return [{'label': e['name'].title(), 'value': e['count']} for e in employers[:top_n]]
+            return [{'label': e['name'], 'value': e['count']} for e in employers[:top_n]]
 
         # Helper for salary range data
         def to_salary_range_data(items: list, label_key: str = 'label') -> list:
