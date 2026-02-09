@@ -499,11 +499,11 @@ class TestAshbyPipelineIntegration:
         assert structured["salary_min"] == 90000
         assert structured["salary_max"] == 120000
 
-        # Verify Ashby salary prioritized in enriched insert (over classifier's 80000/110000)
+        # Verify salary suppressed for London (no pay transparency laws)
         enriched_call = mock_enriched.call_args
-        assert enriched_call.kwargs["salary_min"] == 90000
-        assert enriched_call.kwargs["salary_max"] == 120000
-        assert enriched_call.kwargs["currency"] == "GBP"
+        assert enriched_call.kwargs["salary_min"] is None
+        assert enriched_call.kwargs["salary_max"] is None
+        assert enriched_call.kwargs["currency"] is None
 
     @patch("scrapers.ashby.ashby_fetcher.load_company_mapping")
     @patch("scrapers.ashby.ashby_fetcher.fetch_ashby_jobs")

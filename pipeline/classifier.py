@@ -211,6 +211,7 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
 3. For skills: Extract ONLY skills explicitly mentioned by name (no inference from context)
 4. Return valid JSON matching the exact schema provided below
 5. Use null for any field where information is not explicitly stated in title OR description
+6. For compensation: ONLY extract salary if a specific numeric salary or range is explicitly written in the description (e.g. "$120,000 - $150,000" or "70,000 GBP"). Return null if no salary figure is stated. Do NOT estimate or infer salary.
 
 # JOB FAMILY CLASSIFICATION (MOST IMPORTANT)
 
@@ -300,10 +301,10 @@ Return JSON with this EXACT structure:
     "working_arrangement": "onsite|hybrid|remote|flexible|unknown (required - use 'unknown' if not stated or unclear)"
   }},
   "compensation": {{
-    "currency": "gbp|usd|null",
+    "currency": "gbp|usd|null (ONLY if salary is explicitly stated)",
     "base_salary_range": {{
-      "min": number or null,
-      "max": number or null
+      "min": "number or null (ONLY if explicitly stated as a number in the posting)",
+      "max": "number or null (ONLY if explicitly stated as a number in the posting)"
     }},
     "equity_eligible": true|false|null
   }},
@@ -415,6 +416,8 @@ def adapt_prompt_for_gemini(prompt: str) -> str:
 
    IMPORTANT: Use ONLY these exact product subfamily codes: core_pm, platform_pm, technical_pm, growth_pm, ai_ml_pm
    Do NOT invent new codes like "product_pm" - use "core_pm" for general PM roles.
+
+3. **COMPENSATION**: Only return salary values if a specific number appears in the job description text (e.g. "$120,000", "70,000 GBP", "100k-130k"). If no salary is mentioned, return null for currency, base_salary_range.min, and base_salary_range.max. Never estimate or guess.
 
 """
     prompt = prompt.replace(

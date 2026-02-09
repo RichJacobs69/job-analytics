@@ -1052,9 +1052,9 @@ class ReportGenerator:
             items = distribution[:top_n] if top_n else distribution
             return [{'label': d['label'], 'value': round(d['percentage'])} for d in items]
 
-        # Helper to convert distribution to {label, value} with percentage as value
+        # Helper to convert employers to {label, value} with raw job count as value
         def to_employer_chart_data(employers: list, top_n: int = 15) -> list:
-            return [{'label': e['name'].title(), 'value': round(e['percentage'])} for e in employers[:top_n]]
+            return [{'label': e['name'].title(), 'value': e['count']} for e in employers[:top_n]]
 
         # Helper for salary range data
         def to_salary_range_data(items: list, label_key: str = 'label') -> list:

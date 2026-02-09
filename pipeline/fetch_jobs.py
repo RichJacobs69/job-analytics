@@ -75,6 +75,16 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("google_genai").setLevel(logging.WARNING)
 
+# Cities without pay transparency laws - salary data is not trustworthy
+NO_SALARY_TRANSPARENCY_CITIES = {'lon', 'sgp'}
+
+
+def suppress_salary_for_city(city_code: str, currency, salary_min, salary_max):
+    """Null out salary data for cities without pay transparency laws."""
+    if city_code in NO_SALARY_TRANSPARENCY_CITIES:
+        return None, None, None
+    return currency, salary_min, salary_max
+
 
 async def fetch_from_adzuna(city: str, max_jobs_per_query: int, max_days_old: int = 30) -> List:
     """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects
@@ -568,6 +578,14 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 # Get display name from config (e.g., "Rightmove" instead of "rightmovecareers")
                 employer_display_name = slug_to_display_name.get(company_slug, job.company)
 
+                # Suppress salary for cities without pay transparency laws
+                gh_currency, gh_salary_min, gh_salary_max = suppress_salary_for_city(
+                    legacy_city_code,
+                    compensation.get('currency'),
+                    compensation.get('base_salary_range', {}).get('min'),
+                    compensation.get('base_salary_range', {}).get('max')
+                )
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=job.company,
@@ -584,9 +602,9 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     employer_department=employer.get('department'),
                     is_agency=employer.get('is_agency'),
                     agency_confidence=employer.get('agency_confidence'),
-                    currency=compensation.get('currency'),
-                    salary_min=compensation.get('base_salary_range', {}).get('min'),
-                    salary_max=compensation.get('base_salary_range', {}).get('max'),
+                    currency=gh_currency,
+                    salary_min=gh_salary_min,
+                    salary_max=gh_salary_max,
                     equity_eligible=compensation.get('equity_eligible'),
                     skills=classification.get('skills', []),
                     summary=classification.get('summary'),
@@ -880,8 +898,8 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                     'description': description,
                     'location': None,  # Location extracted deterministically via extract_locations()
                     'category': job.adzuna_category if hasattr(job, 'adzuna_category') else None,
-                    'salary_min': job.adzuna_salary_min if hasattr(job, 'adzuna_salary_min') else None,
-                    'salary_max': job.adzuna_salary_max if hasattr(job, 'adzuna_salary_max') else None,
+                    'salary_min': None,  # Adzuna salary is unreliable (predicted/agency data)
+                    'salary_max': None,  # Adzuna salary is unreliable (predicted/agency data)
                 }
                 
                 classification = classify_job(
@@ -966,9 +984,9 @@ async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_da
                 employer_department=employer.get('department'),
                 is_agency=employer.get('is_agency'),
                 agency_confidence=employer.get('agency_confidence'),
-                currency=compensation.get('currency'),
-                salary_min=compensation.get('base_salary_range', {}).get('min'),
-                salary_max=compensation.get('base_salary_range', {}).get('max'),
+                currency=None,  # Adzuna salary is unreliable (predicted/agency data)
+                salary_min=None,
+                salary_max=None,
                 equity_eligible=compensation.get('equity_eligible'),
                 skills=classification.get('skills', []),
                 summary=classification.get('summary'),
@@ -1303,6 +1321,14 @@ async def process_lever_incremental(companies: Optional[List[str]] = None, resum
                         wa_fallback = get_working_arrangement_fallback(company_display)
                         working_arrangement = wa_fallback if wa_fallback else 'unknown'
 
+                # Suppress salary for cities without pay transparency laws
+                lv_currency, lv_salary_min, lv_salary_max = suppress_salary_for_city(
+                    legacy_city_code,
+                    compensation.get('currency'),
+                    compensation.get('base_salary_range', {}).get('min'),
+                    compensation.get('base_salary_range', {}).get('max')
+                )
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company_display,
@@ -1319,9 +1345,9 @@ async def process_lever_incremental(companies: Optional[List[str]] = None, resum
                     employer_department=employer.get('department'),
                     is_agency=employer.get('is_agency'),
                     agency_confidence=employer.get('agency_confidence'),
-                    currency=compensation.get('currency'),
-                    salary_min=compensation.get('base_salary_range', {}).get('min'),
-                    salary_max=compensation.get('base_salary_range', {}).get('max'),
+                    currency=lv_currency,
+                    salary_min=lv_salary_min,
+                    salary_max=lv_salary_max,
                     equity_eligible=compensation.get('equity_eligible'),
                     skills=classification.get('skills', []),
                     summary=classification.get('summary'),
@@ -1692,6 +1718,11 @@ async def process_ashby_incremental(companies: Optional[List[str]] = None, resum
                 final_salary_min = job.salary_min or compensation.get('base_salary_range', {}).get('min')
                 final_salary_max = job.salary_max or compensation.get('base_salary_range', {}).get('max')
                 final_currency = job.salary_currency or compensation.get('currency')
+
+                # Suppress salary for cities without pay transparency laws
+                final_currency, final_salary_min, final_salary_max = suppress_salary_for_city(
+                    legacy_city_code, final_currency, final_salary_min, final_salary_max
+                )
 
                 # Derive working arrangement: classifier > is_remote flag > employer metadata > unknown
                 working_arrangement = location.get('working_arrangement') or 'unknown'
@@ -2103,6 +2134,11 @@ async def process_workable_incremental(companies: Optional[List[str]] = None, re
                 final_salary_min = job.salary_min or compensation.get('base_salary_range', {}).get('min')
                 final_salary_max = job.salary_max or compensation.get('base_salary_range', {}).get('max')
                 final_currency = job.salary_currency or compensation.get('currency')
+
+                # Suppress salary for cities without pay transparency laws
+                final_currency, final_salary_min, final_salary_max = suppress_salary_for_city(
+                    legacy_city_code, final_currency, final_salary_min, final_salary_max
+                )
 
                 # Derive working arrangement: classifier > telecommuting hint > employer metadata > unknown
                 # Priority: Let classifier infer from description (can detect hybrid), use telecommuting as fallback
@@ -2534,6 +2570,14 @@ async def process_smartrecruiters_incremental(companies: Optional[List[str]] = N
                     wa_fallback = get_working_arrangement_fallback(company_name)
                     working_arrangement = wa_fallback if wa_fallback else 'unknown'
 
+                # Suppress salary for cities without pay transparency laws
+                sr_currency, sr_salary_min, sr_salary_max = suppress_salary_for_city(
+                    legacy_city_code,
+                    compensation.get('currency'),
+                    compensation.get('base_salary_range', {}).get('min'),
+                    compensation.get('base_salary_range', {}).get('max')
+                )
+
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company_name,
@@ -2550,9 +2594,9 @@ async def process_smartrecruiters_incremental(companies: Optional[List[str]] = N
                     employer_department=employer.get('department'),
                     is_agency=employer.get('is_agency'),
                     agency_confidence=employer.get('agency_confidence'),
-                    currency=compensation.get('currency'),
-                    salary_min=compensation.get('base_salary_range', {}).get('min'),
-                    salary_max=compensation.get('base_salary_range', {}).get('max'),
+                    currency=sr_currency,
+                    salary_min=sr_salary_min,
+                    salary_max=sr_salary_max,
                     equity_eligible=compensation.get('equity_eligible'),
                     skills=classification.get('skills', []),
                     summary=classification.get('summary'),

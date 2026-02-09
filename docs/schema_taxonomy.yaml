@@ -94,7 +94,7 @@ fields:
       type: enum
       enum: track
       nullable: true
-      extraction_note: "IC = individual contributor with no direct reports (includes tech/product leads). Management = explicit people management with direct reports, line management, or hiring/performance review responsibilities. When unclear or mentions 'team lead' without direct reports, default to IC."
+      extraction_note: "IC = individual contributor with no direct reports (includes tech/product leads). Management = explicit people management with direct reports, line management, or hiring/performance review responsibilities. When unclear or mentions 'team lead' without direct reports, default to IC. IMPORTANT: 'Product Manager', 'Programme Manager', 'Project Manager', 'Delivery Manager', 'Scrum Master', and 'Technical Program Manager' are IC roles that manage work/products/projects, not people - default to IC unless description explicitly states people management."
     
     position_type: 
       type: enum
@@ -644,6 +644,11 @@ classification_guidance:
       - "'Data Scientist, 7 years' → senior (years guide when no level in title)"
       - "'Lead Data Scientist' → senior (Lead = senior level)"
       - "'Principal PM, 9 years' → staff_principal (title wins despite years suggesting senior)"
+      - "'Programme Manager' (no level) → mid (IC role, use IC seniority scale, not management hierarchy)"
+      - "'Project Manager' (no level) → mid (IC role, use IC seniority scale)"
+      - "'Senior Programme Manager' → senior (title wins)"
+      - "'Staff Technical Program Manager' → staff_principal (title wins, IC track)"
+      - "'Director, Program Management' → director_plus (Director signal = management hierarchy)"
     
     market_context:
       - "UK Senior roles typically 6-8 years; US Senior roles typically 7-10 years"
@@ -656,6 +661,8 @@ classification_guidance:
       - "director_plus = Management track (Director, VP, Head of, C-level)"
       - "These are parallel paths, not sequential - don't promote Staff to Director"
       - "Director with 8 years → director_plus (management track, ignore years)"
+      - "'Product Manager', 'Programme Manager', 'Program Manager', 'Project Manager', 'Delivery Manager', and 'Scrum Master' are IC roles by default - they manage products/work/projects/programmes, NOT people. Only classify as management if the description explicitly mentions direct reports, hiring authority, line management, or performance review responsibilities."
+      - "'Technical Program Manager' (TPM) and 'Technical Product Manager' are IC roles - they coordinate technical execution, not manage people."
     
     edge_cases:
       - "Lead Engineer without years → senior (Lead = senior IC, not management)"
@@ -666,6 +673,9 @@ classification_guidance:
       - "'Architect' alone with 6-8 years → senior"
       - "'Principal Architect' → staff_principal"
       - "'5+ years' requirement → Use title to determine level (senior if title is Senior, mid if title is generic)"
+      - "DELIVERY TITLES: 'Programme Manager', 'Project Manager', 'Delivery Manager', 'Product Manager' without a level qualifier (Senior, Staff, Lead, Director, Head) → mid. These are IC roles - do NOT route through the management seniority hierarchy. Only use director_plus if title explicitly contains Director, Head, VP, or C-level."
+      - "'Sr Program Manager' or 'Sr. Programme Manager' → senior (Sr = Senior)"
+      - "'Manager, Technical Program Management' → mid (no level qualifier, IC role despite 'Manager')"
     
     default_when_ambiguous: "mid"
 
@@ -852,12 +862,15 @@ normalization:
       - "vp"
       - "vice president"
       - "svp"
+      - "evp"
+      - "avp"
+      - "rvp"
       - "head of"
       - "chief"
       - "cto"
       - "cpo"
       - "cdo"
-      - "evp"
+      - "partner"
 
 # =========================
 # VALIDATION RULES

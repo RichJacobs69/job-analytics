@@ -112,11 +112,13 @@ The `generate_report_data()` method returns:
 
 ### Portfolio Site JSON
 
-After generating a report, create a JSON file for the portfolio site:
+After generating a report, create a JSON file for the portfolio site. The portfolio site is a **separate repository** -- save reports to the absolute path, not a relative path within job-analytics:
 
 ```
-portfolio-site/content/reports/{city}-data-{month}-{year}.json
+C:/Cursor Projects/portfolio-site/content/reports/{city}-data-{month}-{year}.json
 ```
+
+**Do NOT save to `portfolio-site/` within the job-analytics repo.** That path does not serve the live site.
 
 See existing files (e.g., `sf-data-december-2025.json`) for the required schema.
 
@@ -465,7 +467,7 @@ For London and Singapore, skip compensation section with note:
      --start {start} --end {end} \
      --compare-start {prev_start} --compare-end {prev_end} \
      --output portfolio \
-     --save "portfolio-site/content/reports/{city}-data-{month}-{year}.json"
+     --save "C:/Cursor Projects/portfolio-site/content/reports/{city}-data-{month}-{year}.json"
    ```
 
    Example for December 2025 with November comparison:
@@ -475,7 +477,7 @@ For London and Singapore, skip compensation section with note:
      --start 2025-12-01 --end 2025-12-31 \
      --compare-start 2025-11-01 --compare-end 2025-11-30 \
      --output portfolio \
-     --save "portfolio-site/content/reports/london-data-december-2025.json"
+     --save "C:/Cursor Projects/portfolio-site/content/reports/london-data-december-2025.json"
    ```
 
 3. **Search for market context** - Run web searches for economic/industry context:
@@ -491,7 +493,7 @@ For London and Singapore, skip compensation section with note:
 
 5. **Fill in [PLACEHOLDER] content** - The report generator outputs data with placeholder markers. You MUST replace all placeholders with interpretive content based on the data and market context.
 
-6. **Save completed JSON** to `portfolio-site/content/reports/{city}-data-{month}-{year}.json`
+6. **Save completed JSON** to `C:/Cursor Projects/portfolio-site/content/reports/{city}-data-{month}-{year}.json`
 
 ### Placeholder Content Checklist
 
@@ -564,7 +566,7 @@ When generating reports for multiple cities, use this workflow to avoid sub-agen
      --start {start} --end {end} \
      --compare-start {prev_start} --compare-end {prev_end} \
      --output portfolio \
-     --save "portfolio-site/content/reports/{city}-data-{month}-{year}.json"
+     --save "C:/Cursor Projects/portfolio-site/content/reports/{city}-data-{month}-{year}.json"
    ```
 
 2. **From the main context**, read each city's data (using targeted offset/limit reads) and run web research (3-4 searches per city). Compile a concise data summary and research notes.

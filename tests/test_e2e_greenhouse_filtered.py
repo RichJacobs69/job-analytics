@@ -10,7 +10,7 @@ import pytest
 import asyncio
 from pathlib import Path
 from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper, is_relevant_role, load_title_patterns
-from unified_job_ingester import UnifiedJobIngester, UnifiedJob
+from pipeline.unified_job_ingester import UnifiedJobIngester, UnifiedJob
 
 
 @pytest.mark.asyncio
