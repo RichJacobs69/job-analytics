@@ -26,7 +26,7 @@ on:
 jobs:
   url-validation-stats:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Reduced from 45 (no summary generation)
+    timeout-minutes: 45  # Increased for API freshness check + URL validation
 
     steps:
       - name: Checkout repository
@@ -46,14 +46,25 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      # Step 1: URL Validation (must run before employer_stats)
+      # Step 1: API Freshness Check (runs before URL validation to reduce queue)
+      - name: Run api_freshness_checker.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "=========================================="
+          echo "STEP 1: API Freshness Check"
+          echo "=========================================="
+          python pipeline/api_freshness_checker.py
+
+      # Step 2: URL Validation (must run before employer_stats)
       - name: Run url_validator.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 1: URL Validation"
+          echo "STEP 2: URL Validation"
           echo "=========================================="
           # Default limit of 1000 for scheduled runs (covers all 6 ATS sources)
           LIMIT="${{ github.event.inputs.url_limit }}"
@@ -63,7 +74,7 @@ jobs:
           echo "Checking up to $LIMIT URLs..."
           python pipeline/url_validator.py --limit=$LIMIT
 
-      # Step 2: Employer Stats (depends on 404 data from URL validation)
+      # Step 3: Employer Stats (depends on 404 data from URL validation)
       - name: Run employer_stats.py
         if: ${{ github.event.inputs.run_employer_stats != 'false' }}
         env:
@@ -71,7 +82,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 2: Employer Fill Stats"
+          echo "STEP 3: Employer Fill Stats"
           echo "=========================================="
           python pipeline/employer_stats.py
 
@@ -86,6 +97,7 @@ jobs:
               f.write("## URL Validation & Stats Complete\n\n")
               f.write(f"| Step | Status |\n")
               f.write(f"|------|--------|\n")
+              f.write(f"| **API Freshness Check** | Complete |\n")
               f.write(f"| **URL Validator** | Complete |\n")
               f.write(f"| **Employer Stats** | Complete |\n")
               f.write(f"\n**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")

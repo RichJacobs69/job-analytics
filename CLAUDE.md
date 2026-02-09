@@ -61,6 +61,8 @@ python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
 python pipeline/employer_stats.py              # Compute employer fill stats
 python pipeline/summary_generator.py --limit=50 # Backfill summaries (new jobs get inline)
 python pipeline/url_validator.py --limit=100   # Check for 404 dead links
+python pipeline/api_freshness_checker.py       # API-based freshness check (SPA sources)
+python pipeline/api_freshness_checker.py --dry-run --source ashby  # Preview single source
 
 # Reports
 python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
@@ -180,6 +182,7 @@ job-analytics/
 | `pipeline/employer_stats.py` | Median fill times per employer (Epic 8) |
 | `pipeline/summary_generator.py` | Backfill utility for summaries (new jobs get inline via classifier) |
 | `pipeline/url_validator.py` | 404 detection for dead links (Epic 8) |
+| `pipeline/api_freshness_checker.py` | API-based freshness check for SPA sources (Epic 8) |
 | `pipeline/utilities/backfill_track_seniority.py` | Backfill track (IC/Manager) and seniority level |
 | `pipeline/utilities/audit_skills_taxonomy.py` | Audit unmapped skills, duplicates, coverage gaps |
 | `pipeline/utilities/backfill_skill_families.py` | Backfill skill family codes from current mapping |
