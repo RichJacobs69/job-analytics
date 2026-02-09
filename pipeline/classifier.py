@@ -336,6 +336,7 @@ Return JSON with this EXACT structure:
 - Extract ONLY skills that are EXPLICITLY NAMED in the job posting text
 - DO NOT list skills from the ontology that aren't mentioned in the posting
 - MAXIMUM 20 skills - if more are mentioned, pick the most important ones
+- Use standard casing for skill names: "Python" not "python", "SQL" not "sql", "JIRA" not "Jira". Match the casing shown in the skills ontology above
 - Match to family_code from the ontology above whenever possible
 - Common examples: "Python" → programming, "AWS" → cloud, "Snowflake" → warehouses_lakes
 - If skill doesn't match any family in ontology, use family_code: null

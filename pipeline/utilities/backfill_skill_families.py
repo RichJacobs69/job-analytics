@@ -18,7 +18,7 @@ import argparse
 from dotenv import load_dotenv
 from supabase import create_client
 
-from pipeline.skill_family_mapper import get_skill_family, get_mapping_stats
+from pipeline.skill_family_mapper import get_skill_family, get_canonical_name, get_mapping_stats
 
 load_dotenv()
 
@@ -74,6 +74,7 @@ def backfill_skill_families(dry_run: bool = False, limit: int = None):
         "total_records": len(all_records),
         "records_with_skills": 0,
         "skills_updated": 0,
+        "skills_name_fixed": 0,
         "skills_already_mapped": 0,
         "skills_unmapped": 0,
         "records_updated": 0,
@@ -95,7 +96,13 @@ def backfill_skill_families(dry_run: bool = False, limit: int = None):
         for skill in skills:
             name = skill.get("name", "")
             current_family = skill.get("family_code")
+            canonical = get_canonical_name(name)
             new_family = get_skill_family(name)
+
+            # Detect name casing change
+            if canonical != name:
+                stats["skills_name_fixed"] += 1
+                needs_update = True
 
             if new_family:
                 if current_family != new_family:
@@ -103,18 +110,19 @@ def backfill_skill_families(dry_run: bool = False, limit: int = None):
                     needs_update = True
                 else:
                     stats["skills_already_mapped"] += 1
-                updated_skills.append({"name": name, "family_code": new_family})
+                updated_skills.append({"name": canonical, "family_code": new_family})
             else:
                 stats["skills_unmapped"] += 1
-                updated_skills.append({"name": name, "family_code": None})
+                updated_skills.append({"name": canonical, "family_code": None})
 
         if needs_update:
             updates.append({"id": job_id, "skills": updated_skills})
 
     print(f"\nStatistics:")
     print(f"  Records with skills: {stats['records_with_skills']}")
-    print(f"  Skills updated: {stats['skills_updated']}")
-    print(f"  Skills already mapped: {stats['skills_already_mapped']}")
+    print(f"  Skills family updated: {stats['skills_updated']}")
+    print(f"  Skills name casing fixed: {stats['skills_name_fixed']}")
+    print(f"  Skills already correct: {stats['skills_already_mapped']}")
     print(f"  Skills unmapped (no mapping exists): {stats['skills_unmapped']}")
     print(f"  Records needing update: {len(updates)}")
 

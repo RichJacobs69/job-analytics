@@ -155,7 +155,7 @@ fields:
         properties:
           name: 
             type: string
-            extraction_note: "Exact skill name from posting (e.g., 'Python', 'SQL', 'A/B testing')"
+            extraction_note: "Skill name from posting using standard casing: 'Python' not 'python', 'SQL' not 'sql', 'JIRA' not 'Jira'. Match casing from skills_ontology"
           
           family_code: 
             type: string
