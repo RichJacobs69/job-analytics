@@ -5,8 +5,8 @@
 
 metadata:
   version: 1.7
-  last_updated: "2026-01-28"
-  total_agencies: 322
+  last_updated: "2026-02-09"
+  total_agencies: 337
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -403,6 +403,23 @@ hard_filter:
 
   # Added 2026-02-07: Hiring platform (aggregates jobs from other employers)
   - fuku
+
+  # Added 2026-02-09: Graduate recruitment agencies and job boards
+  - frazer jones
+  - via match limited
+  - via match
+  - brighterbox
+  - grayce
+  - sw6 associates limited
+  - sw6 associates
+  - redtech recruit
+  - the opportunity hub uk
+  - manu forti
+  - manu forti ltd
+  - jobvital
+  - how to job ltd
+  - how to job
+  - intellect group
 
 # =========================
 # PATTERN DETECTION

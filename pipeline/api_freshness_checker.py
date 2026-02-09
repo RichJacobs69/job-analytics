@@ -285,6 +285,11 @@ def get_active_jobs_by_source(source: str) -> List[Dict]:
             continue
 
         metadata = raw.get('metadata') or {}
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                metadata = {}
         company_slug = metadata.get('company_slug', '')
         if not company_slug:
             continue

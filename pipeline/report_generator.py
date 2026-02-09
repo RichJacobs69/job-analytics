@@ -34,6 +34,25 @@ from typing import Optional
 from dotenv import load_dotenv
 
 
+# Skills that should preserve their exact casing (acronyms, brand names)
+SKILL_CASING_OVERRIDES = {
+    'jira': 'JIRA', 'prince2': 'PRINCE2', 'pmp': 'PMP', 'saas': 'SaaS',
+    'aws': 'AWS', 'sql': 'SQL', 'ai': 'AI', 'api': 'API', 'ci/cd': 'CI/CD',
+    'raid management': 'RAID Management', 'hpe': 'HPE', 'sap': 'SAP',
+    'erp': 'ERP', 'itil': 'ITIL', 'okr': 'OKR', 'kpi': 'KPI',
+}
+
+
+def normalize_skill_name(name: str) -> str:
+    """Normalize skill name to consistent Title Case, preserving known acronyms."""
+    if not name:
+        return name
+    lower = name.lower().strip()
+    if lower in SKILL_CASING_OVERRIDES:
+        return SKILL_CASING_OVERRIDES[lower]
+    return name.title()
+
+
 def normalize_employer_name(name: str) -> str:
     """Normalize employer name to match employer_metadata.canonical_name format."""
     if not name:
@@ -144,6 +163,33 @@ class ReportGenerator:
         'research_scientist_ml': 'Research Scientist (ML)',
         'ai_engineer': 'AI Engineer',
     }
+
+    # Subfamily display labels (Delivery family)
+    DELIVERY_SUBFAMILY_LABELS = {
+        'programme_manager': 'Programme Manager',
+        'project_manager': 'Project Manager',
+        'delivery_manager': 'Delivery Manager',
+        'scrum_master': 'Scrum Master',
+    }
+
+    # Subfamily display labels (Product family)
+    PRODUCT_SUBFAMILY_LABELS = {
+        'product_manager': 'Product Manager',
+        'product_designer': 'Product Designer',
+        'product_analyst': 'Product Analyst',
+        'product_owner': 'Product Owner',
+        'product_operations': 'Product Operations',
+    }
+
+    # Map job_family to subfamily labels
+    SUBFAMILY_LABELS_BY_FAMILY = {
+        'data': DATA_SUBFAMILY_LABELS,
+        'delivery': DELIVERY_SUBFAMILY_LABELS,
+        'product': PRODUCT_SUBFAMILY_LABELS,
+    }
+
+    # Fixed seniority display order (most senior to most junior)
+    SENIORITY_ORDER = ['director_plus', 'staff_principal', 'senior', 'mid', 'junior']
 
     # Working arrangement display labels
     ARRANGEMENT_LABELS = {
@@ -457,7 +503,7 @@ class ReportGenerator:
 
         return {
             **dist,
-            'senior_to_junior_ratio': round(senior_to_junior),
+            'senior_to_junior_ratio': round(senior_to_junior) if senior_to_junior != float('inf') else None,
             'entry_accessibility_rate': round(entry_accessibility * 100),
         }
 
@@ -483,9 +529,9 @@ class ReportGenerator:
         for job in jobs_with_skills:
             for skill in job.get('skills', []):
                 if isinstance(skill, dict):
-                    name = skill.get('name', 'unknown')
+                    name = normalize_skill_name(skill.get('name', 'unknown'))
                 else:
-                    name = str(skill)
+                    name = normalize_skill_name(str(skill))
                 skill_counts[name] = skill_counts.get(name, 0) + 1
 
         # Top skills
@@ -505,9 +551,9 @@ class ReportGenerator:
             job_skills = []
             for s in job.get('skills', []):
                 if isinstance(s, dict):
-                    job_skills.append(s.get('name', ''))
+                    job_skills.append(normalize_skill_name(s.get('name', '')))
                 else:
-                    job_skills.append(str(s))
+                    job_skills.append(normalize_skill_name(str(s)))
             job_skills = sorted(set(job_skills))
 
             for i in range(len(job_skills)):
@@ -744,8 +790,9 @@ class ReportGenerator:
         # Calculate all metrics
         employer_metrics = self._calculate_employer_metrics(direct_jobs)
         seniority_metrics = self._calculate_seniority_metrics(direct_jobs)
+        subfamily_labels = self.SUBFAMILY_LABELS_BY_FAMILY.get(job_family, self.DATA_SUBFAMILY_LABELS)
         subfamily_dist = self._calculate_distribution(
-            direct_jobs, 'job_subfamily', self.DATA_SUBFAMILY_LABELS
+            direct_jobs, 'job_subfamily', subfamily_labels
         )
         track_dist = self._calculate_distribution(
             direct_jobs, 'track', self.TRACK_LABELS
@@ -1038,6 +1085,12 @@ class ReportGenerator:
             items = distribution[:top_n] if top_n else distribution
             return [{'label': d['label'], 'value': round(d['percentage'])} for d in items]
 
+        def to_chart_data_fixed_order(distribution: list, order: list) -> list:
+            """Sort distribution by a fixed order based on 'code' field."""
+            order_map = {code: i for i, code in enumerate(order)}
+            sorted_dist = sorted(distribution, key=lambda d: order_map.get(d.get('code', ''), 999))
+            return [{'label': d['label'], 'value': round(d['percentage'])} for d in sorted_dist]
+
         # Helper to convert employers to {label, value} with raw job count as value
         def to_employer_chart_data(employers: list, top_n: int = 15) -> list:
             return [{'label': e['name'].title(), 'value': e['count']} for e in employers[:top_n]]
@@ -1181,8 +1234,8 @@ class ReportGenerator:
                 ) if compare_raw else None
             },
             'seniorityDistribution': {
-                'data': to_chart_data(raw['seniority']['distribution']),
-                'seniorToJuniorRatio': round(access['senior_to_junior_ratio']),
+                'data': to_chart_data_fixed_order(raw['seniority']['distribution'], self.SENIORITY_ORDER),
+                'seniorToJuniorRatio': round(access['senior_to_junior_ratio']) if access['senior_to_junior_ratio'] is not None else None,
                 'entryAccessibilityRate': round(access['entry_accessibility_rate']),
                 'interpretation': '[PLACEHOLDER] Seniority distribution interpretation.',
                 'comparison': self._calculate_comparison(

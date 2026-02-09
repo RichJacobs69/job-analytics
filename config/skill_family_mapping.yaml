@@ -14,7 +14,7 @@
 # - Product names as officially written: Python, Snowflake, PyTorch, TensorFlow
 # - Intentionally lowercase brands stay lowercase: dbt, pytest, fastapi
 # - Acronyms uppercase: SQL, AWS, GCP, ETL, REST, API, PMP
-# - Multi-word skills in sentence case: Stakeholder management, Risk management
+# - Multi-word skills in Title Case: Stakeholder Management, Risk Management
 # - SQL variants preserve conventions: PL/SQL, T-SQL, SparkSQL
 #
 # Family codes align with skills_ontology in schema_taxonomy.yaml
@@ -83,7 +83,7 @@ programming:
   - Flask
   - fastapi
   - Rails
-  - Ruby on Rails
+  - Ruby On Rails
   - Express
   - Spring
   - ASP.NET
@@ -103,13 +103,13 @@ programming:
   - Android
 
   # Data science libraries
-  - pandas
+  - Pandas
   - NumPy
   - SciPy
   - Matplotlib
   - Seaborn
   - Plotly
-  - statsmodels
+  - Statsmodels
 
   # Other frameworks
   - Redux
@@ -220,20 +220,20 @@ cloud:
 
   # General cloud
   - Cloud
-  - Cloud computing
-  - Cloud infrastructure
-  - Cloud engineering
-  - Cloud architecture
-  - Cloud platforms
-  - Cloud technologies
-  - Cloud storage
-  - Cloud native architectures
-  - Hybrid cloud
+  - Cloud Computing
+  - Cloud Infrastructure
+  - Cloud Engineering
+  - Cloud Architecture
+  - Cloud Platforms
+  - Cloud Technologies
+  - Cloud Storage
+  - Cloud Native Architectures
+  - Hybrid Cloud
   - IaaS
-  - Cloud database
-  - Cloud operations
-  - Cloud ops
-  - Cloud cost management
+  - Cloud Database
+  - Cloud Operations
+  - Cloud Ops
+  - Cloud Cost Management
   - FinOps
 
 # =============================================================================
@@ -248,18 +248,18 @@ warehouses_lakes:
   - Delta Lake
   - Delta Live Tables
   - Lakehouse
-  - Lakehouse architecture
-  - Data lake
-  - Data lakes
-  - Data lakehouse
+  - Lakehouse Architecture
+  - Data Lake
+  - Data Lakes
+  - Data Lakehouse
   - Iceberg
   - Apache Iceberg
   - Hudi
   - Parquet
-  - Data warehouse
-  - Data warehouses
-  - Data warehousing
-  - Cloud data warehouses
+  - Data Warehouse
+  - Data Warehouses
+  - Data Warehousing
+  - Cloud Data Warehouses
   - Greenplum
   - Netezza
   - Teradata
@@ -270,8 +270,8 @@ warehouses_lakes:
   - Trino
   - Starburst
   - Denodo
-  - Medallion architecture
-  - Medallion data architecture
+  - Medallion Architecture
+  - Medallion Data Architecture
   - Data Vault 2.0
   - LakeFS
 
@@ -301,15 +301,15 @@ databases:
   - Cosmos DB
   - Timestream
   - NoSQL
-  - Relational database
+  - Relational Database
   - Database
   - Databases
-  - Database design
-  - Database engineering
-  - Database management
-  - Database systems
-  - Database technologies
-  - Database administration
+  - Database Design
+  - Database Engineering
+  - Database Management
+  - Database Systems
+  - Database Technologies
+  - Database Administration
 
 # =============================================================================
 # DATA PIPELINES & ORCHESTRATION
@@ -324,9 +324,9 @@ pipelines_orchestration:
   - ETL
   - ELT
   - ETL/ELT
-  - Data pipelines
-  - Data pipeline
-  - ML pipelines
+  - Data Pipelines
+  - Data Pipeline
+  - ML Pipelines
   - Synapse Pipelines
   - Fivetran
   - Airbyte
@@ -340,11 +340,11 @@ pipelines_orchestration:
   - Talend
   - Pentaho
   - Celigo
-  - Data integration
-  - Real-time data integration
-  - Data engineering
-  - Workflow orchestration
-  - Workflow automation
+  - Data Integration
+  - Real-Time Data Integration
+  - Data Engineering
+  - Workflow Orchestration
+  - Workflow Automation
   - Argo
   - Temporal
 
@@ -355,22 +355,22 @@ data_modeling:
   - dbt
   - dbt Core
   - dbt Cloud
-  - Data modeling
-  - Data modelling
-  - Dimensional modeling
-  - Kimball design methodology
-  - Star schema
-  - Snowflake schema
-  - Data vault
+  - Data Modeling
+  - Data Modelling
+  - Dimensional Modeling
+  - Kimball Design Methodology
+  - Star Schema
+  - Snowflake Schema
+  - Data Vault
   - ERwin
   - PowerDesigner
   - Sparx EA
-  - Semantic layers
-  - Semantic technologies
-  - Data transforms
-  - Data transformation
-  - Data architecture
-  - Data models
+  - Semantic Layers
+  - Semantic Technologies
+  - Data Transforms
+  - Data Transformation
+  - Data Architecture
+  - Data Models
 
 # =============================================================================
 # BIG DATA & DISTRIBUTED COMPUTING
@@ -393,12 +393,12 @@ big_data:
   - Apache Flink
   - Ray
   - Dask
-  - Distributed computing
-  - Distributed systems
-  - Distributed system
-  - Distributed data stores
-  - Distributed storage
-  - Big data
+  - Distributed Computing
+  - Distributed Systems
+  - Distributed System
+  - Distributed Data Stores
+  - Distributed Storage
+  - Big Data
 
 # =============================================================================
 # STREAMING & REAL-TIME
@@ -411,13 +411,13 @@ streaming:
   - Pub/Sub
   - RabbitMQ
   - SQS
-  - Event-driven
-  - Stream processing
-  - Real-time processing
-  - Real-time data processing
-  - Real-time systems
+  - Event-Driven
+  - Stream Processing
+  - Real-Time Processing
+  - Real-Time Data Processing
+  - Real-Time Systems
   - Streaming
-  - Streaming data
+  - Streaming Data
   - Debezium
 
 # =============================================================================
@@ -429,49 +429,49 @@ deep_learning:
   - Keras
   - JAX
   - MXNet
-  - Neural networks
-  - Deep learning
-  - Deep neural networks
+  - Neural Networks
+  - Deep Learning
+  - Deep Neural Networks
   - CNNs
   - RNNs
   - LSTMs
   - Transformers
   - Transformer
-  - Transformer architecture
-  - Transformer architectures
-  - Transformer models
+  - Transformer Architecture
+  - Transformer Architectures
+  - Transformer Models
   - Attention
-  - Computer vision
-  - Image processing
-  - Object detection
-  - Semantic segmentation
-  - Depth estimation
+  - Computer Vision
+  - Image Processing
+  - Object Detection
+  - Semantic Segmentation
+  - Depth Estimation
   - NLP
-  - Natural language processing
+  - Natural Language Processing
   - NLU
-  - Text processing
-  - Text mining
-  - Speech recognition
-  - Speech technology
+  - Text Processing
+  - Text Mining
+  - Speech Recognition
+  - Speech Technology
   - Speech
   - Audio
-  - Speech/audio technology
-  - Text-to-speech
-  - Voice conversion
-  - Diffusion models
-  - Diffusion policies
-  - Auto-encoders
+  - Speech/audio Technology
+  - Text-To-Speech
+  - Voice Conversion
+  - Diffusion Models
+  - Diffusion Policies
+  - Auto-Encoders
   - GNNs
-  - Graph neural networks
-  - Sequence modeling
-  - Multimodal models
-  - Multimodal systems
-  - Vision-language models
-  - Visual language models
-  - Vision-language-action models
-  - Perception models
-  - Video analysis
-  - Video technology
+  - Graph Neural Networks
+  - Sequence Modeling
+  - Multimodal Models
+  - Multimodal Systems
+  - Vision-Language Models
+  - Visual Language Models
+  - Vision-Language-Action Models
+  - Perception Models
+  - Video Analysis
+  - Video Technology
   - CUDA
   - GPU
 
@@ -479,53 +479,53 @@ deep_learning:
 # CLASSICAL MACHINE LEARNING
 # =============================================================================
 classical_ml:
-  - Machine learning
+  - Machine Learning
   - ML
-  - scikit-learn
+  - Scikit-Learn
   - XGBoost
   - LightGBM
   - CatBoost
-  - Random forest
-  - Random forests
-  - Decision trees
-  - Logistic regression
-  - Linear regression
+  - Random Forest
+  - Random Forests
+  - Decision Trees
+  - Logistic Regression
+  - Linear Regression
   - Regression
   - Classification
   - Clustering
   - SVM
-  - Support vector machine
-  - K-nearest neighbors
-  - Feature engineering
-  - Model training
-  - ML model development
-  - Supervised learning
-  - Semi-supervised learning
-  - Transfer learning
-  - Active learning
-  - Imitation learning
-  - Reinforcement learning
-  - Recommendation systems
-  - Recommender systems
+  - Support Vector Machine
+  - K-Nearest Neighbors
+  - Feature Engineering
+  - Model Training
+  - ML Model Development
+  - Supervised Learning
+  - Semi-Supervised Learning
+  - Transfer Learning
+  - Active Learning
+  - Imitation Learning
+  - Reinforcement Learning
+  - Recommendation Systems
+  - Recommender Systems
   - Personalization
-  - Personalization systems
-  - Anomaly detection
-  - Fraud detection
-  - Predictive modeling
-  - Statistical modeling
-  - Bayesian methods
-  - Bayesian modeling
-  - Bayesian modelling
-  - Bayesian methodology
-  - Bayesian statistics
-  - Bayesian inference
-  - Causal inference
+  - Personalization Systems
+  - Anomaly Detection
+  - Fraud Detection
+  - Predictive Modeling
+  - Statistical Modeling
+  - Bayesian Methods
+  - Bayesian Modeling
+  - Bayesian Modelling
+  - Bayesian Methodology
+  - Bayesian Statistics
+  - Bayesian Inference
+  - Causal Inference
   - Econometrics
   - Optimization
-  - Optimization algorithms
-  - Data science
+  - Optimization Algorithms
+  - Data Science
   - AI/ML
-  - Model evaluation
+  - Model Evaluation
 
 # =============================================================================
 # LLM & GENERATIVE AI
@@ -533,7 +533,7 @@ classical_ml:
 llm_genai:
   - LLM
   - LLMs
-  - Large language models
+  - Large Language Models
   - GPT
   - GPT-3.5
   - GPT-4
@@ -556,50 +556,50 @@ llm_genai:
   - GenAI
   - Gen AI
   - AI
-  - Artificial intelligence
-  - Prompt engineering
+  - Artificial Intelligence
+  - Prompt Engineering
   - Prompting
   - RAG
-  - Retrieval augmented generation
-  - Retrieval-augmented generation
+  - Retrieval Augmented Generation
+  - Retrieval-Augmented Generation
   - GraphRAG
-  - Graph-based retrieval-augmented generation
+  - Graph-Based Retrieval-Augmented Generation
   - LangChain
   - LlamaIndex
   - LangGraph
   - DSPy
   - Embeddings
-  - Vector databases
-  - Vector search
+  - Vector Databases
+  - Vector Search
   - Pinecone
   - FAISS
-  - Fine-tuning
-  - Model fine-tuning
+  - Fine-Tuning
+  - Model Fine-Tuning
   - LoRA
   - PEFT
   - RLHF
-  - Reward modeling
+  - Reward Modeling
   - Agents
   - Agentic AI
-  - AI agents
-  - Agent frameworks
-  - Agent systems
-  - Multi-agent systems
-  - Multi-agent frameworks
-  - Autonomous agents
-  - Function calling
+  - AI Agents
+  - Agent Frameworks
+  - Agent Systems
+  - Multi-Agent Systems
+  - Multi-Agent Frameworks
+  - Autonomous Agents
+  - Function Calling
   - Chatbots
   - Conversational AI
-  - Foundation models
+  - Foundation Models
   - Multimodal AI
   - Multimodal LLMs
   - MLLM
   - VLM
-  - Code generation tools
+  - Code Generation Tools
   - GitHub Copilot
   - M365 Copilot
   - Microsoft Copilot
-  - watsonx
+  - Watsonx
   - Hugging Face
   - HuggingFace
   - Hugging Face Transformers
@@ -617,12 +617,12 @@ mlops:
   - MLflow
   - Kubeflow
   - Metaflow
-  - Model serving
-  - Model deployment
-  - Model monitoring
-  - Feature stores
-  - Model registry
-  - Experiment tracking
+  - Model Serving
+  - Model Deployment
+  - Model Monitoring
+  - Feature Stores
+  - Model Registry
+  - Experiment Tracking
   - Weights & Biases
   - WandB
   - Neptune
@@ -633,9 +633,9 @@ mlops:
   - TRT
   - ONNX
   - DeepSpeed
-  - Tensor parallelism
-  - Mixed precision
-  - Model pruning
+  - Tensor Parallelism
+  - Mixed Precision
+  - Model Pruning
   - Quantisation
   - Distillation
 
@@ -647,9 +647,9 @@ deployment:
   - Kubernetes
   - K8s
   - Helm
-  - Container orchestration
+  - Container Orchestration
   - Containerization
-  - Container images
+  - Container Images
   - AKS
   - EKS
   - GKE
@@ -662,8 +662,8 @@ infrastructure_code:
   - CloudFormation
   - Pulumi
   - Ansible
-  - Infrastructure as code
-  - Infrastructure automation
+  - Infrastructure As Code
+  - Infrastructure Automation
   - IaC
   - Terragrunt
 
@@ -676,9 +676,9 @@ ci_cd:
   - Jenkins
   - CircleCI
   - ArgoCD
-  - Continuous integration
-  - Continuous delivery
-  - Continuous deployment
+  - Continuous Integration
+  - Continuous Delivery
+  - Continuous Deployment
   - CI/CD
   - DevOps
   - DevSecOps
@@ -705,7 +705,7 @@ monitoring:
   - ELK Stack
   - Splunk
   - Observability
-  - Observability platforms
+  - Observability Platforms
   - Logging
   - Monitoring
   - Dynatrace
@@ -737,12 +737,12 @@ visualization:
   - Domo
   - Sigma
   - Omni
-  - Data visualization
-  - Data visualisation
-  - Dashboard design
+  - Data Visualization
+  - Data Visualisation
+  - Dashboard Design
   - Dashboards
   - Reporting
-  - Business intelligence
+  - Business Intelligence
   - BI
 
 # =============================================================================
@@ -750,30 +750,30 @@ visualization:
 # =============================================================================
 analytics_stats:
   - Statistics
-  - Statistical analysis
-  - Statistical methods
+  - Statistical Analysis
+  - Statistical Methods
   - Probability
-  - Hypothesis testing
-  - A/B testing
-  - A/B experiments
+  - Hypothesis Testing
+  - A/B Testing
+  - A/B Experiments
   - Experimentation
-  - Experiment design
-  - Experimental design
-  - Online experimentation
-  - Multivariate testing
-  - Multi-variant testing
-  - Time series
-  - Time series forecasting
-  - Time-series analysis
-  - Regression analysis
-  - Factor analysis
+  - Experiment Design
+  - Experimental Design
+  - Online Experimentation
+  - Multivariate Testing
+  - Multi-Variant Testing
+  - Time Series
+  - Time Series Forecasting
+  - Time-Series Analysis
+  - Regression Analysis
+  - Factor Analysis
   - PCA
   - Biostatistics
-  - Spatial statistics
+  - Spatial Statistics
   - PyMC
   - Analytics
-  - Data analytics
-  - A/B tests
+  - Data Analytics
+  - A/B Tests
   - Forecasting
 
 # =============================================================================
@@ -831,21 +831,21 @@ product_usage:
   - GA4
   - Adobe Analytics
   - Segment
-  - Product analytics
+  - Product Analytics
   - KPIs
-  - KPI tracking
+  - KPI Tracking
   - Metrics
-  - Metrics analysis
-  - Metrics design
-  - Data analysis
-  - Data-driven decision making
-  - Data-driven decision-making
-  - Cohort analysis
-  - Attribution modeling
-  - Marketing analytics
-  - Marketing mix modeling
-  - Marketing mix models
-  - ROI analysis
+  - Metrics Analysis
+  - Metrics Design
+  - Data Analysis
+  - Data-Driven Decision Making
+  - Data-Driven Decision-Making
+  - Cohort Analysis
+  - Attribution Modeling
+  - Marketing Analytics
+  - Marketing Mix Modeling
+  - Marketing Mix Models
+  - ROI Analysis
 
 # =============================================================================
 # APIs & INTEGRATION
@@ -855,21 +855,21 @@ apis_integration:
   - REST API
   - REST APIs
   - RESTful APIs
-  - RESTful services
+  - RESTful Services
   - GraphQL
   - gRPC
   - API
   - APIs
-  - API design
-  - API management
-  - API gateways
+  - API Design
+  - API Management
+  - API Gateways
   - Webhooks
   - Microservices
   - OpenAPI
   - Swagger
   - Postman
   - HTTP
-  - HTTP servers
+  - HTTP Servers
   - WebSocket
   - Thrift
 
@@ -879,13 +879,13 @@ apis_integration:
 security:
   - Security
   - Cybersecurity
-  - Security architecture
-  - Network security
-  - Endpoint security
+  - Security Architecture
+  - Network Security
+  - Endpoint Security
   - Encryption
   - Cryptography
   - IAM
-  - Identity & authentication
+  - Identity & Authentication
   - Authentication
   - Authorization
   - OAuth
@@ -897,7 +897,7 @@ security:
   - Okta
   - Active Directory
   - RBAC
-  - Access management
+  - Access Management
   - MFA
   - Compliance
   - GDPR
@@ -906,7 +906,7 @@ security:
   - ISO 27001
   - ISO27001
   - PCI
-  - PCI compliance
+  - PCI Compliance
   - FedRAMP
 
 # =============================================================================
@@ -914,17 +914,17 @@ security:
 # =============================================================================
 compliance_regulation:
   - AML
-  - Anti-money laundering
+  - Anti-Money Laundering
   - KYC
-  - Know your customer
+  - Know Your Customer
   - SOX
   - Sarbanes-Oxley
-  - Regulatory compliance
-  - Regulatory reporting
-  - Audit logging
+  - Regulatory Compliance
+  - Regulatory Reporting
+  - Audit Logging
   - Regulatory
-  - Financial regulations
-  - Banking regulations
+  - Financial Regulations
+  - Banking Regulations
 
 # =============================================================================
 # CRM & MARKETING PLATFORMS
@@ -937,7 +937,7 @@ crm_marketing:
   - Intercom
   - Iterable
   - Braze
-  - Customer data platform
+  - Customer Data Platform
   - CDP
   - Adobe Experience Platform
   - Adobe Experience Manager
@@ -948,7 +948,7 @@ crm_marketing:
   - Google Ads
   - DV360
   - The Trade Desk
-  - Programmatic advertising
+  - Programmatic Advertising
   - CRM
 
 # =============================================================================
@@ -971,25 +971,25 @@ erp_systems:
 # DATA GOVERNANCE & QUALITY
 # =============================================================================
 data_governance:
-  - Data governance
-  - Data quality
-  - Data lineage
-  - Data catalog
-  - Data cataloguing
-  - Metadata management
-  - Master data management
+  - Data Governance
+  - Data Quality
+  - Data Lineage
+  - Data Catalog
+  - Data Cataloguing
+  - Metadata Management
+  - Master Data Management
   - MDM
   - Collibra
   - Collibra DIP
   - Alation
   - Atlan
-  - Data profiling
-  - Data validation
+  - Data Profiling
+  - Data Validation
   - Great Expectations
   - Soda
-  - Data privacy
-  - Data protection
-  - Data security
+  - Data Privacy
+  - Data Protection
+  - Data Security
 
 # =============================================================================
 # EXPERIMENTATION & PRODUCT
@@ -999,21 +999,21 @@ experimentation:
   - LaunchDarkly
   - Statsig
   - Eppo
-  - Feature flags
-  - AB testing platforms
+  - Feature Flags
+  - AB Testing Platforms
 
 # =============================================================================
 # DISCOVERY & RESEARCH (PM Skills)
 # =============================================================================
 discovery_research:
-  - User research
-  - User interviews
-  - Customer research
-  - Market research
+  - User Research
+  - User Interviews
+  - Customer Research
+  - Market Research
   - UX
-  - User experience
+  - User Experience
   - UI
-  - UI design
+  - UI Design
   - UI/UX
   - Discovery
   - Research
@@ -1025,61 +1025,62 @@ execution_delivery:
   - Agile
   - Scrum
   - Kanban
-  - Sprint planning
-  - Backlog management
+  - Sprint Planning
+  - Backlog Management
   - Roadmapping
   - Roadmap
   - Roadmaps
-  - Product roadmap
-  - Product roadmapping
-  - Product strategy
-  - Product lifecycle management
-  - Requirements management
-  - Requirements gathering
-  - Functional requirements
-  - User stories
+  - Product Roadmap
+  - Product Roadmapping
+  - Product Strategy
+  - Product Lifecycle Management
+  - Requirements Management
+  - Requirements Gathering
+  - Functional Requirements
+  - User Stories
   - Prioritization
 
 # =============================================================================
 # STAKEHOLDER MANAGEMENT (PM Skills)
 # =============================================================================
 stakeholder_mgmt:
-  - Stakeholder management
-  - Cross-functional collaboration
-  - Cross-functional communication
-  - Cross-functional execution
-  - Team leadership
-  - Change management
-  - Customer collaboration
-  - Client services
-  - Executive communication
+  - Stakeholder Management
+  - Cross-Functional Collaboration
+  - Cross-Functional Communication
+  - Cross-Functional Execution
+  - Team Leadership
+  - Change Management
+  - Customer Collaboration
+  - Client Services
+  - Executive Communication
 
 # =============================================================================
 # TESTING & QA
 # =============================================================================
 testing:
+  - QA
   - Selenium
   - Cypress
   - Playwright
   - pytest
   - RSpec
   - JMeter
-  - Unit testing
-  - Integration testing
-  - Regression testing
-  - Functional testing
-  - Performance testing
-  - Accessibility testing
-  - Test automation
+  - Unit Testing
+  - Integration Testing
+  - Regression Testing
+  - Functional Testing
+  - Performance Testing
+  - Accessibility Testing
+  - Test Automation
   - BDD
   - Behave
   - Gherkin
   - SpecFlow
   - MSTest
-  - ETL testing
+  - ETL Testing
   - Query Surge
   - SonarQube
-  - Code reviews
+  - Code Reviews
 
 # =============================================================================
 # GEOSPATIAL & GIS
@@ -1090,22 +1091,22 @@ geospatial:
   - PostGIS
   - ArcFM
   - Geospatial
-  - Geospatial data
-  - Remote sensing
+  - Geospatial Data
+  - Remote Sensing
 
 # =============================================================================
 # BLOCKCHAIN & WEB3
 # =============================================================================
 blockchain:
   - Blockchain
-  - Blockchain technology
+  - Blockchain Technology
   - Web3
   - DeFi
-  - Decentralized finance
+  - Decentralized Finance
   - Ethereum
   - Solana
-  - Smart contracts
-  - Smart contract
+  - Smart Contracts
+  - Smart Contract
   - Cryptocurrency
   - Crypto
 
@@ -1113,43 +1114,43 @@ blockchain:
 # DELIVERY METHODOLOGIES & FRAMEWORKS
 # =============================================================================
 methodologies:
-  - Agile methodology
-  - Scrum methodology
-  - Scrum framework
-  - Kanban methodology
+  - Agile Methodology
+  - Scrum Methodology
+  - Scrum Framework
+  - Kanban Methodology
   - SAFe
   - SAFe Agile
   - Scaled Agile
   - Scaled Agile Framework
   - Waterfall
-  - Waterfall methodology
+  - Waterfall Methodology
   - PRINCE2
-  - PRINCE2 methodology
+  - PRINCE2 Methodology
   - MSP
   - Managing Successful Programmes
   - Lean
-  - Lean methodology
+  - Lean Methodology
   - Six Sigma
   - Lean Six Sigma
-  - Hybrid methodology
+  - Hybrid Methodology
   - Hybrid Agile
   - Disciplined Agile
   - Spotify Model
   - LeSS
   - Large Scale Scrum
   - Nexus
-  - Scrum of Scrums
-  - Agile at scale
+  - Scrum Of Scrums
+  - Agile At Scale
 
 # =============================================================================
 # DELIVERY CERTIFICATIONS
 # =============================================================================
 certifications:
   - PMP
-  - PMP certified
-  - PMP certification
+  - PMP Certified
+  - PMP Certification
   - Project Management Professional
-  - PRINCE2 certified
+  - PRINCE2 Certified
   - PRINCE2 Practitioner
   - PRINCE2 Foundation
   - CSM
@@ -1160,11 +1161,11 @@ certifications:
   - PSM II
   - PMI-ACP
   - SAFe Agilist
-  - SAFe certified
+  - SAFe Certified
   - CAPM
-  - Certified Associate in Project Management
+  - Certified Associate In Project Management
   - Scrum@Scale
-  - Scrum at Scale
+  - Scrum At Scale
   - PgMP
   - Program Management Professional
   - PMI-RMP
@@ -1172,9 +1173,9 @@ certifications:
   - PMI-PBA
   - Business Analysis Professional
   - ITIL
-  - ITIL certified
+  - ITIL Certified
   - ITIL Foundation
-  - ITIL v4
+  - ITIL V4
 
 # =============================================================================
 # DELIVERY & PROJECT TOOLS
@@ -1194,41 +1195,41 @@ delivery_tools:
   - Azure Boards
   - JIRA Software
   - JIRA Align
-  - Portfolio for JIRA
+  - Portfolio For JIRA
   - Advanced Roadmaps
-  - Structure for JIRA
+  - Structure For JIRA
 
 # =============================================================================
 # GOVERNANCE & RISK MANAGEMENT
 # =============================================================================
 governance:
-  - Risk management
-  - Risk assessment
-  - Risk mitigation
-  - RAID log
-  - RAID management
-  - Change control
-  - Stakeholder engagement
-  - Budget management
-  - Budget tracking
-  - Cost management
-  - Resource planning
-  - Resource management
-  - Capacity planning
-  - Capacity management
-  - Dependency management
-  - Issue management
-  - Scope management
-  - Quality management
-  - Project governance
-  - Programme governance
-  - Portfolio management
+  - Risk Management
+  - Risk Assessment
+  - Risk Mitigation
+  - RAID Log
+  - RAID Management
+  - Change Control
+  - Stakeholder Engagement
+  - Budget Management
+  - Budget Tracking
+  - Cost Management
+  - Resource Planning
+  - Resource Management
+  - Capacity Planning
+  - Capacity Management
+  - Dependency Management
+  - Issue Management
+  - Scope Management
+  - Quality Management
+  - Project Governance
+  - Programme Governance
+  - Portfolio Management
   - PMO
   - Project Management Office
-  - Gate reviews
+  - Gate Reviews
   - Tollgates
-  - Milestone tracking
-  - Status reporting
-  - Project reporting
-  - Earned value management
+  - Milestone Tracking
+  - Status Reporting
+  - Project Reporting
+  - Earned Value Management
   - EVM
