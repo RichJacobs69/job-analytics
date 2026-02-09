@@ -73,6 +73,43 @@ def _normalize(name: str) -> str:
     return n
 
 
+# Known abbreviations that should stay uppercase in title-cased output.
+# Only used as a fallback for skills NOT in the YAML mapping.
+_UPPERCASE_ABBREVS = {
+    'sql', 'aws', 'gcp', 'etl', 'elt', 'api', 'apis', 'rest', 'sdk', 'cli',
+    'ai', 'ml', 'nlp', 'llm', 'gpu', 'tpu', 'ci', 'cd', 'ci/cd',
+    'saas', 'iaas', 'paas', 'http', 'https', 'json', 'xml', 'yaml', 'csv',
+    'html', 'css', 'js', 'ts', 'orm', 'mvc', 'mvp', 'tdd', 'bdd',
+    'dns', 'tcp', 'udp', 'ssh', 'ssl', 'tls', 'cdn', 'cms', 'crm', 'erp',
+    'sap', 'pmo', 'raid', 'itil', 'iso', 'soc', 'gdpr', 'hipaa', 'pci',
+    'owasp', 'kpi', 'okr', 'sla', 'roi', 'b2b', 'b2c', 'sem', 'seo',
+    'ppc', 'ux', 'ui', 'qa', 'uat', 'sdlc', 'vpc', 'iam', 'rds', 'hpe',
+    'pmp', 'dbt', 'iot', 'rpa', 'bpm',
+}
+
+
+def _smart_title_case(name: str) -> str:
+    """Title-case a skill name while preserving acronyms.
+
+    Used as a fallback for skills not found in the YAML mapping.
+    """
+    words = name.split()
+    result = []
+    for word in words:
+        # Check if word (or word without trailing punctuation) is a known abbreviation
+        clean = word.lower().strip('.,;:()')
+        if clean in _UPPERCASE_ABBREVS:
+            result.append(word.upper())
+        elif '/' in word:
+            # Handle slash-separated parts: CI/CD, PL/SQL
+            parts = word.split('/')
+            parts = [p.upper() if p.lower() in _UPPERCASE_ABBREVS else p.title() for p in parts]
+            result.append('/'.join(parts))
+        else:
+            result.append(word.title())
+    return ' '.join(result)
+
+
 # =============================================================================
 # Load Mapping
 # =============================================================================
@@ -187,8 +224,8 @@ def get_canonical_name(skill_name: str) -> str:
     if normalized in NORMALIZED_TO_CANONICAL:
         return NORMALIZED_TO_CANONICAL[normalized]
 
-    # 3. Unknown skill: title-case as best guess
-    return skill_name.strip().title()
+    # 3. Unknown skill: smart title-case (preserving acronyms)
+    return _smart_title_case(skill_name.strip())
 
 
 def enrich_skills_with_families(skills: list[dict]) -> list[dict]:
