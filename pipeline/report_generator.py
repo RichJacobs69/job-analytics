@@ -409,12 +409,40 @@ class ReportGenerator:
             'coverage': round(coverage * 100),
         }
 
+    # Merge map: canonical_names that should be consolidated in reports.
+    # Key = canonical_name in DB, value = canonical_name to merge into.
+    # The target must also be a key in employer_metadata for display name resolution.
+    EMPLOYER_MERGE_MAP = {
+        # JPMorgan variants
+        'jpmorgan chase bank, n.a.': 'jpmorgan chase',
+        'jpmorganchase': 'jpmorgan chase',
+        # Rightmove variants
+        'rightmove careers': 'rightmove',
+        'rightmovecareers': 'rightmove',
+        # NBC Universal variants
+        'nbc universal': 'nbcuniversal',
+        # CBRE variants
+        'cbre enterprise emea': 'cbre',
+        # Sierra Nevada variants
+        'sierra nevada company, llc': 'sierra nevada corporation',
+        # Tradeweb variants
+        'tradeweb markets': 'tradeweb',
+    }
+
     def _get_display_name(self, canonical_name: str) -> str:
         """Resolve employer display name from metadata, falling back to the raw name."""
         meta = self._fetch_employer_metadata().get(canonical_name)
         if meta and meta.get('display_name'):
             return meta['display_name']
         return canonical_name
+
+    def _merge_employer_counts(self, employer_counts: dict) -> dict:
+        """Merge employer counts using EMPLOYER_MERGE_MAP."""
+        merged = {}
+        for emp, count in employer_counts.items():
+            target = self.EMPLOYER_MERGE_MAP.get(emp, emp)
+            merged[target] = merged.get(target, 0) + count
+        return merged
 
     def _calculate_employer_metrics(self, jobs: list) -> dict:
         """
@@ -424,10 +452,13 @@ class ReportGenerator:
         - Market concentration (top 5, top 15)
         - Jobs per employer ratio
         """
-        employer_counts = {}
+        raw_counts = {}
         for job in jobs:
             emp = job.get('employer_name', 'unknown')
-            employer_counts[emp] = employer_counts.get(emp, 0) + 1
+            raw_counts[emp] = raw_counts.get(emp, 0) + 1
+
+        # Merge known duplicates for reporting
+        employer_counts = self._merge_employer_counts(raw_counts)
 
         unique_employers = len(employer_counts)
         total_jobs = len(jobs)
