@@ -90,10 +90,26 @@ def load_display_name_map() -> dict:
 
 # Words that should stay uppercase when title-casing company names
 ACRONYMS = {
+    # General
     'ai', 'ml', 'it', 'hr', 'uk', 'us', 'eu', 'hq',
     'io', 'vr', 'ar', 'xr', 'qa', 'ux', 'ui', 'cx', 'dx',
     'nyc', 'usa', 'llc', 'inc', 'plc', 'api', 'cto',
     'svp', 'vp', 'dba', 'saas', 'b2b', 'b2c', 'd2c',
+    # Company acronyms commonly appearing in multi-word names
+    'hp', 'td', 'ab', 'ad', 'abb', 'abc', 'abm', 'abs',
+    'acs', 'aeg', 'aws', 'bdo', 'bny', 'cgi', 'cnn', 'dbs',
+    'dxc', 'gsk', 'hpe', 'ibm', 'ihg', 'itv', 'jll', 'kbr',
+    'kkr', 'ntt', 'rbc', 'rsm', 'rtx', 'sap', 'ubs', 'wpp',
+    'wsp', 'wtw', 'amd', 'dpr', 'erm', 'hdr', 'pvh',
+}
+
+# Short brand names that should stay title-cased, not uppercased.
+# Everything else that is 2-3 alpha chars gets uppercased (HP, GSK, AMD, etc.)
+SHORT_BRAND_NAMES = {
+    'arm', 'arc', 'box', 'cos', 'eon', 'eos', 'fal', 'fay', 'fin',
+    'fox', 'gap', 'hud', 'ing', 'ion', 'ki', 'mux', 'on', 'rec',
+    'res', 'rho', 'ro', 'sim', 'sky', 'spa', 'sur', 'wex', 'wix',
+    'wiz', 'zip', 'alt', 'edo', 'dat', 'vec', 'sj',
 }
 
 # Ordinal suffixes that title() incorrectly capitalizes (e.g. "1St" -> "1st")
@@ -105,14 +121,26 @@ def smart_title_case(name: str) -> str:
     """
     Title-case a company name with acronym awareness.
 
-    Applies str.title(), uppercases known acronyms, and fixes ordinals
-    like "1St" back to "1st".
+    Applies str.title(), uppercases known acronyms, fixes ordinals.
+    For single-word names that are 2-3 alpha chars (e.g. "hp", "gsk"),
+    uppercases them unless they are known brand names (Box, Sky, etc.).
     """
     titled = name.title()
     words = titled.split()
+
+    # Single-word short name: likely an acronym (HP, GSK, AMD)
+    if len(words) == 1:
+        lower = words[0].lower()
+        if lower in ACRONYMS:
+            return words[0].upper()
+        if len(lower) <= 3 and lower.isalpha() and lower not in SHORT_BRAND_NAMES:
+            return words[0].upper()
+        return words[0]
+
     result = []
     for word in words:
-        if word.lower() in ACRONYMS:
+        lower = word.lower()
+        if lower in ACRONYMS:
             result.append(word.upper())
         else:
             # Fix ordinals: "1St" -> "1st", "22Nd" -> "22nd"
