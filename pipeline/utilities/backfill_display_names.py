@@ -88,6 +88,39 @@ def load_display_name_map() -> dict:
     return display_names
 
 
+# Words that should stay uppercase when title-casing company names
+ACRONYMS = {
+    'ai', 'ml', 'it', 'hr', 'uk', 'us', 'eu', 'hq',
+    'io', 'vr', 'ar', 'xr', 'qa', 'ux', 'ui', 'cx', 'dx',
+    'nyc', 'usa', 'llc', 'inc', 'plc', 'api', 'cto',
+    'svp', 'vp', 'dba', 'saas', 'b2b', 'b2c', 'd2c',
+}
+
+# Ordinal suffixes that title() incorrectly capitalizes (e.g. "1St" -> "1st")
+import re
+_ORDINAL_RE = re.compile(r'(\d+)(St|Nd|Rd|Th)\b', re.IGNORECASE)
+
+
+def smart_title_case(name: str) -> str:
+    """
+    Title-case a company name with acronym awareness.
+
+    Applies str.title(), uppercases known acronyms, and fixes ordinals
+    like "1St" back to "1st".
+    """
+    titled = name.title()
+    words = titled.split()
+    result = []
+    for word in words:
+        if word.lower() in ACRONYMS:
+            result.append(word.upper())
+        else:
+            # Fix ordinals: "1St" -> "1st", "22Nd" -> "22nd"
+            word = _ORDINAL_RE.sub(lambda m: m.group(1) + m.group(2).lower(), word)
+            result.append(word)
+    return ' '.join(result)
+
+
 def get_supabase():
     """Initialize Supabase client."""
     url = os.getenv("SUPABASE_URL")
@@ -139,34 +172,47 @@ def backfill_display_names(apply: bool = False):
     print(f"[OK] Fetched {len(all_rows)} employer_metadata rows")
 
     # Step 3: Find rows that need fixing
-    fixable = []
+    fixable_config = []   # From ATS config / overrides
+    fixable_titlecase = []  # From smart title-case fallback
     already_correct = 0
-    no_mapping = 0
 
     for row in all_rows:
         canonical = row['canonical_name']
         current_display = row.get('display_name', '')
 
+        if current_display != canonical:
+            # display_name already differs from canonical -- already set
+            already_correct += 1
+            continue
+
         if canonical in name_map:
             new_display = name_map[canonical]
-            if current_display == canonical:
-                # display_name is the lowercase default -- needs fixing
-                fixable.append({
+            fixable_config.append({
+                'canonical_name': canonical,
+                'current': current_display,
+                'new': new_display,
+                'source': 'config',
+            })
+        else:
+            # Fallback: smart title-case
+            new_display = smart_title_case(canonical)
+            if new_display != canonical:
+                fixable_titlecase.append({
                     'canonical_name': canonical,
                     'current': current_display,
                     'new': new_display,
+                    'source': 'titlecase',
                 })
-            else:
-                already_correct += 1
-        else:
-            no_mapping += 1
+
+    fixable = fixable_config + fixable_titlecase
 
     # Step 4: Print statistics
     print(f"\n[STATS]")
-    print(f"  Total rows checked:   {len(all_rows)}")
-    print(f"  Fixable (need update): {len(fixable)}")
+    print(f"  Total rows checked:    {len(all_rows)}")
     print(f"  Already correct:       {already_correct}")
-    print(f"  No mapping available:  {no_mapping}")
+    print(f"  Fixable from config:   {len(fixable_config)}")
+    print(f"  Fixable from titlecase: {len(fixable_titlecase)}")
+    print(f"  Total to update:       {len(fixable)}")
 
     if not fixable:
         print("\n[DONE] Nothing to fix.")
@@ -174,12 +220,12 @@ def backfill_display_names(apply: bool = False):
 
     # Step 5: Preview
     print(f"\n[PREVIEW] First 30 fixes:")
-    print("-" * 65)
-    print(f"  {'Current (lowercase)':<30} {'New (proper casing)':<30}")
-    print("-" * 65)
+    print("-" * 75)
+    print(f"  {'Current (lowercase)':<30} {'New (proper casing)':<30} {'Source':<10}")
+    print("-" * 75)
 
     for item in sorted(fixable, key=lambda x: x['canonical_name'])[:30]:
-        print(f"  {item['current'][:30]:<30} {item['new'][:30]:<30}")
+        print(f"  {item['current'][:30]:<30} {item['new'][:30]:<30} {item['source']:<10}")
 
     if len(fixable) > 30:
         print(f"  ... and {len(fixable) - 30} more")
