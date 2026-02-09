@@ -805,10 +805,6 @@ class ReportGenerator:
                         (d['percentage'] for d in arrangement_dist['distribution'] if d['code'] == 'remote'),
                         0
                     ),
-                    'flexibility_rate': sum(
-                        d['percentage'] for d in arrangement_dist['distribution']
-                        if d['code'] in ('remote', 'hybrid', 'flexible')
-                    ),
                 },
                 'data_quality': {
                     'seniority_coverage': seniority_metrics['coverage'],
@@ -878,16 +874,6 @@ class ReportGenerator:
         else:
             return 'Very high flexibility'
 
-    def _get_flexibility_benchmark(self, pct: float) -> str:
-        """Return benchmark label for overall flexibility rate."""
-        if pct < 50:
-            return 'Limited flexibility'
-        elif pct < 70:
-            return 'Moderate flexibility'
-        elif pct < 85:
-            return 'Flexible market'
-        else:
-            return 'Very flexible market'
 
     def _calculate_comparison(self, current_dist: list, previous_dist: list,
                               previous_period_label: str, min_change: float = 1.0) -> dict:
@@ -1270,12 +1256,6 @@ class ReportGenerator:
                         'value': f"{round(flex['remote_rate'])}%",
                         'benchmark': self._get_remote_benchmark(flex['remote_rate']),
                         'description': 'Roles offering fully remote work'
-                    },
-                    {
-                        'label': 'Flexibility rate',
-                        'value': f"{round(flex['flexibility_rate'])}%",
-                        'benchmark': self._get_flexibility_benchmark(flex['flexibility_rate']),
-                        'description': 'Roles with remote, hybrid, or flexible arrangements'
                     }
                 ]
             },
