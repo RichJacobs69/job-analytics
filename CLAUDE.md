@@ -83,6 +83,10 @@ python pipeline/utilities/backfill_skill_families.py --stats-only # Mapper stats
 python pipeline/utilities/backfill_track_seniority.py --dry-run   # Preview track/seniority updates
 python pipeline/utilities/backfill_track_seniority.py             # Apply updates
 
+# Employer display name backfill
+python -m pipeline.utilities.backfill_display_names               # Dry run (default)
+python -m pipeline.utilities.backfill_display_names --apply       # Apply display name fixes
+
 # ATS Company Discovery & Validation
 python pipeline/utilities/discover_ats_companies.py all        # Discover new companies (Google CSE)
 python pipeline/utilities/validate_ats_slugs.py greenhouse     # Validate all slugs for a source
@@ -187,6 +191,7 @@ job-analytics/
 | `pipeline/utilities/audit_skills_taxonomy.py` | Audit unmapped skills, duplicates, coverage gaps |
 | `pipeline/utilities/backfill_skill_families.py` | Backfill skill family codes from current mapping |
 | `pipeline/utilities/seed_employer_metadata.py` | Seed employer_metadata from ATS config files |
+| `pipeline/utilities/backfill_display_names.py` | Fix employer display names (smart title-case + ATS config) |
 | `scrapers/greenhouse/greenhouse_scraper.py` | Playwright browser automation |
 | `scrapers/lever/lever_fetcher.py` | Lever API client |
 | `scrapers/ashby/ashby_fetcher.py` | Ashby API client (structured compensation) |
