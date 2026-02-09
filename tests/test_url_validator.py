@@ -393,10 +393,10 @@ class TestEmployerStatsSoft404:
         with open('C:\\Cursor Projects\\job-analytics\\pipeline\\employer_stats.py', 'r') as f:
             content = f.read()
 
-        # Check that soft_404 is included in the query
+        # Check that soft_404 and 410 are included in the query
         assert 'soft_404' in content, "employer_stats.py should query for soft_404"
-        assert '["404", "soft_404"]' in content or "['404', 'soft_404']" in content, \
-            "Query should include both 404 and soft_404 in list"
+        assert '["404", "410", "soft_404"]' in content or "['404', '410', 'soft_404']" in content, \
+            "Query should include 404, 410, and soft_404 in list"
 
 
 # ============================================

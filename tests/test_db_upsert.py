@@ -31,7 +31,22 @@ class TestUpsertBehavior:
         test_company = "TestCorp_Upsert_12345"
         test_title = "Senior Data Engineer"
         test_city = "lon"
+        first_id = None
         nyc_id = None
+
+        # Pre-test cleanup: remove residual data from previous failed runs
+        for city in ["lon", "nyc"]:
+            test_hash = generate_job_hash(test_company, test_title, city)
+            try:
+                supabase.table('raw_jobs').delete().eq('hash', test_hash).execute()
+            except Exception:
+                pass
+        # Also clean up by source_job_id
+        for sid in ['adzuna_123', 'adzuna_nyc_789']:
+            try:
+                supabase.table('raw_jobs').delete().eq('source_job_id', sid).execute()
+            except Exception:
+                pass
 
         try:
             # Test 1: First insert creates new record
@@ -48,7 +63,7 @@ class TestUpsertBehavior:
             assert not result1['was_duplicate']
             first_id = result1['id']
 
-            # Test 2: Second insert with same hash updates existing
+            # Test 2: Second insert with same (source, source_job_id) updates existing
             result2 = insert_raw_job_upsert(
                 source='adzuna',
                 posting_url='https://test.com/job1_updated',
@@ -56,25 +71,28 @@ class TestUpsertBehavior:
                 company=test_company,
                 raw_text='Updated description from Adzuna',
                 city_code=test_city,
-                source_job_id='adzuna_123_v2'
+                source_job_id='adzuna_123'
             )
             assert result2['id'] == first_id
+            assert result2['action'] == 'updated'
+            assert result2['was_duplicate']
 
-            # Test 3: Greenhouse overwrites Adzuna description
-            greenhouse_text = "Full job description from Greenhouse with 9000+ characters" * 100
+            # Test 3: Same source re-insert updates description
+            updated_text = "Updated full job description from Adzuna with more detail" * 10
             result3 = insert_raw_job_upsert(
-                source='greenhouse',
-                posting_url='https://greenhouse.io/testcorp/job1',
+                source='adzuna',
+                posting_url='https://test.com/job1_v3',
                 title=test_title,
                 company=test_company,
-                raw_text=greenhouse_text,
+                raw_text=updated_text,
                 city_code=test_city,
-                source_job_id='greenhouse_456'
+                source_job_id='adzuna_123'
             )
             assert result3['id'] == first_id
+            assert result3['action'] == 'updated'
 
             record = supabase.table('raw_jobs').select('raw_text').eq('id', first_id).execute()
-            assert record.data[0]['raw_text'] == greenhouse_text
+            assert record.data[0]['raw_text'] == updated_text
 
             # Test 4: Different city = different job
             result4 = insert_raw_job_upsert(

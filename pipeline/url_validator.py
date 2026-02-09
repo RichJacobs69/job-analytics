@@ -120,6 +120,7 @@ SOFT_404_PATTERNS = [
     "job does not exist",
     "position is no longer available",
     "opportunity is no longer available",
+    "might have closed",
 ]
 
 # Bot protection detection - patterns that indicate we're blocked, not seeing real content
@@ -243,7 +244,10 @@ def check_url(url: str) -> Tuple[str, Optional[int], Optional[str]]:
 
 def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False):
     """
-    Validate posting URLs for all ATS sources (Greenhouse/Lever/Ashby/Workable/SmartRecruiters/Custom).
+    Validate posting URLs for Greenhouse jobs via HTTP/Playwright.
+
+    SPA sources (Lever, Ashby, Workable, SmartRecruiters) are handled by
+    api_freshness_checker.py which uses API-based listing + per-job verification.
 
     Args:
         limit: Maximum jobs to check (None = all needing check)
@@ -274,7 +278,7 @@ def validate_urls(limit: int = None, force: bool = False, dry_run: bool = False)
             # Build query - skip confirmed dead jobs (404/410/soft_404 are terminal)
             query = supabase.table("enriched_jobs") \
                 .select("id, raw_job_id, data_source") \
-                .in_("data_source", ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "custom"]) \
+                .in_("data_source", ["greenhouse"]) \
                 .not_.in_("url_status", ["404", "410", "soft_404"])
 
             if not force:

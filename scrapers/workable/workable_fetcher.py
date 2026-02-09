@@ -92,34 +92,49 @@ def parse_workable_job(job_data: Dict, company_slug: str) -> WorkableJob:
     Returns:
         WorkableJob object
 
-    Note: Actual API response differs from documented spec:
-        - Uses `telecommuting` boolean instead of `workplace_type` enum
-        - Location is top-level fields (city, country, state) + locations array
+    Note: API response may include both formats:
+        - `workplace_type` enum (on_site/hybrid/remote) or `telecommuting` boolean
+        - Location as nested object or top-level fields (city, country, state) + locations array
         - Salary may not be present in most jobs
     """
     # Extract salary components (may not be present)
     salary_data = job_data.get('salary', {}) or {}
 
-    # Build location string from top-level fields
-    location_parts = []
-    if job_data.get('city'):
-        location_parts.append(job_data['city'])
-    if job_data.get('state'):
-        location_parts.append(job_data['state'])
-    if job_data.get('country'):
-        location_parts.append(job_data['country'])
-    location_str = ', '.join(location_parts)
+    # Extract nested location object (API returns location as nested dict)
+    location_obj = job_data.get('location', {}) or {}
 
-    # Extract country_code from locations array if available
-    country_code = None
-    locations_array = job_data.get('locations', [])
-    if locations_array and isinstance(locations_array, list):
-        country_code = locations_array[0].get('countryCode')
+    # Build location string: prefer location_str, fall back to component fields
+    location_str = location_obj.get('location_str', '')
+    if not location_str:
+        # Build from top-level fields first, then fall back to nested location object
+        location_parts = []
+        city = job_data.get('city') or location_obj.get('city')
+        state = job_data.get('state') or location_obj.get('region')
+        country = job_data.get('country') or location_obj.get('country')
+        if city:
+            location_parts.append(city)
+        if state:
+            location_parts.append(state)
+        if country:
+            location_parts.append(country)
+        location_str = ', '.join(location_parts)
 
-    # Map telecommuting boolean to workplace_type
-    # telecommuting=true -> 'remote', telecommuting=false -> 'on_site'
-    telecommuting = job_data.get('telecommuting', False)
-    workplace_type = 'remote' if telecommuting else 'on_site'
+    # Extract structured location fields (top-level first, then nested)
+    city = job_data.get('city') or location_obj.get('city')
+    region = job_data.get('state') or location_obj.get('region')
+
+    # Extract country_code: locations array > nested location > None
+    country_code = location_obj.get('country_code')
+    if not country_code:
+        locations_array = job_data.get('locations', [])
+        if locations_array and isinstance(locations_array, list):
+            country_code = locations_array[0].get('countryCode')
+
+    # Map workplace_type: prefer explicit field, fall back to telecommuting boolean
+    workplace_type = job_data.get('workplace_type')
+    if not workplace_type:
+        telecommuting = job_data.get('telecommuting', False)
+        workplace_type = 'remote' if telecommuting else 'on_site'
 
     return WorkableJob(
         id=job_data.get('shortcode', ''),
@@ -131,12 +146,12 @@ def parse_workable_job(job_data: Dict, company_slug: str) -> WorkableJob:
         apply_url=job_data.get('application_url', ''),
         department=job_data.get('department'),
         employment_type=job_data.get('employment_type'),
-        workplace_type=workplace_type,  # Derived from telecommuting boolean
+        workplace_type=workplace_type,
         salary_min=salary_data.get('salary_from'),
         salary_max=salary_data.get('salary_to'),
         salary_currency=salary_data.get('salary_currency'),
-        city=job_data.get('city'),
-        region=job_data.get('state'),  # API uses 'state' not 'region'
+        city=city,
+        region=region,
         country_code=country_code,
         published_at=job_data.get('published_on') or job_data.get('created_at')
     )

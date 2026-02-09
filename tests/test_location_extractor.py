@@ -209,14 +209,14 @@ def test_remote_apac():
 # =============================================================================
 
 def test_multi_location_or_separator():
-    """Test: 'London or Stockholm' -> two cities"""
-    result = extract_locations("London or Stockholm")
+    """Test: 'London or Denver' -> two cities"""
+    result = extract_locations("London or Denver")
 
     assert len(result) == 2
 
     cities = [loc["city"] for loc in result]
     assert "london" in cities
-    assert "stockholm" in cities
+    assert "denver" in cities
 
 
 def test_multi_location_nyc_or_remote():

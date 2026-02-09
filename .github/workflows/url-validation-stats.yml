@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       url_limit:
-        description: 'Limit for URL validation (blank = default 1000)'
+        description: 'Limit for Greenhouse URL validation (blank = check all)'
         required: false
         default: ''
         type: string
@@ -26,7 +26,7 @@ on:
 jobs:
   url-validation-stats:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Increased for API freshness check + URL validation
+    timeout-minutes: 60  # API freshness check (with per-job verification) + Greenhouse URL validation
 
     steps:
       - name: Checkout repository
@@ -46,8 +46,9 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      # Step 1: API Freshness Check (runs before URL validation to reduce queue)
-      - name: Run api_freshness_checker.py
+      # Step 1: API Freshness Check (Lever, Ashby, Workable, SmartRecruiters)
+      # Includes per-job verification for Lever/SmartRecruiters
+      - name: Run api_freshness_checker.py (SPA sources)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
@@ -57,22 +58,24 @@ jobs:
           echo "=========================================="
           python pipeline/api_freshness_checker.py
 
-      # Step 2: URL Validation (must run before employer_stats)
-      - name: Run url_validator.py
+      # Step 2: Greenhouse URL Validation (must run before employer_stats)
+      # SPA sources (Lever, Ashby, Workable, SmartRecruiters) handled by api_freshness_checker above
+      - name: Run url_validator.py (Greenhouse only)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 2: URL Validation"
+          echo "STEP 2: Greenhouse URL Validation"
           echo "=========================================="
-          # Default limit of 1000 for scheduled runs (covers all 6 ATS sources)
           LIMIT="${{ github.event.inputs.url_limit }}"
           if [ -z "$LIMIT" ]; then
-            LIMIT="1000"
+            echo "Checking all Greenhouse URLs..."
+            python pipeline/url_validator.py
+          else
+            echo "Checking up to $LIMIT Greenhouse URLs..."
+            python pipeline/url_validator.py --limit=$LIMIT
           fi
-          echo "Checking up to $LIMIT URLs..."
-          python pipeline/url_validator.py --limit=$LIMIT
 
       # Step 3: Employer Stats (depends on 404 data from URL validation)
       - name: Run employer_stats.py
@@ -95,11 +98,11 @@ jobs:
 
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
               f.write("## URL Validation & Stats Complete\n\n")
-              f.write(f"| Step | Status |\n")
-              f.write(f"|------|--------|\n")
-              f.write(f"| **API Freshness Check** | Complete |\n")
-              f.write(f"| **URL Validator** | Complete |\n")
-              f.write(f"| **Employer Stats** | Complete |\n")
+              f.write(f"| Step | Scope | Status |\n")
+              f.write(f"|------|-------|--------|\n")
+              f.write(f"| **API Freshness Check** | Lever, Ashby, Workable, SmartRecruiters | Complete |\n")
+              f.write(f"| **Greenhouse URL Validator** | Greenhouse | Complete |\n")
+              f.write(f"| **Employer Stats** | All sources | Complete |\n")
               f.write(f"\n**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-              f.write(f"\n_Note: Summary generation now happens inline during job scraping._\n")
+              f.write(f"\n_API freshness checker includes per-job verification for Lever/SmartRecruiters._\n")
           EOF

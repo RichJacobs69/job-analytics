@@ -94,6 +94,7 @@ SOFT_404_PATTERNS = [
     "job does not exist",
     "position is no longer available",
     "opportunity is no longer available",
+    "might have closed",
 ]
 
 BOT_PROTECTION_PATTERNS = [
@@ -218,6 +219,51 @@ def fetch_smartrecruiters_job_ids(slug: str) -> Optional[Set[str]]:
             time.sleep(RATE_LIMITS['smartrecruiters'])
 
         return all_ids
+    except Exception:
+        return None
+
+
+# Rate limit for per-job API calls (Lever/SmartRecruiters)
+PER_JOB_DELAY = 0.3  # seconds between per-job API calls
+
+
+def check_lever_job_exists(slug: str, job_id: str, instance: str = 'global') -> Optional[bool]:
+    """Check if a single Lever posting still exists.
+
+    Returns True (200 = active), False (404 = closed), None (error/unknown).
+    """
+    base_url = LEVER_API_URLS.get(instance, LEVER_API_URLS['global'])
+    url = f"{base_url}/{slug}/{job_id}"
+    headers = {'User-Agent': USER_AGENT, 'Accept': 'application/json'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            return False
+        else:
+            return None
+    except Exception:
+        return None
+
+
+def check_smartrecruiters_job_exists(slug: str, job_id: str) -> Optional[bool]:
+    """Check if a single SmartRecruiters posting still exists.
+
+    Returns True (200 = active), False (404 = closed), None (error/unknown).
+    """
+    url = f"{SMARTRECRUITERS_API_URL}/{slug}/postings/{job_id}"
+    headers = {'User-Agent': USER_AGENT, 'Accept': 'application/json'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            return False
+        else:
+            return None
     except Exception:
         return None
 
@@ -406,6 +452,7 @@ def run_freshness_check(
         'companies_skipped_error': 0,
         'companies_skipped_suspicious': 0,
         'jobs_confirmed_active': 0,
+        'jobs_per_job_closed': 0,
         'jobs_first_absence': 0,
         'jobs_stale': 0,
         'jobs_closed_by_playwright': 0,
@@ -472,6 +519,7 @@ def run_freshness_check(
 
             # Step 3: Per-job comparison
             confirmed = 0
+            per_job_closed = 0
             absent_first = 0
             absent_stale = 0
 
@@ -480,12 +528,40 @@ def run_freshness_check(
                 ej_id = job['enriched_job_id']
 
                 if job_id in api_job_ids:
-                    # Job still present - update timestamp
-                    confirmed += 1
+                    # Job present in listing - verify with per-job endpoint if available
+                    update_fields = {
+                        "api_last_seen_at": now.isoformat(),
+                        "url_checked_at": now.isoformat(),
+                        "url_status": "active",
+                    }
+
+                    if source in ('lever', 'smartrecruiters'):
+                        # Per-job verification (catches scenario 2: listed but actually closed)
+                        time.sleep(PER_JOB_DELAY)
+                        if source == 'lever':
+                            instance = job.get('lever_instance', 'global')
+                            per_job_result = check_lever_job_exists(slug, job_id, instance)
+                        else:
+                            per_job_result = check_smartrecruiters_job_exists(slug, job_id)
+
+                        if per_job_result is False:
+                            # Per-job endpoint says closed despite listing presence
+                            per_job_closed += 1
+                            update_fields = {
+                                "url_status": "soft_404",
+                                "url_checked_at": now.isoformat(),
+                            }
+                        else:
+                            # per_job_result is True or None (error) -- trust listing
+                            confirmed += 1
+                    else:
+                        # Ashby/Workable: no per-job endpoint, trust listing
+                        confirmed += 1
+
                     if not dry_run:
                         try:
                             supabase.table("enriched_jobs") \
-                                .update({"api_last_seen_at": now.isoformat()}) \
+                                .update(update_fields) \
                                 .eq("id", ej_id) \
                                 .execute()
                         except Exception as e:
@@ -521,11 +597,15 @@ def run_freshness_check(
                             })
 
             total_stats['jobs_confirmed_active'] += confirmed
+            total_stats['jobs_per_job_closed'] += per_job_closed
             total_stats['jobs_first_absence'] += absent_first
             total_stats['jobs_stale'] += absent_stale
 
             # Only log companies with notable findings
-            if absent_first > 0 or absent_stale > 0:
+            if per_job_closed > 0:
+                print(f"  {slug}: {confirmed} active, {per_job_closed} closed by per-job check, "
+                      f"{absent_first} first-absence, {absent_stale} stale")
+            elif absent_first > 0 or absent_stale > 0:
                 print(f"  {slug}: {confirmed} active, {absent_first} first-absence, "
                       f"{absent_stale} stale (API has {len(api_job_ids)} total)")
             elif len(companies) <= 20:
@@ -605,6 +685,7 @@ def run_freshness_check(
     print(f"  Companies skipped (suspicious): {total_stats['companies_skipped_suspicious']}")
     print()
     print(f"  Jobs confirmed active:       {total_stats['jobs_confirmed_active']}")
+    print(f"  Jobs closed (per-job API):   {total_stats['jobs_per_job_closed']}")
     print(f"  Jobs first absence:          {total_stats['jobs_first_absence']}")
     print(f"  Jobs stale (2+ absences):    {total_stats['jobs_stale']}")
     if stale_jobs_for_playwright:

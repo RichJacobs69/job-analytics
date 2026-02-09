@@ -76,6 +76,26 @@
 | **Query view not table** | API queries `jobs_with_employer_context` view for proper display_name casing |
 | **Working arrangement fallback** | Classifier > ATS flag > employer_metadata.working_arrangement_default > 'unknown' |
 
+### URL Validation Architecture (Updated 2026-02-09)
+
+Each validation tool owns the sources it can reliably check. No overlap.
+
+| Source | Validator | Method | `url_checked_at` set? |
+|--------|-----------|--------|-----------------------|
+| Greenhouse | `url_validator.py` | HTTP GET + soft 404 detection + Playwright fallback | Yes |
+| Lever | `api_freshness_checker.py` | Listing check + per-job API (`/v0/postings/{slug}/{id}`) | Yes |
+| Ashby | `api_freshness_checker.py` | Listing check only | Yes |
+| Workable | `api_freshness_checker.py` | Listing check only | Yes |
+| SmartRecruiters | `api_freshness_checker.py` | Listing check + per-job API (`/v1/companies/{slug}/postings/{id}`) | Yes |
+
+**Per-job verification (Lever/SmartRecruiters):**
+When a job appears in the company listing, the per-job endpoint is called to confirm the posting is still live. This catches "scenario 2": jobs that remain in the listing API but return 404 on the individual posting endpoint (already closed on the actual page).
+
+**Known limitations:**
+- **Ashby/Workable**: No per-job API endpoint exists. If a job appears in the listing but is actually closed on the page (scenario 2), this is undetectable. Listing presence is the best available signal.
+- **SPA sources and HTTP validation**: Lever, Ashby, Workable, and SmartRecruiters all use JavaScript-rendered pages that return HTTP 200 with a shell regardless of job status. Cloudflare bot protection blocks even Playwright-based checking (48/52 URLs blocked in testing). API-based checking is the only reliable approach.
+- **Custom source jobs** (~63 active): Dropped from url_validator scope. These have no ATS pattern and low volume; manual review is more appropriate.
+
 ### Test Results (2025-12-30)
 
 ```
