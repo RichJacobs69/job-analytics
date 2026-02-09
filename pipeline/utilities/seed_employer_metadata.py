@@ -174,9 +174,13 @@ def load_display_names_from_config() -> dict:
             for display_name, info in lever_companies.items():
                 if isinstance(info, dict) and 'slug' in info:
                     canonical = info['slug'].lower().strip()
-                    # Don't overwrite if already set (Greenhouse takes precedence)
                     if canonical not in display_names:
                         display_names[canonical] = display_name
+                    # Also key by display_name.lower() since DB canonical_name
+                    # may use the lowercased display name instead of the slug
+                    canonical_from_name = display_name.lower().strip()
+                    if canonical_from_name not in display_names:
+                        display_names[canonical_from_name] = display_name
 
     # Ashby: config/ashby/company_mapping.json
     # Structure: {"ashby": {"Harvey AI": {"slug": "harvey"}, ...}}
@@ -188,9 +192,27 @@ def load_display_names_from_config() -> dict:
             for display_name, info in ashby_companies.items():
                 if isinstance(info, dict) and 'slug' in info:
                     canonical = info['slug'].lower().strip()
-                    # Don't overwrite if already set
                     if canonical not in display_names:
                         display_names[canonical] = display_name
+                    canonical_from_name = display_name.lower().strip()
+                    if canonical_from_name not in display_names:
+                        display_names[canonical_from_name] = display_name
+
+    # Workable: config/workable/company_mapping.json
+    # Structure: {"workable": {"Starling Bank": {"slug": "starling-bank"}, ...}}
+    workable_path = config_dir / 'workable' / 'company_mapping.json'
+    if workable_path.exists():
+        with open(workable_path) as f:
+            data = json.load(f)
+            workable_companies = data.get('workable', data)
+            for display_name, info in workable_companies.items():
+                if isinstance(info, dict) and 'slug' in info:
+                    canonical = info['slug'].lower().strip()
+                    if canonical not in display_names:
+                        display_names[canonical] = display_name
+                    canonical_from_name = display_name.lower().strip()
+                    if canonical_from_name not in display_names:
+                        display_names[canonical_from_name] = display_name
 
     # SmartRecruiters: config/smartrecruiters/company_mapping.json
     # Structure: {"smartrecruiters": {"Visa": {"slug": "visa"}, ...}}
@@ -202,9 +224,11 @@ def load_display_names_from_config() -> dict:
             for display_name, info in sr_companies.items():
                 if isinstance(info, dict) and 'slug' in info:
                     canonical = info['slug'].lower().strip()
-                    # Don't overwrite if already set
                     if canonical not in display_names:
                         display_names[canonical] = display_name
+                    canonical_from_name = display_name.lower().strip()
+                    if canonical_from_name not in display_names:
+                        display_names[canonical_from_name] = display_name
 
     return display_names
 

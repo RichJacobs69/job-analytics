@@ -604,7 +604,8 @@ def upsert_employer_metadata(
 
 def ensure_employer_metadata(employer_name: str, display_name: str = None) -> bool:
     """
-    Create employer_metadata entry if not exists.
+    Create employer_metadata entry if not exists, or update display_name if
+    the current value is the lowercase default and a better hint is provided.
 
     Args:
         employer_name: The employer name (will be normalized to lowercase)
@@ -618,6 +619,15 @@ def ensure_employer_metadata(employer_name: str, display_name: str = None) -> bo
     # Check if already exists
     existing = get_employer_metadata(canonical)
     if existing:
+        # Update display_name if current value is the lowercase default
+        # and caller provided a properly-cased hint
+        if display_name and display_name != existing.get('display_name'):
+            current_display = existing.get('display_name', '')
+            if current_display == canonical:
+                upsert_employer_metadata(
+                    canonical_name=canonical,
+                    display_name=display_name
+                )
         return False  # Already exists
 
     # Create minimal entry (working_arrangement_default will be inferred later)
