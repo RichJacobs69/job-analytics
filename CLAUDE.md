@@ -21,7 +21,7 @@ Before starting any task, check if it matches a skill in `.claude/skills/`. If i
 | `gha-analyzer` | Analyze GHA logs, debug workflows, check pipeline health |
 | `company-curator` | Add/validate companies, check broken career pages |
 | `config-validator` | Validate YAML/JSON, add skill/agency/location mappings |
-| `data-analyst` | Create reports, analyze trends, generate content |
+| `data-analyst` | Create reports, analyze trends, run dataset queries |
 | `qa-tester` | Review test coverage, write tests, identify regressions |
 | `repo-reviewer` | Audit repo, find duplication, identify stale files |
 | `security-audit` | Test security of APIs, Supabase, credentials, generate audit reports |

@@ -1,23 +1,21 @@
 ---
 name: data-analyst
-description: Data analyst for hiring market insights. Use when asked to create reports, analyze trends, generate content for LinkedIn/blog posts, answer marketplace questions, or produce data visualizations.
+description: Data analyst for hiring market insights. Use when asked to create reports, analyze trends, answer marketplace questions, or run queries against the dataset.
 ---
 
 # Data Analyst
 
-Generate actionable insights from hiring market data. Create reports, identify trends, and produce content for marketing and thought leadership.
+Generate actionable insights from hiring market data. Create reports, identify trends, and run analyses across the dataset.
 
 ## When to Use This Skill
 
 Trigger when user asks to:
 - Create a hiring market report (monthly/quarterly)
 - Analyze hiring trends
-- Generate LinkedIn post content
-- Write blog article drafts
 - Answer marketplace questions
 - Compare cities/roles/companies
 - Identify emerging patterns
-- Produce data visualizations
+- Run queries against the dataset
 
 ## Key References
 
@@ -649,74 +647,6 @@ The report_generator calculates these automatically. Key benchmarks:
 | Young | <=5 yrs | Early-stage, higher risk/reward |
 | Growth | 6-15 yrs | Scale-up phase, Series B+ typically |
 | Mature | >15 yrs | Established enterprises |
-
----
-
-## Content Templates
-
-### LinkedIn Post Template
-
-```markdown
-[Hook - surprising stat or question]
-
-I analyzed [X] job postings across [cities] to understand [topic].
-
-Here's what I found:
-
-[Point 1 with specific number]
-[Point 2 with specific number]
-[Point 3 with specific number]
-
-The takeaway for job seekers: [Actionable insight]
-
-The takeaway for hiring managers: [Actionable insight]
-
----
-Full report: [link]
-
-#HiringTrends #[JobFamily] #[City]
-```
-
-**Guidelines:**
-- Lead with surprising/counterintuitive finding
-- Use specific numbers, not vague claims
-- Split takeaways by audience
-- Keep under 1,300 characters
-- 3-5 hashtags max
-
-### Blog Article Structure
-
-```markdown
-# [Title: Question or Surprising Statement]
-
-## TL;DR
-[3-4 bullet points with key findings]
-
-## The Data
-- X direct employer job postings analyzed
-- [Job Family] roles in [Location]
-- [Time period]
-- Agency listings excluded for accuracy
-
-## Finding 1: [Headline]
-[2-3 paragraphs with data + interpretation + source citation]
-
-## Finding 2: [Headline]
-[2-3 paragraphs with data + interpretation + source citation]
-
-## What This Means
-
-### For Job Seekers
-- [Actionable insight 1]
-- [Actionable insight 2]
-
-### For Hiring Managers
-- [Actionable insight 1]
-- [Actionable insight 2]
-
-## Methodology
-[Standard methodology block]
-```
 
 ---
 
