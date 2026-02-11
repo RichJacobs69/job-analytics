@@ -1,64 +1,34 @@
 {
   "ashby": {
-    "Strava": {
-      "slug": "strava"
+    "0G": {
+      "slug": "0g"
     },
-    "Notion": {
-      "slug": "notion"
-    },
-    "Ramp": {
-      "slug": "ramp"
-    },
-    "Linear": {
-      "slug": "linear"
-    },
-    "OpenAI": {
-      "slug": "openai"
-    },
-    "Replit": {
-      "slug": "replit"
-    },
-    "Vercel": {
-      "slug": "vercel"
-    },
-    "Supabase": {
-      "slug": "supabase"
-    },
-    "PostHog": {
-      "slug": "posthog"
-    },
-    "Retool": {
-      "slug": "retool"
-    },
-    "Airtable": {
-      "slug": "airtable"
-    },
-    "Harvey AI": {
-      "slug": "harvey"
-    },
-    "Lovable": {
-      "slug": "lovable"
-    },
-    "Cursor (Anysphere)": {
-      "slug": "cursor"
-    },
-    "Cohere": {
-      "slug": "cohere"
-    },
-    "Vanta": {
-      "slug": "vanta"
-    },
-    "OpenSea": {
-      "slug": "opensea"
+    "1Password": {
+      "slug": "1password"
     },
     "9Fin": {
       "slug": "9fin"
     },
+    "Abridge": {
+      "slug": "abridge"
+    },
+    "Adaptivesecurity": {
+      "slug": "adaptivesecurity"
+    },
     "Agentio": {
       "slug": "agentio"
     },
+    "Airtable": {
+      "slug": "airtable"
+    },
     "Airwallex": {
       "slug": "airwallex"
+    },
+    "Alan": {
+      "slug": "alan"
+    },
+    "Alembic": {
+      "slug": "alembic"
     },
     "Allium": {
       "slug": "allium"
@@ -66,14 +36,47 @@
     "Almedia": {
       "slug": "almedia"
     },
+    "Andela": {
+      "slug": "andela"
+    },
+    "Anrok": {
+      "slug": "anrok"
+    },
+    "Artisan": {
+      "slug": "artisan"
+    },
+    "Atomic": {
+      "slug": "atomic"
+    },
+    "Aurora Solar": {
+      "slug": "aurorasolar"
+    },
     "Benepass": {
       "slug": "benepass"
+    },
+    "Bjakcareer": {
+      "slug": "bjakcareer"
     },
     "Blackbird Labs Inc": {
       "slug": "blackbird-labs-inc"
     },
+    "Boomi": {
+      "slug": "boomi"
+    },
+    "Brainco": {
+      "slug": "brainco"
+    },
+    "Brigit": {
+      "slug": "brigit"
+    },
     "Candidhealth": {
       "slug": "candidhealth"
+    },
+    "Cartesia": {
+      "slug": "cartesia"
+    },
+    "Centari": {
+      "slug": "centari"
     },
     "Claylabs": {
       "slug": "claylabs"
@@ -81,20 +84,95 @@
     "Clickup": {
       "slug": "clickup"
     },
+    "Cobot": {
+      "slug": "cobot"
+    },
+    "Coder": {
+      "slug": "coder"
+    },
     "Cogent Security": {
       "slug": "cogent-security"
+    },
+    "Cohere": {
+      "slug": "cohere"
+    },
+    "Convey": {
+      "slug": "convey"
+    },
+    "Cursor (Anysphere)": {
+      "slug": "cursor"
+    },
+    "Datastealth": {
+      "slug": "datastealth"
+    },
+    "Dave": {
+      "slug": "dave"
+    },
+    "Decagon": {
+      "slug": "decagon"
     },
     "Deel": {
       "slug": "deel"
     },
+    "Deepgram": {
+      "slug": "deepgram"
+    },
+    "Deliveroo": {
+      "slug": "deliveroo"
+    },
+    "Distyl": {
+      "slug": "distyl"
+    },
+    "Doppler": {
+      "slug": "doppler"
+    },
+    "Dune": {
+      "slug": "dune"
+    },
     "E2B": {
       "slug": "e2b"
+    },
+    "EightSleep": {
+      "slug": "eightsleep"
+    },
+    "ElevenLabs": {
+      "slug": "elevenlabs"
+    },
+    "Ema": {
+      "slug": "ema"
     },
     "Espresso": {
       "slug": "espresso"
     },
     "Fable": {
       "slug": "fable"
+    },
+    "Fiducial": {
+      "slug": "fiducial"
+    },
+    "Fin AI": {
+      "slug": "fin"
+    },
+    "Finch": {
+      "slug": "finch-legal"
+    },
+    "Flowengineering": {
+      "slug": "flowengineering"
+    },
+    "Form Energy": {
+      "slug": "formenergy"
+    },
+    "Found": {
+      "slug": "Found"
+    },
+    "Freed": {
+      "slug": "freed"
+    },
+    "Front": {
+      "slug": "frontcareers"
+    },
+    "FullStory": {
+      "slug": "fullstory"
     },
     "G2I": {
       "slug": "g2i"
@@ -105,20 +183,68 @@
     "Gigaml": {
       "slug": "gigaml"
     },
+    "Gorgias": {
+      "slug": "gorgias"
+    },
     "Granola": {
       "slug": "granola"
+    },
+    "Granted": {
+      "slug": "granted"
     },
     "Graphite": {
       "slug": "graphite"
     },
+    "HackerOne": {
+      "slug": "hackerone"
+    },
+    "Harvey AI": {
+      "slug": "harvey"
+    },
     "Hoplynk": {
       "slug": "hoplynk"
+    },
+    "Hopper": {
+      "slug": "hopper"
+    },
+    "Iambic Therapeutics": {
+      "slug": "iambic-therapeutics"
     },
     "Illumio": {
       "slug": "illumio"
     },
     "Imprint": {
       "slug": "imprint"
+    },
+    "Incard": {
+      "slug": "incard"
+    },
+    "incident.io": {
+      "slug": "incident"
+    },
+    "Influxdata": {
+      "slug": "influxdata"
+    },
+    "Ironcladhq": {
+      "slug": "ironcladhq"
+    },
+    "Jellyfishcareers": {
+      "slug": "jellyfishcareers"
+    },
+    "Jump": {
+      "slug": "jump"
+    },
+    "Junction": {
+      "slug": "junction"
+    },
+    "Kaizenlabs": {
+      "slug": "kaizenlabs"
+    },
+    "Kalshi": {
+      "slug": "kalshi"
+    },
+    "Keyrock": {
+      "slug": "keyrock"
     },
     "Kikoff": {
       "slug": "kikoff"
@@ -129,8 +255,44 @@
     "Kognitos": {
       "slug": "kognitos"
     },
+    "Kognity": {
+      "slug": "kognity"
+    },
     "Kraken": {
       "slug": "kraken"
+    },
+    "Lazer": {
+      "slug": "lazer"
+    },
+    "Leapsome": {
+      "slug": "leapsome"
+    },
+    "Legora": {
+      "slug": "legora"
+    },
+    "Lemonade": {
+      "slug": "lemonade"
+    },
+    "Linear": {
+      "slug": "linear"
+    },
+    "Liquid Ai": {
+      "slug": "liquid-ai"
+    },
+    "Listen Labs": {
+      "slug": "listenlabs"
+    },
+    "Lovable": {
+      "slug": "lovable"
+    },
+    "Magicschool": {
+      "slug": "magicschool"
+    },
+    "Marqeta": {
+      "slug": "marqeta"
+    },
+    "Marshmallow": {
+      "slug": "marshmallow"
     },
     "Mazehq": {
       "slug": "mazehq"
@@ -138,11 +300,59 @@
     "Mercor": {
       "slug": "mercor"
     },
+    "Mercury": {
+      "slug": "mercury"
+    },
+    "Meridianlink": {
+      "slug": "meridianlink"
+    },
+    "Meter": {
+      "slug": "meter"
+    },
+    "Middesk": {
+      "slug": "middesk"
+    },
+    "Modern Treasury": {
+      "slug": "moderntreasury"
+    },
+    "Monte Carlo": {
+      "slug": "montecarlodata"
+    },
+    "Multiverse": {
+      "slug": "multiverse"
+    },
+    "n8n": {
+      "slug": "n8n"
+    },
+    "Nabla": {
+      "slug": "nabla"
+    },
+    "Nash": {
+      "slug": "nash"
+    },
+    "Nexus Cognitive": {
+      "slug": "nexus-cognitive"
+    },
     "Nexxen": {
       "slug": "nexxen"
     },
+    "Nightfall Ai": {
+      "slug": "nightfall-ai"
+    },
+    "Nooks": {
+      "slug": "nooks"
+    },
+    "Notion": {
+      "slug": "notion"
+    },
     "Onebrief": {
       "slug": "onebrief"
+    },
+    "OpenAI": {
+      "slug": "openai"
+    },
+    "OpenSea": {
+      "slug": "opensea"
     },
     "Parafin": {
       "slug": "parafin"
@@ -159,6 +369,12 @@
     "Phoebe": {
       "slug": "phoebe"
     },
+    "Plaud": {
+      "slug": "plaud"
+    },
+    "PostHog": {
+      "slug": "posthog"
+    },
     "Profound": {
       "slug": "profound"
     },
@@ -168,209 +384,26 @@
     "Pylon Labs": {
       "slug": "pylon-labs"
     },
-    "Rilla": {
-      "slug": "rilla"
+    "Quora": {
+      "slug": "quora"
     },
-    "Sailorhealth": {
-      "slug": "sailorhealth"
+    "Ramp": {
+      "slug": "ramp"
     },
-    "Scribd": {
-      "slug": "scribd"
+    "Reddit": {
+      "slug": "reddit"
     },
-    "Sesame": {
-      "slug": "sesame"
-    },
-    "Sfcompute": {
-      "slug": "sfcompute"
-    },
-    "Sierra": {
-      "slug": "sierra"
-    },
-    "Suno": {
-      "slug": "suno"
-    },
-    "Tabs": {
-      "slug": "tabs"
-    },
-    "Talos Trading": {
-      "slug": "talos-trading"
-    },
-    "Tandem": {
-      "slug": "tandem"
-    },
-    "Upside": {
-      "slug": "upside"
-    },
-    "Whatnot": {
-      "slug": "whatnot"
-    },
-    "Withpulley": {
-      "slug": "withpulley"
-    },
-    "Zapier": {
-      "slug": "zapier"
-    },
-    "0G": {
-      "slug": "0g"
-    },
-    "Abridge": {
-      "slug": "abridge"
-    },
-    "Alembic": {
-      "slug": "alembic"
-    },
-    "Artisan": {
-      "slug": "artisan"
-    },
-    "Atomic": {
-      "slug": "atomic"
-    },
-    "Bjakcareer": {
-      "slug": "bjakcareer"
-    },
-    "Brigit": {
-      "slug": "brigit"
-    },
-    "Cartesia": {
-      "slug": "cartesia"
-    },
-    "Convey": {
-      "slug": "convey"
-    },
-    "Datastealth": {
-      "slug": "datastealth"
-    },
-    "Decagon": {
-      "slug": "decagon"
-    },
-    "Distyl": {
-      "slug": "distyl"
-    },
-    "Dune": {
-      "slug": "dune"
-    },
-    "Granted": {
-      "slug": "granted"
-    },
-    "Incard": {
-      "slug": "incard"
-    },
-    "Ironcladhq": {
-      "slug": "ironcladhq"
-    },
-    "Jellyfishcareers": {
-      "slug": "jellyfishcareers"
-    },
-    "Jump": {
-      "slug": "jump"
-    },
-    "Kaizenlabs": {
-      "slug": "kaizenlabs"
-    },
-    "Keyrock": {
-      "slug": "keyrock"
-    },
-    "Kognity": {
-      "slug": "kognity"
-    },
-    "Lazer": {
-      "slug": "lazer"
-    },
-    "Legora": {
-      "slug": "legora"
-    },
-    "Meter": {
-      "slug": "meter"
-    },
-    "Nash": {
-      "slug": "nash"
-    },
-    "Nexus Cognitive": {
-      "slug": "nexus-cognitive"
-    },
-    "Nooks": {
-      "slug": "nooks"
-    },
-    "Plaud": {
-      "slug": "plaud"
+    "Replit": {
+      "slug": "replit"
     },
     "Retell Ai": {
       "slug": "retell-ai"
     },
-    "Second Front Systems": {
-      "slug": "second-front-systems"
+    "Retool": {
+      "slug": "retool"
     },
-    "Siena": {
-      "slug": "siena"
-    },
-    "Simspace Corporation": {
-      "slug": "simspace-corporation"
-    },
-    "Sona": {
-      "slug": "sona"
-    },
-    "Synthflow": {
-      "slug": "synthflow"
-    },
-    "Tailor": {
-      "slug": "tailor"
-    },
-    "Technitask": {
-      "slug": "technitask"
-    },
-    "Tessera Labs": {
-      "slug": "tessera-labs"
-    },
-    "Tokenmetrics": {
-      "slug": "tokenmetrics"
-    },
-    "Vendelux": {
-      "slug": "vendelux"
-    },
-    "Virtahealth": {
-      "slug": "virtahealth"
-    },
-    "Adaptivesecurity": {
-      "slug": "adaptivesecurity"
-    },
-    "Brainco": {
-      "slug": "brainco"
-    },
-    "Centari": {
-      "slug": "centari"
-    },
-    "Deepgram": {
-      "slug": "deepgram"
-    },
-    "Ema": {
-      "slug": "ema"
-    },
-    "Fiducial": {
-      "slug": "fiducial"
-    },
-    "Flowengineering": {
-      "slug": "flowengineering"
-    },
-    "Influxdata": {
-      "slug": "influxdata"
-    },
-    "Junction": {
-      "slug": "junction"
-    },
-    "Liquid Ai": {
-      "slug": "liquid-ai"
-    },
-    "Magicschool": {
-      "slug": "magicschool"
-    },
-    "Meridianlink": {
-      "slug": "meridianlink"
-    },
-    "Nabla": {
-      "slug": "nabla"
-    },
-    "Nightfall Ai": {
-      "slug": "nightfall-ai"
+    "Rilla": {
+      "slug": "rilla"
     },
     "Robin Radar": {
       "slug": "robin-radar"
@@ -378,20 +411,128 @@
     "Rox Data Corp": {
       "slug": "rox-data-corp"
     },
+    "Rula": {
+      "slug": "rula"
+    },
+    "Sailorhealth": {
+      "slug": "sailorhealth"
+    },
+    "Scribd": {
+      "slug": "scribd"
+    },
+    "Scribe": {
+      "slug": "scribe"
+    },
+    "Second Front Systems": {
+      "slug": "second-front-systems"
+    },
+    "Sesame": {
+      "slug": "sesame"
+    },
+    "Sfcompute": {
+      "slug": "sfcompute"
+    },
+    "Siena": {
+      "slug": "siena"
+    },
+    "Sierra": {
+      "slug": "sierra"
+    },
+    "Simspace Corporation": {
+      "slug": "simspace-corporation"
+    },
+    "Snowflake": {
+      "slug": "snowflake"
+    },
     "Socure": {
       "slug": "socure"
+    },
+    "Sofar Ocean": {
+      "slug": "sofarocean"
+    },
+    "Sona": {
+      "slug": "sona"
+    },
+    "Squint": {
+      "slug": "squint.ai"
+    },
+    "Statsig": {
+      "slug": "statsig"
+    },
+    "Strava": {
+      "slug": "strava"
+    },
+    "Stytch": {
+      "slug": "stytch"
+    },
+    "Suno": {
+      "slug": "suno"
+    },
+    "Supabase": {
+      "slug": "supabase"
+    },
+    "Synthflow": {
+      "slug": "synthflow"
+    },
+    "Tabs": {
+      "slug": "tabs"
+    },
+    "Tailor": {
+      "slug": "tailor"
+    },
+    "Talos Trading": {
+      "slug": "talos-trading"
+    },
+    "Tandem": {
+      "slug": "tandem"
     },
     "Taptapsend": {
       "slug": "taptapsend"
     },
+    "Technitask": {
+      "slug": "technitask"
+    },
+    "Tecton": {
+      "slug": "tectonai"
+    },
     "Tennr": {
       "slug": "tennr"
+    },
+    "Tessera Labs": {
+      "slug": "tessera-labs"
+    },
+    "thatgamecompany": {
+      "slug": "thatgamecompany"
+    },
+    "Tokenmetrics": {
+      "slug": "tokenmetrics"
     },
     "Topline Pro": {
       "slug": "topline-pro"
     },
+    "Traversal": {
+      "slug": "traversal"
+    },
+    "UiPath": {
+      "slug": "uipath"
+    },
+    "Upside": {
+      "slug": "upside"
+    },
+    "Vanta": {
+      "slug": "vanta"
+    },
     "Veezu": {
       "slug": "veezu"
+    },
+    "Vendelux": {
+      "slug": "vendelux"
+    },
+    "Vercel": {
+      "slug": "vercel"
+    },
+    "Virtahealth": {
+      "slug": "virtahealth"
     },
     "Watershed": {
       "slug": "watershed"
@@ -399,115 +540,17 @@
     "Weave": {
       "slug": "weave"
     },
+    "Whatnot": {
+      "slug": "whatnot"
+    },
+    "Withpulley": {
+      "slug": "withpulley"
+    },
+    "X-Bow Systems": {
+      "slug": "xbowcareers"
+    },
     "Zapier": {
       "slug": "zapier"
-    },
-    "ElevenLabs": {
-      "slug": "elevenlabs"
-    },
-    "Sofar Ocean": {
-      "slug": "sofarocean"
-    },
-    "Snowflake": {
-      "slug": "snowflake"
-    },
-    "Lemonade": {
-      "slug": "lemonade"
-    },
-    "Gorgias": {
-      "slug": "gorgias"
-    },
-    "UiPath": {
-      "slug": "uipath"
-    },
-    "Deliveroo": {
-      "slug": "deliveroo"
-    },
-    "Reddit": {
-      "slug": "reddit"
-    },
-    "Mercury": {
-      "slug": "mercury"
-    },
-    "Alan": {
-      "slug": "alan"
-    },
-    "Aurora Solar": {
-      "slug": "aurorasolar"
-    },
-    "Boomi": {
-      "slug": "boomi"
-    },
-    "Coder": {
-      "slug": "coder"
-    },
-    "Dave": {
-      "slug": "dave"
-    },
-    "EightSleep": {
-      "slug": "eightsleep"
-    },
-    "Form Energy": {
-      "slug": "formenergy"
-    },
-    "FullStory": {
-      "slug": "fullstory"
-    },
-    "HackerOne": {
-      "slug": "hackerone"
-    },
-    "Marqeta": {
-      "slug": "marqeta"
-    },
-    "Monte Carlo": {
-      "slug": "montecarlodata"
-    },
-    "Multiverse": {
-      "slug": "multiverse"
-    },
-    "1Password": {
-      "slug": "1password"
-    },
-    "Modern Treasury": {
-      "slug": "moderntreasury"
-    },
-    "Stytch": {
-      "slug": "stytch"
-    },
-    "incident.io": {
-      "slug": "incident"
-    },
-    "Hopper": {
-      "slug": "hopper"
-    },
-    "Quora": {
-      "slug": "quora"
-    },
-    "Andela": {
-      "slug": "andela"
-    },
-    "Marshmallow": {
-      "slug": "marshmallow"
-    },
-    "Leapsome": {
-      "slug": "leapsome"
-    },
-    "Rula": {
-      "slug": "rula"
-    },
-    "Scribe": {
-      "slug": "scribe"
     }
-  },
-  "_meta": {
-    "validated_at": "2025-12-30",
-    "discovery_sources": [
-      "epic_initial_list",
-      "company_curator_2025-12-30",
-      "ashby_customers_page_2026-02-06"
-    ],
-    "total_companies": 164,
-    "notes": "Added 30 companies from ashbyhq.com/customers cross-reference",
-    "last_updated": "2026-02-06"
   }
 }
