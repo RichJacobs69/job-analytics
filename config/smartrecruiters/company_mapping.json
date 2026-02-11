@@ -1,29 +1,5 @@
 {
   "smartrecruiters": {
-    "Visa": {
-      "slug": "Visa",
-      "notes": "Enterprise payments, 1100+ postings"
-    },
-    "Bosch Group": {
-      "slug": "BoschGroup",
-      "notes": "Engineering/manufacturing, 3800+ postings"
-    },
-    "ServiceNow": {
-      "slug": "ServiceNow",
-      "notes": "Enterprise SaaS, 1100+ postings"
-    },
-    "Delivery Hero": {
-      "slug": "DeliveryHero",
-      "notes": "Food delivery, 780+ postings"
-    },
-    "Wise": {
-      "slug": "Wise",
-      "notes": "Fintech, 370+ postings, London/Singapore"
-    },
-    "Canva": {
-      "slug": "Canva",
-      "notes": "Design SaaS, 320+ postings"
-    },
     "Abercrombie & Fitch": {
       "slug": "abercrombieandfitchco"
     },
@@ -33,14 +9,29 @@
     "BEUMER Group": {
       "slug": "beumergroup1"
     },
+    "Bluesheets": {
+      "slug": "Bluesheets"
+    },
     "Boomtrain": {
       "slug": "boomtrain"
+    },
+    "Bosch Group": {
+      "slug": "BoschGroup",
+      "notes": "Engineering/manufacturing, 3800+ postings"
+    },
+    "Canva": {
+      "slug": "Canva",
+      "notes": "Design SaaS, 320+ postings"
     },
     "Cint": {
       "slug": "cint"
     },
     "City and County of San Francisco": {
       "slug": "cityandcountyofsanfrancisco1"
+    },
+    "Delivery Hero": {
+      "slug": "DeliveryHero",
+      "notes": "Food delivery, 780+ postings"
     },
     "Entertainment Benefits Group": {
       "slug": "entertainmentbenefitsgroup"
@@ -59,6 +50,9 @@
     },
     "Forbes Advisor": {
       "slug": "forbesadvisor"
+    },
+    "Grab": {
+      "slug": "grab"
     },
     "IntegriChain": {
       "slug": "integrichain1"
@@ -105,8 +99,20 @@
     "RELX": {
       "slug": "reedbusinessinformationlimited"
     },
+    "ServiceNow": {
+      "slug": "ServiceNow",
+      "notes": "Enterprise SaaS, 1100+ postings"
+    },
     "Turnitin": {
       "slug": "turnitinllc"
+    },
+    "Visa": {
+      "slug": "Visa",
+      "notes": "Enterprise payments, 1100+ postings"
+    },
+    "Wise": {
+      "slug": "Wise",
+      "notes": "Fintech, 370+ postings, London/Singapore"
     },
     "Wix": {
       "slug": "wix2"
@@ -118,8 +124,8 @@
       "manual_api_testing",
       "google_cse_2026-02-06"
     ],
-    "total_companies": 35,
+    "total_companies": 37,
     "notes": "Pruned from 82 to 35 after audit: removed 47 slugs with zero enriched jobs (44 dead/empty API, 3 fully filtered out)",
-    "last_updated": "2026-02-06"
+    "last_updated": "2026-02-11"
   }
 }
