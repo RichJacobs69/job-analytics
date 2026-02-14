@@ -260,6 +260,8 @@ def insert_enriched_job(
     locations: Optional[List[Dict]] = None,
     # AI-generated summary (inline from classifier)
     summary: Optional[str] = None,
+    # Model that generated the summary/classification
+    summary_model: Optional[str] = None,
     # URL validation status (defaults to active for freshly scraped jobs)
     url_status: str = 'active',
     # Display name hint for employer_metadata auto-creation (from ATS config key)
@@ -353,6 +355,7 @@ def insert_enriched_job(
 
         # AI-generated summary
         "summary": summary,
+        "summary_model": summary_model,
 
         # Dates (posted_date omitted -- set by DB DEFAULT on first insert, preserved on upsert)
         "last_seen_date": last_seen_date.isoformat(),

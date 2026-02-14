@@ -246,21 +246,9 @@ def fetch_greenhouse_jobs(
                     stats['filtered_by_title'] += 1
                     continue
 
-            # Apply location filter
+            # Apply location filter (location.name field only)
             if filter_locations and location_patterns:
-                location_matched = matches_target_location(location, location_patterns)
-
-                # Also check description for location keywords (catches multi-location roles)
-                if not location_matched:
-                    content = job_data.get('content', '')
-                    if content:
-                        content_lower = content.lower()
-                        location_matched = any(
-                            pattern.lower() in content_lower
-                            for pattern in location_patterns
-                        )
-
-                if not location_matched:
+                if not matches_target_location(location, location_patterns):
                     stats['filtered_by_location'] += 1
                     continue
 
