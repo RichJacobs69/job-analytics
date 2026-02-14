@@ -270,10 +270,10 @@ Uses JSONB array for flexible multi-location support:
 Located in `.github/workflows/`:
 - `scrape-greenhouse.yml` - Mon/Thu 7AM UTC (2 batches via REST API, ~226 companies each)
 - `scrape-adzuna.yml` - Wed 7AM UTC (5 cities, weekly)
-- `scrape-lever.yml` - Mon/Wed/Fri 6PM UTC (evening slot)
+- `scrape-lever.yml` - Mon/Thu 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
-- `scrape-workable.yml` - Wed/Sat 6PM UTC (evening slot)
-- `scrape-smartrecruiters.yml` - Thu/Sun 8PM UTC (evening slot)
+- `scrape-workable.yml` - Wed/Sat 7PM UTC (staggered after Lever)
+- `scrape-smartrecruiters.yml` - Tue 8PM UTC (weekly, 35 companies)
 - `url-validation-stats.yml` - Mon-Fri 9AM UTC (URL validation + employer stats)
 - `refresh-employer-metadata.yml` - Sun 8AM UTC (seed, enrich, backfill)
 

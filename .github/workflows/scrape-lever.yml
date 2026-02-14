@@ -1,11 +1,10 @@
-name: Scrape Lever (Mon/Wed/Fri 6PM UTC)
+name: Scrape Lever (Mon/Thu 6PM UTC)
 
 on:
   schedule:
-    # Weekday evening slot (jobs are posted Mon-Fri)
+    # Twice-weekly evening slots - catches new posts within 3-4 days
     - cron: '0 18 * * 1'  # Monday at 6:00 PM UTC
-    - cron: '0 18 * * 3'  # Wednesday at 6:00 PM UTC
-    - cron: '0 18 * * 5'  # Friday at 6:00 PM UTC
+    - cron: '0 18 * * 4'  # Thursday at 6:00 PM UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:

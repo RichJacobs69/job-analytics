@@ -1,10 +1,9 @@
-name: Scrape SmartRecruiters (Thu/Sun 8PM UTC)
+name: Scrape SmartRecruiters (Tue 8PM UTC)
 
 on:
   schedule:
-    # Evening slots - no conflicts with existing workflows
-    - cron: '0 20 * * 4'  # Thursday at 8:00 PM UTC
-    - cron: '0 20 * * 0'  # Sunday at 8:00 PM UTC
+    # Weekly evening slot - 35 companies, low churn
+    - cron: '0 20 * * 2'  # Tuesday at 8:00 PM UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:

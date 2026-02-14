@@ -1,10 +1,10 @@
-name: Scrape Workable (Wed/Sat 6PM UTC)
+name: Scrape Workable (Wed/Sat 7PM UTC)
 
 on:
   schedule:
-    # Weekday evening + weekend slot
-    - cron: '0 18 * * 3'  # Wednesday at 6:00 PM UTC
-    - cron: '0 18 * * 6'  # Saturday at 6:00 PM UTC
+    # Staggered 1h after Lever to avoid Gemini rate-limit collision
+    - cron: '0 19 * * 3'  # Wednesday at 7:00 PM UTC
+    - cron: '0 19 * * 6'  # Saturday at 7:00 PM UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:
