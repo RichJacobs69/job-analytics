@@ -60,7 +60,6 @@ def _get_model_costs(model_name: str) -> dict:
 # Source-specific model overrides (default is Gemini 3 Flash)
 # Only list sources that need a different model
 SOURCE_MODEL_CONFIG = {
-    "greenhouse": "gemini-2.5-flash",          # Stable (avoids JSON errors on complex titles)
     "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
 }
 
