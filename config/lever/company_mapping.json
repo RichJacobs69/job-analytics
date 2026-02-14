@@ -304,50 +304,6 @@
       "slug": "atlassian",
       "instance": "global"
     },
-    "Grammarly": {
-      "slug": "grammarly",
-      "instance": "global"
-    },
-    "Quora": {
-      "slug": "quora",
-      "instance": "global"
-    },
-    "Patreon": {
-      "slug": "patreon",
-      "instance": "global"
-    },
-    "Postman": {
-      "slug": "postman",
-      "instance": "global"
-    },
-    "Eventbrite": {
-      "slug": "eventbrite",
-      "instance": "global"
-    },
-    "DonorsChoose": {
-      "slug": "donorschoose",
-      "instance": "global"
-    },
-    "Opendoor": {
-      "slug": "opendoor",
-      "instance": "global"
-    },
-    "Khan Academy": {
-      "slug": "khanacademy",
-      "instance": "global"
-    },
-    "Loom": {
-      "slug": "loom",
-      "instance": "global"
-    },
-    "Verition": {
-      "slug": "verition",
-      "instance": "global"
-    },
-    "Wise": {
-      "slug": "wise",
-      "instance": "global"
-    },
     "Aircall": {
       "slug": "aircall"
     },
@@ -688,8 +644,8 @@
       "cli",
       "migrated_from_company_ats_mapping"
     ],
-    "total_companies": 178,
-    "notes": "Added ShopBack, Adventus, Amber Group (Singapore Lever companies)",
-    "last_updated": "2026-02-06"
+    "total_companies": 168,
+    "notes": "Removed 10 dead companies (donorschoose, eventbrite, grammarly, khanacademy, loom, opendoor, patreon, postman, quora, verition)",
+    "last_updated": "2026-02-14"
   }
 }

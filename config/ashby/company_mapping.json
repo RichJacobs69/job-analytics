@@ -552,5 +552,16 @@
     "Zapier": {
       "slug": "zapier"
     }
+  },
+  "_meta": {
+    "validated_at": "2025-12-30",
+    "discovery_sources": [
+      "epic_initial_list",
+      "company_curator_2025-12-30",
+      "ashby_customers_page_2026-02-06"
+    ],
+    "total_companies": 184,
+    "notes": "Added 30 companies from ashbyhq.com/customers cross-reference",
+    "last_updated": "2026-02-11"
   }
 }
