@@ -1,6 +1,5 @@
 """
-Evaluate Gemini 2.0 Flash for job classification.
-Compares against Claude Haiku ground truth.
+Evaluate Gemini classification against ground truth dataset.
 
 Usage:
     python tests/eval_gemini.py --sample 10      # Quick test
@@ -20,7 +19,11 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from pipeline.classifier import build_classification_prompt
+from pipeline.classifier import (
+    build_classification_prompt_v2,
+    sanitize_null_strings,
+    get_gemini_model_for_source,
+)
 from pipeline.job_family_mapper import get_correct_job_family
 
 load_dotenv()
@@ -34,97 +37,24 @@ if not GOOGLE_API_KEY:
 
 gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# Gemini 2.0 Flash pricing (per 1M tokens)
-GEMINI_INPUT_PRICE = 0.10
-GEMINI_OUTPUT_PRICE = 0.40
+# Use current production model
+EVAL_MODEL = get_gemini_model_for_source("ashby")
 
-
-def adapt_prompt_for_gemini(prompt: str) -> str:
-    """
-    Modify the classification prompt for Gemini-specific requirements:
-    1. Years-First seniority logic (more normalized across companies)
-    2. Consistent null handling (use JSON null, not string "null")
-    3. Reinforce Product Manager title -> product family rule
-    """
-    # ===========================================
-    # 1. SENIORITY: Years-First Logic
-    # ===========================================
-    old_priority = """**Priority Order (FOLLOW THIS STRICTLY):**
-- **Title is primary signal**: If title explicitly states level (Junior, Senior, Staff, Principal, Director), use that as primary classification
-- **Years as secondary signal**: Use experience years only when title is ambiguous (e.g., 'Data Scientist' without level qualifier)
-- **When both present**: If title and years conflict, prioritize title unless conflict is extreme (e.g., 'Junior' with 15 years)"""
-
-    new_priority = """**Priority Order (FOLLOW THIS STRICTLY):**
-- **Years of experience is PRIMARY signal**: Use explicitly stated years to determine seniority level
-- **Title is SECONDARY signal**: Only use title (Senior, Staff, etc.) when years are NOT stated
-- **When both present**: Prioritize years over title for normalized cross-company comparison
-- **When neither present**: Return null for seniority"""
-
-    prompt = prompt.replace(old_priority, new_priority)
-
-    old_examples = """**Title Priority Examples (STUDY THESE):**
-- 'Senior Data Scientist, 4 years' -> senior (title wins over years)
-- 'Staff Engineer, 8 years' -> staff_principal (title wins)
-- 'Director of Data, 7 years' -> director_plus (title wins)
-- 'Data Scientist, 7 years' -> senior (years guide when no level in title)
-- 'Lead Data Scientist' -> senior (Lead = senior level)
-- 'Principal PM, 9 years' -> staff_principal (title wins despite years suggesting senior)"""
-
-    new_examples = """**Seniority Examples (STUDY THESE - Years First):**
-- 'Senior Data Scientist, 4 years' -> mid (4 years = mid, ignore title)
-- 'Data Scientist, 7 years' -> senior (7 years = senior)
-- 'Staff Engineer, 8 years' -> senior (8 years = senior, not staff_principal)
-- 'Data Scientist, 12 years' -> staff_principal (12 years = staff_principal)
-- 'Director of Data, 7 years' -> director_plus (Director title = management track)
-- 'Senior Data Scientist' (no years stated) -> senior (fall back to title)
-- 'Data Scientist' (no years, no level) -> null (insufficient signal)"""
-
-    prompt = prompt.replace(old_examples, new_examples)
-
-    # ===========================================
-    # 2. NULL HANDLING & PRODUCT MANAGER RULE
-    # ===========================================
-    # Add instructions before the output schema section
-    extra_instructions = """
-**CRITICAL RULES - READ BEFORE CLASSIFYING:**
-
-1. **NULL VALUES**: When a field is unknown or not stated, use JSON null (not the string "null").
-   - Correct: "seniority": null
-   - Wrong: "seniority": "null"
-
-2. **PRODUCT MANAGER TITLE RULE**: If the job title contains "Product Manager", "PM", or "GPM",
-   it is ALWAYS a product subfamily, regardless of any qualifier words like "Data", "Technical", "Growth".
-   - "Data Product Manager" -> job_subfamily: core_pm (NOT data family)
-   - "Senior Data Product Manager, GTM" -> job_subfamily: core_pm
-   - "Technical Product Manager" -> job_subfamily: technical_pm
-   - "Growth PM" -> job_subfamily: growth_pm
-   - "AI/ML PM" -> job_subfamily: ai_ml_pm
-   - "Product Manager" (generic) -> job_subfamily: core_pm
-   The word "Product Manager" in the title is the deciding factor.
-
-   IMPORTANT: Use ONLY these exact product subfamily codes: core_pm, platform_pm, technical_pm, growth_pm, ai_ml_pm
-   Do NOT invent new codes like "product_pm" - use "core_pm" for general PM roles.
-
-"""
-    prompt = prompt.replace(
-        "# REQUIRED OUTPUT SCHEMA",
-        extra_instructions + "# REQUIRED OUTPUT SCHEMA"
-    )
-
-    return prompt
+# Gemini 3.0 Flash pricing (per 1M tokens) - Updated Feb 2026
+# Eval model defaults to gemini-3-flash-preview via get_gemini_model_for_source
+GEMINI_INPUT_PRICE = 0.50
+GEMINI_OUTPUT_PRICE = 3.00
 
 
 def classify_with_gemini(job_text: str, verbose: bool = False) -> Dict:
     """
-    Classify a job using Gemini 2.0 Flash.
-    Uses adapted prompt with Years-First seniority logic.
+    Classify a job using Gemini with V2 prompt.
     """
-    prompt = build_classification_prompt(job_text)
-    prompt = adapt_prompt_for_gemini(prompt)
+    prompt = build_classification_prompt_v2(job_text)
 
     _eval_config = types.GenerateContentConfig(
         temperature=0.1,
-        max_output_tokens=4000,  # Increased to avoid truncation
+        max_output_tokens=8000,
         response_mime_type="application/json"
     )
 
@@ -132,7 +62,7 @@ def classify_with_gemini(job_text: str, verbose: bool = False) -> Dict:
 
     try:
         response = gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=EVAL_MODEL,
             contents=prompt,
             config=_eval_config
         )
@@ -162,11 +92,12 @@ def classify_with_gemini(job_text: str, verbose: bool = False) -> Dict:
         response_text = response_text.strip()
 
         result = json.loads(response_text)
+        result = sanitize_null_strings(result)
 
         # Handle list responses (Gemini sometimes returns array for malformed input)
         if isinstance(result, list):
             if len(result) > 0 and isinstance(result[0], dict):
-                result = result[0]  # Take first item
+                result = result[0]
             else:
                 raise ValueError(f"Expected dict, got empty or invalid list")
 
@@ -174,7 +105,7 @@ def classify_with_gemini(job_text: str, verbose: bool = False) -> Dict:
         if not isinstance(result, dict):
             raise ValueError(f"Expected dict, got {type(result).__name__}")
 
-        # Auto-derive job_family from job_subfamily (same as Claude)
+        # Auto-derive job_family from job_subfamily
         role = result.get('role', {})
         if isinstance(role, dict) and role.get('job_subfamily'):
             job_subfamily = role['job_subfamily']
@@ -210,7 +141,7 @@ def evaluate_gemini(dataset_path: str, sample_size: int = None, verbose: bool = 
     Run Gemini evaluation on test dataset.
     """
     print(f"\n{'='*60}")
-    print("GEMINI 2.0 FLASH EVALUATION")
+    print(f"GEMINI EVALUATION (model: {EVAL_MODEL})")
     print(f"{'='*60}\n")
 
     # Load dataset
@@ -222,7 +153,7 @@ def evaluate_gemini(dataset_path: str, sample_size: int = None, verbose: bool = 
         jobs = jobs[:sample_size]
 
     print(f"Evaluating {len(jobs)} jobs from {dataset_path}")
-    print(f"Ground truth from Claude Haiku classifications\n")
+    print(f"Ground truth from dataset classifications\n")
 
     # Results tracking
     results = {
@@ -348,7 +279,7 @@ def evaluate_gemini(dataset_path: str, sample_size: int = None, verbose: bool = 
         print(f"  P95: {p95_latency:.0f}ms")
 
     print(f"\n{'='*60}")
-    print("FIELD ACCURACY (vs Claude Ground Truth)")
+    print("FIELD ACCURACY (vs Ground Truth)")
     print(f"{'='*60}")
 
     for field, data in results['field_matches'].items():
@@ -379,10 +310,9 @@ def evaluate_gemini(dataset_path: str, sample_size: int = None, verbose: bool = 
     subfamily_acc = 100 * results['field_matches']['job_subfamily']['match'] / (results['field_matches']['job_subfamily']['match'] + results['field_matches']['job_subfamily']['mismatch']) if (results['field_matches']['job_subfamily']['match'] + results['field_matches']['job_subfamily']['mismatch']) > 0 else 0
 
     if family_acc >= 95 and subfamily_acc >= 90:
-        print("\n[GO] Gemini 2.0 Flash meets accuracy thresholds!")
+        print(f"\n[GO] {EVAL_MODEL} meets accuracy thresholds!")
         print(f"  - job_family: {family_acc:.1f}% (threshold: 95%)")
         print(f"  - job_subfamily: {subfamily_acc:.1f}% (threshold: 90%)")
-        print(f"  - Cost savings: ~90%")
     else:
         print("\n[REVIEW NEEDED] Accuracy below thresholds")
         print(f"  - job_family: {family_acc:.1f}% (threshold: 95%)")
@@ -392,7 +322,7 @@ def evaluate_gemini(dataset_path: str, sample_size: int = None, verbose: bool = 
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate Gemini 2.0 Flash")
+    parser = argparse.ArgumentParser(description="Evaluate Gemini classification")
     parser.add_argument('--sample', type=int, default=None, help='Number of jobs to test')
     parser.add_argument('--dataset', type=str, default='tests/fixtures/llm_eval_dataset.json', help='Dataset path')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')

@@ -339,7 +339,7 @@ main()
 - **Hash-based Deduplication:** UPSERT by company+title+city hash
 - **Last Seen Tracking:** Distinguishes first discovery from most recent scrape
 - **Deterministic Mapping:** Job family and skill family derived from mappings (not LLM)
-- **Gemini 2.5 Flash Classifier:** ~88% cheaper than previous Claude Haiku classifier
+- **Gemini Classifier:** Gemini 2.5 Flash ($0.000629/job) for high-volume sources, Gemini 3.0 Flash ($0.002435/job) for others
 - **Report Generator:** Flexible reports by city/family/date with portfolio output
 
 ### Completed Epics

@@ -1,14 +1,50 @@
 # Classification Cost Metrics
 
-> **IMPORTANT (Feb 2026):** The default classifier was migrated from Claude 3.5 Haiku to **Gemini 2.5 Flash** in January 2026, achieving an ~88% cost reduction per classified job. The metrics below are a **historical snapshot** from the Claude Haiku era and are preserved for reference. For migration details, see `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md`. The Claude Haiku fallback remains available via `LLM_PROVIDER=anthropic`.
+> **Last Updated:** 2026-02-14
 
-> **Last Updated:** 2025-12-04
+## Current Production Costs (Gemini, V2 Prompt)
+
+Based on measured V2 prompt with avg **2,848 input** / **337 output** tokens per job.
+
+### Gemini 2.5 Flash (Greenhouse, Adzuna)
+
+| Component | Avg Tokens | Rate (per 1M) | Cost per Job |
+|-----------|-----------|----------------|-------------|
+| Input | 2,848 | $0.15 | $0.000427 |
+| Output | 337 | $0.60 | $0.000202 |
+| **Total** | | | **$0.000629** |
+
+### Gemini 3.0 Flash (Lever, Ashby, Workable, SmartRecruiters)
+
+| Component | Avg Tokens | Rate (per 1M) | Cost per Job |
+|-----------|-----------|----------------|-------------|
+| Input | 2,848 | $0.50 | $0.001424 |
+| Output | 337 | $3.00 | $0.001011 |
+| **Total** | | | **$0.002435** |
+
+### Model Routing
+
+| Source | Model | Cost/Job |
+|--------|-------|----------|
+| Greenhouse | gemini-2.5-flash | $0.000629 |
+| Adzuna | gemini-2.5-flash | $0.000629 |
+| Lever | gemini-3-flash-preview | $0.002435 |
+| Ashby | gemini-3-flash-preview | $0.002435 |
+| Workable | gemini-3-flash-preview | $0.002435 |
+| SmartRecruiters | gemini-3-flash-preview | $0.002435 |
+
+---
+
+## Historical: Claude 3.5 Haiku Era (Dec 2025)
+
+> The metrics below are a **historical snapshot** from the Claude Haiku era, preserved for reference. For migration details, see `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md`.
+
 > **Data Source:** Anthropic API Usage Dashboard
-> **Note:** This is a point-in-time cost analysis from Dec 4, 2025. These metrics represent the cost per job for Haiku classification and remain valid regardless of dataset size. See `../../CLAUDE.md` for current job counts (Supabase source of truth).
+> **Note:** Point-in-time cost analysis from Dec 4, 2025.
 
-## Summary
+### Summary
 
-This directory contains API cost tracking data and analysis for the Claude 3.5 Haiku classification pipeline (historical). The metrics below represent actual measured costs from production runs and are independent of the total job dataset size.
+This section contains historical API cost data from the Claude 3.5 Haiku classification pipeline.
 
 ### Key Cost Metrics (Point-in-Time: 2025-12-04)
 
@@ -135,6 +171,19 @@ The classifier returns cost data in `_cost_data`:
 - **Bug Fixed (2025-12-04)**: Pipeline was looking for `cost_usd` instead of `total_cost` in cost tracking
 - **Model**: Using Claude 3.5 Haiku for cost efficiency (~10x cheaper than Sonnet)
 - **Quality**: Haiku achieves ~93% accuracy on job classification tasks
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

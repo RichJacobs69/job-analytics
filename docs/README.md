@@ -107,9 +107,9 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ## Cost Tracking & Metrics
 
 ### directory: `costs/`
-- **COST_METRICS.md** - Historical classification cost analysis (point-in-time snapshot from Dec 2025, pre-Gemini migration)
+- **COST_METRICS.md** - Current Gemini cost metrics + historical Claude Haiku snapshot
 - CSV exports from early Claude Haiku era (archived for reference)
-- **Note:** Classifier migrated to Gemini 2.5 Flash in Jan 2026 (~88% cheaper). See `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md` for migration details.
+- **Current:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse/Adzuna, Gemini 3.0 Flash ($0.002435/job) for other sources. See `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md` for migration details.
 
 ## Historical Archive
 

@@ -121,7 +121,8 @@ def measure_token_usage(sample_size: int = 20, verbose: bool = False):
 
     providers = {
         'Claude 3.5 Haiku': {'input': 1.00, 'output': 5.00},
-        'Gemini 2.0 Flash': {'input': 0.10, 'output': 0.40},
+        'Gemini 2.5 Flash': {'input': 0.15, 'output': 0.60},
+        'Gemini 3.0 Flash': {'input': 0.50, 'output': 3.00},
         'DeepSeek V3.2 (miss)': {'input': 0.28, 'output': 0.42},
         'DeepSeek V3.2 (hit)': {'input': 0.028, 'output': 0.42},
         'Groq Llama 4 Scout': {'input': 0.11, 'output': 0.34},

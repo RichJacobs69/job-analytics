@@ -240,7 +240,7 @@ Uses JSONB array for flexible multi-location support:
 ## Cost Optimization
 
 - **Pre-filters:** Title + location filtering achieves 94.7% reduction before LLM
-- **Classifier:** Gemini 2.5 Flash (default), ~88% cheaper than previous Claude Haiku
+- **Classifier:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse/Adzuna, Gemini 3.0 Flash ($0.002435/job) for others
 - **Agency blocklist:** Blocks 10-15% before classification
 
 ## Current Work: Epic 8 Job Feed

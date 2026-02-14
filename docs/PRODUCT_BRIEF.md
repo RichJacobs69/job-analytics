@@ -189,7 +189,7 @@ SmartRecruiters ----+     Supabase PostgreSQL
 - **Derived tables:** `employer_fill_stats` (median time-to-fill by company)
 
 **AI Layer:**
-- **Classification:** Gemini 2.5 Flash for structured extraction (~88% cheaper than previous Claude Haiku)
+- **Classification:** Gemini 2.5 Flash ($0.000629/job) and Gemini 3.0 Flash ($0.002435/job) with model routing by source
 - **Role Summary:** Gemini-generated 2-3 sentence summaries inline during classification
 - **Taxonomy Mapping:** Rule-based pre-filtering + LLM classification
 - **Cost Optimization:** Pre-classification filtering achieves 94.7% cost reduction
@@ -247,7 +247,7 @@ SmartRecruiters ----+     Supabase PostgreSQL
 - [DONE] Workable integration (135 companies, workplace_type + salary)
 - [DONE] SmartRecruiters integration (35 companies, locationType + experienceLevel)
 - [DONE] Employer metadata & enrichment system
-- [DONE] LLM migration: Claude Haiku to Gemini 2.5 Flash (~88% cost reduction)
+- [DONE] LLM migration: Claude Haiku to Gemini 2.5/3.0 Flash (87% cost reduction on high-volume sources)
 
 ### In Progress
 

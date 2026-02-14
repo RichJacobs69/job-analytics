@@ -50,8 +50,8 @@ Based on measured 4,112 input / 181 output tokens per job:
 |----------|-------|----------|-----------|----------|----------|--------|
 | Anthropic | Claude 3.5 Haiku | **$1.00** | **$5.00** | $0.00502 | baseline | claude.com/pricing |
 | Anthropic | Haiku (batch) | $0.50 | $2.50 | $0.00251 | **50%** | claude.com/pricing |
-| **Google** | **Gemini 2.0 Flash** | **$0.10** | **$0.40** | **$0.00048** | **90%** | ai.google.dev/pricing |
-| Google | Gemini 2.5 Flash | $0.30 | $2.50 | $0.00169 | **66%** | ai.google.dev/pricing |
+| **Google** | **Gemini 2.5 Flash** | **$0.15** | **$0.60** | **$0.000629** | **87%** | ai.google.dev/pricing (Feb 2026) |
+| Google | Gemini 3.0 Flash | $0.50 | $3.00 | $0.002435 | **51%** | ai.google.dev/pricing (Feb 2026) |
 | DeepSeek | V3.2 (cache miss) | $0.28 | $0.42 | $0.00123 | **76%** | api-docs.deepseek.com |
 | DeepSeek | V3.2 (cache hit) | $0.028 | $0.42 | $0.00019 | **96%** | api-docs.deepseek.com |
 | Groq | Llama 4 Scout | $0.11 | $0.34 | $0.00051 | **90%** | groq.com/pricing |
@@ -62,23 +62,24 @@ Based on verified pricing and measured token usage:
 
 | Priority | Provider | Model | Cost/Job | Why |
 |----------|----------|-------|----------|-----|
-| **1** | **Google** | **Gemini 2.0 Flash** | **$0.00048** | **10x cheaper, excellent JSON mode, fastest** |
-| 2 | Groq | Llama 4 Scout | $0.00051 | Near-identical cost, 594 tok/s, open weights |
+| **1** | **Google** | **Gemini 2.5 Flash** | **$0.000629** | **87% cheaper, excellent JSON mode, production default for high-volume** |
+| 2 | Google | Gemini 3.0 Flash | $0.002435 | Latest model, higher quality, default for non-volume sources |
 | 3 | DeepSeek | V3.2 (cache hit) | $0.00019 | Cheapest with caching, strong reasoning |
-| 4 | DeepSeek | V3.2 (cache miss) | $0.00123 | OpenAI-compatible API, good fallback |
+| 4 | Groq | Llama 4 Scout | $0.00051 | Low cost, 594 tok/s, open weights |
 
-**[RECOMMENDATION] Gemini 2.0 Flash is the clear winner:**
-- 90% cost reduction ($0.00048 vs $0.00502)
+**[OUTCOME] Gemini is the production winner (updated Feb 2026):**
+- Gemini 2.5 Flash: 87% cost reduction ($0.000629 vs $0.00502) for Greenhouse/Adzuna
+- Gemini 3.0 Flash: 51% cost reduction ($0.002435 vs $0.00502) for other sources
 - Excellent JSON output mode
-- Fast inference
-- Major provider reliability
+- Model routing by source for cost/quality balance
 
 ### Annual Cost Projection (10,000 jobs, measured token usage)
 
 | Provider | Model | Annual Cost | Savings |
 |----------|-------|-------------|---------|
 | Anthropic | Claude 3.5 Haiku | $50.20 | - |
-| **Google** | **Gemini 2.0 Flash** | **$4.80** | **$45.40 (90%)** |
+| **Google** | **Gemini 2.5 Flash** | **$6.29** | **$43.91 (87%)** |
+| Google | Gemini 3.0 Flash | $24.35 | $25.85 (51%) |
 | Groq | Llama 4 Scout | $5.10 | $45.10 (90%) |
 | DeepSeek | V3.2 (cache miss) | $12.30 | $37.90 (76%) |
 | DeepSeek | V3.2 (cache hit) | $1.90 | $48.30 (96%) |

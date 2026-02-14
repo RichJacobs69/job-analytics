@@ -50,7 +50,7 @@ scripts:
     key_functions:
       - "build_classification_prompt() - Prompt construction"
       - "classify_job() - Main router (uses LLM_PROVIDER env var)"
-      - "classify_job_with_gemini() - Gemini 2.0 Flash (default, 88% cheaper)"
+      - "classify_job_with_gemini() - Gemini 2.5/3.0 Flash (model routing by source)"
       - "classify_job_with_claude() - Claude Haiku fallback"
     reads:
       - "schema_taxonomy.yaml for classification rules"
@@ -396,32 +396,37 @@ current_state:
 # ============================================
 
 cost_metrics:
-  model: "Claude 3.5 Haiku"
-  pricing:
-    input_per_1m_tokens: "$0.80"
-    output_per_1m_tokens: "$4.00"
-  
-  measured_costs:
+  updated: "2026-02-14"
+  prompt_version: "V2"
+  avg_tokens_per_job:
+    input: 2848
+    output: 337
+
+  models:
+    gemini_2_5_flash:
+      sources: ["greenhouse", "adzuna"]
+      pricing:
+        input_per_1m_tokens: "$0.15"
+        output_per_1m_tokens: "$0.60"
+      cost_per_job: "$0.000629"
+
+    gemini_3_flash:
+      sources: ["lever", "ashby", "workable", "smartrecruiters"]
+      pricing:
+        input_per_1m_tokens: "$0.50"
+        output_per_1m_tokens: "$3.00"
+      cost_per_job: "$0.002435"
+
+  historical_claude_haiku:
     date: "2025-12-04"
-    raw_jobs_inserted: 1654
-    jobs_classified: 961
-    total_api_cost: "$9.38"
-    cost_per_raw_insert: "$0.00567"
     cost_per_classified_job: "$0.00976"
-    classification_rate: "58.1%"
-    
-  token_usage:
-    avg_input_tokens_per_job: "~8,500"
-    avg_output_tokens_per_job: "~700"
-    
+    note: "Pre-migration baseline; see docs/archive/EPIC_LLM_COST_OPTIMIZATION.md"
+
   optimization_strategies:
     implemented:
       - "Duplicate detection (skip already-seen jobs)"
       - "Agency filtering (blacklist before API call)"
       - "Description quality filter"
-    potential:
-      - "Prompt caching (50-90% input cost reduction)"
-      - "Batch classification"
-      - "Title-based pre-filtering"
-      
+      - "Model routing (cheaper 2.5 Flash for high-volume sources)"
+
   documentation: "docs/costs/COST_METRICS.md"

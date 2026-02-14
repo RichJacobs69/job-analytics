@@ -45,10 +45,17 @@ if not GOOGLE_API_KEY:
     raise ValueError("Missing GOOGLE_API_KEY in .env file")
 gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# Gemini pricing (per 1M tokens)
+# Gemini pricing per model (per 1M tokens) - Updated Feb 2026
+# Based on measured V2 prompt: avg 2,848 input / 337 output tokens per job
 PROVIDER_COSTS = {
-    "gemini": {"input": 0.10, "output": 0.40},
+    "gemini-2.5-flash": {"input": 0.15, "output": 0.60},       # $0.000629/job
+    "gemini-3-flash-preview": {"input": 0.50, "output": 3.00},  # $0.002435/job
+    "gemini-2.5-flash-lite": {"input": 0.075, "output": 0.30},  # Fallback model
 }
+
+def _get_model_costs(model_name: str) -> dict:
+    """Get pricing for a specific model, falling back to 2.5 Flash rates."""
+    return PROVIDER_COSTS.get(model_name, PROVIDER_COSTS["gemini-2.5-flash"])
 
 # Source-specific model overrides (default is Gemini 3 Flash)
 # Only list sources that need a different model
@@ -636,8 +643,8 @@ def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_in
         input_tokens = usage.prompt_token_count if usage else 0
         output_tokens = usage.candidates_token_count if usage else 0
 
-        # Calculate cost
-        costs = PROVIDER_COSTS["gemini"]
+        # Calculate cost (model-specific pricing)
+        costs = _get_model_costs(_default_model_name)
         input_cost = (input_tokens / 1_000_000) * costs["input"]
         output_cost = (output_tokens / 1_000_000) * costs["output"]
         total_cost = input_cost + output_cost
@@ -868,8 +875,8 @@ def _classify_job_with_model(job_text: str, model_name: str, verbose: bool = Fal
     input_tokens = usage.prompt_token_count if usage else 0
     output_tokens = usage.candidates_token_count if usage else 0
 
-    # Calculate cost
-    costs = PROVIDER_COSTS["gemini"]
+    # Calculate cost (model-specific pricing)
+    costs = _get_model_costs(model_name)
     input_cost = (input_tokens / 1_000_000) * costs["input"]
     output_cost = (output_tokens / 1_000_000) * costs["output"]
     total_cost = input_cost + output_cost

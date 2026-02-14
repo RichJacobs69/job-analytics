@@ -421,7 +421,7 @@ python wrappers/fetch_jobs.py lon 100 --sources adzuna
 
 ### What the Classifier Receives
 
-All sources call `classify_job(job_text, structured_input)` which routes to Gemini 2.5 Flash (default, ~88% cheaper than Claude Haiku) or Claude Haiku based on `LLM_PROVIDER` env var. Data quality varies by source:
+All sources call `classify_job(job_text, structured_input)` which routes to Gemini 2.5 Flash ($0.000629/job for Greenhouse/Adzuna) or Gemini 3.0 Flash ($0.002435/job for other sources). Data quality varies by source:
 
 #### Adzuna Jobs (83% of dataset)
 
@@ -633,7 +633,7 @@ The multi-source architecture provides:
 - **Quality** - Complete 5,000-15,000+ char descriptions (vs 100-200 char truncation)
 - **Inline Summaries** - AI-generated role summaries during classification (single Gemini 2.5 Flash call)
 - **Flexibility** - Can enable/disable sources independently via `--sources` flag
-- **Cost-effective** - Mix of cheap API + moderate automation, ~88% cheaper with Gemini vs Claude
+- **Cost-effective** - Mix of cheap API + moderate automation, Gemini 2.5 Flash at $0.000629/job
 - **Complete** - All major ATS platforms integrated (~970+ companies)
 
 **Current Status:** All six pipelines operational, unified ingestion working, dashboard + job feed live at richjacobs.me/projects/hiring-market.
