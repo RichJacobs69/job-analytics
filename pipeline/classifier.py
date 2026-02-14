@@ -1,16 +1,18 @@
 """
-Job classification using LLM (Gemini 2.5 Flash or Claude 3.5 Haiku)
-UPDATED: Added Gemini support with 88% cost reduction
-UPDATED: Removed agency detection from LLM prompt (handled by Python pattern matching)
-UPDATED: LLM no longer classifies job_family - it's auto-derived from job_subfamily via strict mapping
-UPDATED: Sanitize string "null" values to Python None for database compatibility
-UPDATED: Using stable Gemini 2.5 Flash with fallback support (reverted from 3.0 preview due to JSON errors)
+Job classification using Gemini LLM.
+Classifies job postings into structured taxonomy (subfamily, seniority, skills, etc.)
+
+Key design decisions:
+- job_family is auto-derived from job_subfamily via strict mapping (not LLM-classified)
+- skill family_codes are assigned by Python (skill_family_mapper.py), not the LLM
+- Agency detection is handled by Python pattern matching, not the LLM
+- Sanitizes string "null" values to Python None for database compatibility
 """
 import os
 import json
 import yaml
 import time
-from typing import Dict, Literal, Any
+from typing import Dict, Any
 from dotenv import load_dotenv
 
 
@@ -35,65 +37,50 @@ load_dotenv()
 # Configuration
 # ============================================
 
-# LLM Provider selection (gemini = default, 88% cheaper)
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
+from google import genai
+from google.genai import types
 
-# Provider-specific pricing (per 1M tokens)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise ValueError("Missing GOOGLE_API_KEY in .env file")
+gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
+
+# Gemini pricing (per 1M tokens)
 PROVIDER_COSTS = {
     "gemini": {"input": 0.10, "output": 0.40},
-    "claude": {"input": 1.00, "output": 5.00}
 }
 
-# Initialize clients based on provider
-if LLM_PROVIDER == "claude":
-    from anthropic import Anthropic
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    if not ANTHROPIC_API_KEY:
-        raise ValueError("Missing ANTHROPIC_API_KEY in .env file")
-    claude_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+# Source-specific model configurations
+# Use Gemini 3 Flash for cleaner ATS sources (Lever, Ashby, Workable)
+# Use Gemini 2.5 Flash for complex/high-volume sources (Greenhouse, Adzuna)
+SOURCE_MODEL_CONFIG = {
+    "greenhouse": "gemini-2.5-flash",          # Stable (avoids JSON errors on complex titles)
+    "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
+    "lever": "gemini-3-flash-preview",         # Better quality for structured data
+    "ashby": "gemini-3-flash-preview",         # Better quality for structured data
+    "workable": "gemini-3-flash-preview",      # Better quality for structured data
+}
 
-elif LLM_PROVIDER == "gemini":
-    from google import genai
-    from google.genai import types
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-    if not GOOGLE_API_KEY:
-        raise ValueError("Missing GOOGLE_API_KEY in .env file")
-    gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
+# Fallback model for all sources
+GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
-    # Source-specific model configurations
-    # Use Gemini 3 Flash for cleaner ATS sources (Lever, Ashby, Workable)
-    # Use Gemini 2.5 Flash for complex/high-volume sources (Greenhouse, Adzuna)
-    SOURCE_MODEL_CONFIG = {
-        "greenhouse": "gemini-2.5-flash",          # Stable (avoids JSON errors on complex titles)
-        "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
-        "lever": "gemini-3-flash-preview",         # Better quality for structured data
-        "ashby": "gemini-3-flash-preview",         # Better quality for structured data
-        "workable": "gemini-3-flash-preview",      # Better quality for structured data
-    }
+_gemini_generation_config = types.GenerateContentConfig(
+    temperature=0.1,
+    max_output_tokens=8000,
+    response_mime_type="application/json"
+)
 
-    # Fallback model for all sources
-    GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite"
+def get_gemini_model_for_source(source: str = None) -> str:
+    """Get the appropriate Gemini model name based on data source."""
+    if source and source.lower() in SOURCE_MODEL_CONFIG:
+        return SOURCE_MODEL_CONFIG[source.lower()]
+    return "gemini-2.5-flash"
 
-    _gemini_generation_config = types.GenerateContentConfig(
-        temperature=0.1,
-        max_output_tokens=8000,
-        response_mime_type="application/json"
-    )
+# Default model name for legacy classify_job_with_gemini()
+_default_model_name = get_gemini_model_for_source("greenhouse")
 
-    def get_gemini_model_for_source(source: str = None) -> str:
-        """Get the appropriate Gemini model name based on data source."""
-        if source and source.lower() in SOURCE_MODEL_CONFIG:
-            return SOURCE_MODEL_CONFIG[source.lower()]
-        return "gemini-2.5-flash"
-
-    # Default model name for legacy classify_job_with_gemini()
-    _default_model_name = get_gemini_model_for_source("greenhouse")
-
-    # Track fallbacks for reporting
-    _model_fallback_count = 0
-
-else:
-    raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}. Use 'gemini' or 'claude'")
+# Track fallbacks for reporting
+_model_fallback_count = 0
 
 # Load taxonomy
 with open('docs/schema_taxonomy.yaml', 'r') as f:
@@ -298,7 +285,7 @@ Return JSON with this EXACT structure:
     "experience_range": "string or null (ONLY if explicitly stated, e.g. '5-7 years')"
   }},
   "location": {{
-    "working_arrangement": "onsite|hybrid|remote|flexible|unknown (required - use 'unknown' if not stated or unclear)"
+    "working_arrangement": "onsite|hybrid|remote|flexible|unknown"
   }},
   "compensation": {{
     "currency": "gbp|usd|null (ONLY if salary is explicitly stated)",
@@ -322,12 +309,12 @@ Return JSON with this EXACT structure:
 - Be specific and actionable (e.g., "Build data pipelines" not "Work with data")
 - Maximum 50 words
 
-# WORKING ARRANGEMENT GUIDANCE (location is extracted separately from source metadata)
-- "Remote or hybrid" → flexible
-- "Hybrid (2 days office)" → hybrid
-- "Remote-first" → remote
-- "Office-based" or "Onsite" explicitly stated → onsite
-- Nothing stated or truncated text → unknown
+# WORKING ARRANGEMENT
+- onsite: Must be in office full-time (e.g. "5 days in office", "on-site", "office-based", no WFH option mentioned)
+- hybrid: Mix of office and remote with a fixed expectation (e.g. "3 days in office", "hybrid 2 days/week")
+- remote: Fully remote, no office requirement (e.g. "remote", "work from anywhere", "remote-first")
+- flexible: Arrangement varies or is employee's choice (e.g. "remote or hybrid", "WFH but may vary by team", "flexible work arrangement")
+- unknown: Nothing stated or text is unclear about arrangement
 
 # SKILLS ONTOLOGY - Use these family_codes when extracting skills
 {skills_ontology_text}
@@ -335,7 +322,6 @@ Return JSON with this EXACT structure:
 # SKILLS EXTRACTION RULES - CRITICAL
 - Extract ONLY skills that are EXPLICITLY NAMED in the job posting text
 - DO NOT list skills from the ontology that aren't mentioned in the posting
-- MAXIMUM 20 skills - if more are mentioned, pick the most important ones
 - Use standard casing for skill names: "Python" not "python", "SQL" not "sql", "JIRA" not "Jira". Match the casing shown in the skills ontology above
 - Match to family_code from the ontology above whenever possible
 - Common examples: "Python" → programming, "AWS" → cloud, "Snowflake" → warehouses_lakes
@@ -430,18 +416,209 @@ def adapt_prompt_for_gemini(prompt: str) -> str:
 
 
 # ============================================
+# V2 Prompt Builder (Tightened, Gemini-native)
+# ============================================
+
+def build_classification_prompt_v2(job_text: str, structured_input: dict = None) -> str:
+    """
+    Build a tightened classification prompt for Gemini.
+
+    Compared to V1 + adapt_prompt_for_gemini():
+    - Bakes in Years-First seniority, PM routing, null handling directly
+    - Removes employer.department (unused downstream)
+    - Removes family_code from skills output (Python overwrites via skill_family_mapper)
+    - Removes skills ontology section (~50 lines saved)
+    - Removes redundant instructions (skills rules stated once, compensation once)
+    - Trims seniority examples from 11 to 4 genuinely ambiguous cases
+    - No separate job_family section (family auto-derived from subfamily)
+
+    Args:
+        job_text: Raw job description text
+        structured_input: Optional dict with structured fields from API
+    """
+    # Extract subfamilies from taxonomy
+    product_subfamilies = "\n".join([
+        f"    {item['code']}: {item['description']}"
+        for item in taxonomy['enums']['product_subfamily']
+    ])
+
+    data_subfamilies = "\n".join([
+        f"    {item['code']}: {item['description']}"
+        for item in taxonomy['enums']['data_subfamily']
+    ])
+
+    delivery_subfamilies = "\n".join([
+        f"    {item['code']}: {item['description']}"
+        for item in taxonomy['enums']['delivery_subfamily']
+    ])
+
+    # Truncate very long descriptions
+    MAX_DESCRIPTION_CHARS = 50000
+
+    def truncate_text(text: str, max_chars: int) -> str:
+        if not text or len(text) <= max_chars:
+            return text
+        return text[:max_chars] + "\n\n[DESCRIPTION TRUNCATED]"
+
+    # Build job input section
+    if structured_input:
+        job_input_section = "# JOB TO CLASSIFY\n\n"
+        job_input_section += f"**Job Title:** {structured_input.get('title', 'Unknown')}\n"
+        job_input_section += f"**Company:** {structured_input.get('company', 'Unknown')}\n"
+
+        if structured_input.get('category'):
+            job_input_section += f"**Category:** {structured_input.get('category')}\n"
+
+        if structured_input.get('location'):
+            job_input_section += f"**Location:** {structured_input.get('location')}\n"
+
+        if structured_input.get('salary_min') or structured_input.get('salary_max'):
+            salary_min = structured_input.get('salary_min', 'N/A')
+            salary_max = structured_input.get('salary_max', 'N/A')
+            job_input_section += f"**Salary Range:** {salary_min} - {salary_max}\n"
+
+        description = truncate_text(structured_input.get('description', job_text), MAX_DESCRIPTION_CHARS)
+        job_input_section += f"\n**Job Description:**\n{description}"
+    else:
+        truncated_text = truncate_text(job_text, MAX_DESCRIPTION_CHARS)
+        job_input_section = f"# JOB POSTING TO CLASSIFY\n\n{truncated_text}"
+
+    prompt = f"""You are a precise job posting classifier. Return structured JSON.
+
+# INSTRUCTIONS
+1. Use the JOB TITLE as primary signal for subfamily classification.
+2. Use YEARS OF EXPERIENCE as primary signal for seniority (title is secondary).
+3. Extract ONLY skills explicitly named in the posting text.
+4. Use JSON null (not the string "null") for unknown/unstated fields.
+
+# ROLE CLASSIFICATION
+
+Pick the most specific subfamily below. Family (product/data/delivery) is derived automatically from your subfamily choice.
+
+**Product subfamilies** (title contains Product Manager, PM, GPM, Product Owner, PO):
+{product_subfamilies}
+
+**Data subfamilies** (title contains Data, ML, Analytics, Research Scientist):
+{data_subfamilies}
+
+**Delivery subfamilies** (title contains Project Manager, Programme Manager, Delivery Manager, Scrum Master):
+{delivery_subfamilies}
+
+**out_of_scope**: Title is clearly NOT product, data, or delivery (e.g. Software Engineer, Marketing Manager, Product Designer, Product Engineer).
+
+**Key routing rules:**
+- "Product Manager" / "PM" / "GPM" in title -> ALWAYS product subfamily, even with qualifiers like "Data", "Technical", "Growth".
+  - "Data Product Manager" -> core_pm (NOT data family)
+  - "Technical Product Manager" -> technical_pm
+  - "Growth PM" -> growth_pm
+  - "AI/ML PM" -> ai_ml_pm
+  - Generic "Product Manager" -> core_pm (never invent codes like "product_pm")
+- "Technical Project Manager" -> delivery: project_manager (NOT product)
+- "Project Manager" / "Programme Manager" / "Scrum Master" -> ALWAYS delivery
+- "Data Analyst" / "Research Scientist" / "Applied Scientist" -> ALWAYS data
+- Applied Scientist -> research_scientist_ml
+- BI Engineer -> analytics_engineer
+- "Product Engineer" / "Platform Engineer" -> out_of_scope (software engineering, not PM)
+- "AI Engineer" -> out_of_scope UNLESS description involves training/fine-tuning models or MLOps
+- Product Analytics vs Data Analyst: product_analytics = product metrics, user behavior, experiments; data_analyst = business reporting, dashboards, BI
+- ML Engineer includes both classical ML AND GenAI/LLM work when focused on model development
+
+# SENIORITY
+
+**Years-First logic (use years as primary signal, title as fallback):**
+- 0-2 years -> junior
+- 3-5 years -> mid
+- 6-10 years -> senior
+- 11+ years -> staff_principal
+- Staff/Principal/Distinguished title -> staff_principal (title signal, ignore years)
+- Director/VP/Head of/C-level title -> director_plus (management track, ignore years)
+- No years AND no level in title -> null
+
+**Examples:**
+- "Senior Data Scientist, 4 years" -> mid (4 years = mid, years override title)
+- "Data Scientist, 7 years" -> senior (7 years = senior)
+- "Staff Product Manager, 5 years" -> staff_principal (Staff in title = staff_principal, ignore years)
+- "Senior Data Scientist" (no years stated) -> senior (fall back to title)
+
+**Track:**
+- ic = individual contributor (includes tech leads, PMs, Scrum Masters -- they manage work, not people)
+- management = explicit people management (direct reports, hiring, performance reviews)
+- PM/Programme Manager/Project Manager/Delivery Manager/Scrum Master default to ic unless description explicitly states people management
+
+**Delivery seniority:** PM/Programme Manager/Project Manager without level qualifier (Senior, Staff, Director, Head) -> mid
+
+# OUTPUT SCHEMA
+
+Return JSON with this exact structure:
+
+{{
+  "role": {{
+    "job_subfamily": "string (required -- from subfamilies above, or out_of_scope)",
+    "seniority": "junior|mid|senior|staff_principal|director_plus|null",
+    "track": "ic|management|null",
+    "position_type": "full_time|part_time|contract|internship",
+    "experience_range": "string or null (e.g. '5-7 years', only if explicitly stated)"
+  }},
+  "location": {{
+    "working_arrangement": "onsite|hybrid|remote|flexible|unknown"
+  }},
+  "compensation": {{
+    "currency": "gbp|usd|eur|sgd|null",
+    "base_salary_range": {{
+      "min": null,
+      "max": null
+    }},
+    "equity_eligible": null
+  }},
+  "skills": [
+    {{"name": "Python"}},
+    {{"name": "SQL"}}
+  ],
+  "summary": "2-3 sentence summary"
+}}
+
+# FIELD NOTES
+- position_type: default full_time if not stated
+- working_arrangement:
+  - onsite: full-time in office ("5 days in office", "office-based", no WFH option)
+  - hybrid: fixed mix of office + remote ("3 days in office", "hybrid 2 days/week")
+  - remote: fully remote, no office requirement ("remote", "work from anywhere", "remote-first")
+  - flexible: varies or employee choice ("remote or hybrid", "WFH but may vary by team")
+  - unknown: nothing stated or unclear
+- compensation: ONLY extract if a specific number appears (e.g. "$120,000", "70k GBP"). Never estimate. Return null fields if no salary mentioned.
+- equity_eligible: true if equity/stock mentioned, null otherwise
+
+# SUMMARY
+- 2-3 concise sentences on day-to-day responsibilities
+- Focus on key duties, team context, product/domain
+- No generic phrases ("exciting opportunity"). Be specific ("Build data pipelines").
+- Maximum 50 words
+
+# SKILLS
+- Extract ONLY technical skills, tools, frameworks, methodologies, and domain techniques explicitly named in the posting text
+- DO NOT infer skills from job type (don't add "Python" just because it's a data job)
+- DO NOT extract: spoken languages (English, French, Japanese), department names (Engineering, Design), or job titles
+- Use standard casing: "Python" not "python", "SQL" not "sql", "JIRA" not "Jira"
+
+{job_input_section}
+
+Return ONLY valid JSON."""
+
+    return prompt
+
+
+# ============================================
 # Classification Functions
 # ============================================
 
 def classify_job_with_gemini(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """
-    Classify a job posting using Gemini 2.5 Flash.
+    Classify a job posting using Gemini (legacy non-retry path).
 
-    88% cheaper and 3.4x faster than Claude Haiku.
-    Uses Years-First seniority logic for normalized cross-company analytics.
+    Production callers should use classify_job() which goes through
+    classify_job_with_gemini_retry() for fallback support.
     """
-    prompt = build_classification_prompt(job_text, structured_input=structured_input)
-    prompt = adapt_prompt_for_gemini(prompt)
+    prompt = build_classification_prompt_v2(job_text, structured_input=structured_input)
 
     if verbose:
         print("\n" + "="*60)
@@ -674,8 +851,7 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
 
 def _classify_job_with_model(job_text: str, model_name: str, verbose: bool = False, structured_input: dict = None) -> Dict:
     """Internal function that classifies using a specific model."""
-    prompt = build_classification_prompt(job_text, structured_input=structured_input)
-    prompt = adapt_prompt_for_gemini(prompt)
+    prompt = build_classification_prompt_v2(job_text, structured_input=structured_input)
 
     if verbose:
         print("\n" + "="*60)
@@ -768,160 +944,15 @@ def _classify_job_with_model(job_text: str, model_name: str, verbose: bool = Fal
     return result
 
 
-def classify_job_with_claude(job_text: str, verbose: bool = False, structured_input: dict = None) -> Dict:
-    """
-    Classify a job posting using Claude 3.5 Haiku.
-    
-    NOTE: This function does NOT populate is_agency or agency_confidence fields.
-    Those are added by Python pattern matching after this function returns.
-    
-    Args:
-        job_text: Full job posting text (used if structured_input not provided)
-        verbose: If True, print prompt and raw response
-        structured_input: Optional dict with structured fields from API:
-            - title: Job title (CRITICAL for job_family classification)
-            - company: Company name
-            - category: Job category (e.g., "IT Jobs" from Adzuna)
-            - location: Location string
-            - salary_min: Minimum salary
-            - salary_max: Maximum salary
-            - description: Job description text
-    
-    Returns:
-        Dictionary with classified job data matching schema
-        (is_agency and agency_confidence will be null - added later by pattern matching)
-    """
-    prompt = build_classification_prompt(job_text, structured_input=structured_input)
-    
-    if verbose:
-        print("\n" + "="*60)
-        print("SENDING PROMPT TO CLAUDE")
-        print("="*60)
-        print(prompt[:500] + "...\n")
-    
-    try:
-        start_time = time.time()
-        response = claude_client.messages.create(
-            model="claude-3-5-haiku-20241022",
-            max_tokens=2000,
-            temperature=0.1,  # Low temperature for consistency
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-        latency_ms = (time.time() - start_time) * 1000
-
-        # Extract actual token usage from API response
-        usage = response.usage
-        costs = PROVIDER_COSTS["claude"]
-
-        cost_data = {
-            'input_tokens': usage.input_tokens,
-            'output_tokens': usage.output_tokens,
-            'input_cost': (usage.input_tokens / 1_000_000) * costs["input"],
-            'output_cost': (usage.output_tokens / 1_000_000) * costs["output"],
-            'total_cost': (usage.input_tokens / 1_000_000) * costs["input"] +
-                         (usage.output_tokens / 1_000_000) * costs["output"],
-            'latency_ms': latency_ms,
-            'provider': 'claude'
-        }
-
-        # Extract text from Claude's response
-        response_text = response.content[0].text
-
-        if verbose:
-            print("\n" + "="*60)
-            print("RAW CLAUDE RESPONSE")
-            print("="*60)
-            print(response_text[:500] + "...\n")
-            print(f"Token usage: {usage.input_tokens} input, {usage.output_tokens} output")
-            print(f"Cost: ${cost_data['total_cost']:.6f}\n")
-
-        # Parse JSON (Claude should return clean JSON)
-        # Strip any markdown code fences just in case
-        response_text = response_text.strip()
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-
-        result = json.loads(response_text)
-
-        # Sanitize string "null" values to Python None
-        result = sanitize_null_strings(result)
-
-        # Ensure employer dict exists and add placeholder agency fields
-        # (These will be overwritten by pattern matching in fetch script)
-        if 'employer' not in result:
-            result['employer'] = {}
-        result['employer']['is_agency'] = None
-        result['employer']['agency_confidence'] = None
-
-        # Automatically derive job_family from job_subfamily using strict mapping
-        # Claude no longer classifies job_family - we determine it deterministically
-        if 'role' in result and result['role'].get('job_subfamily'):
-            job_subfamily = result['role']['job_subfamily']
-
-            # Special case: out_of_scope means job_family should also be out_of_scope
-            if job_subfamily == 'out_of_scope':
-                result['role']['job_family'] = 'out_of_scope'
-            else:
-                # Get correct family from mapping
-                from pipeline.job_family_mapper import get_correct_job_family
-                job_family = get_correct_job_family(job_subfamily)
-
-                if job_family:
-                    result['role']['job_family'] = job_family
-                    if verbose:
-                        print(f"[INFO] job_family auto-assigned: {job_subfamily} -> {job_family}")
-                else:
-                    # Subfamily not in mapping - shouldn't happen but handle gracefully
-                    if verbose:
-                        print(f"[WARNING] Unknown job_subfamily '{job_subfamily}' - no family mapping found")
-                    result['role']['job_family'] = None
-        else:
-            # No subfamily provided
-            result['role']['job_family'] = None
-
-        # Enrich skills with family codes using deterministic mapping
-        # Claude extracts skill names; Python assigns families
-        if 'skills' in result and result['skills']:
-            from pipeline.skill_family_mapper import enrich_skills_with_families
-            result['skills'] = enrich_skills_with_families(result['skills'])
-            if verbose:
-                mapped = sum(1 for s in result['skills'] if s.get('family_code'))
-                print(f"[INFO] Skills enriched: {mapped}/{len(result['skills'])} mapped to families")
-
-        # Attach actual cost data to the result for tracking
-        result['_cost_data'] = cost_data
-
-        return result
-        
-    except json.JSONDecodeError as e:
-        print(f"[ERROR] Failed to parse Claude's response as JSON: {e}")
-        print(f"Raw response: {response_text}")
-        raise
-    except Exception as e:
-        print(f"[ERROR] Classification failed: {e}")
-        raise
-
-
 # ============================================
-# Main Classification Function (Router)
+# Main Classification Function
 # ============================================
 
 def classify_job(job_text: str, verbose: bool = False, structured_input: dict = None, source: str = None) -> Dict:
     """
-    Classify a job posting using the configured LLM provider.
+    Classify a job posting using Gemini.
 
-    Routes to Gemini (default, 88% cheaper) or Claude based on LLM_PROVIDER env var.
-    For Gemini, uses source-specific models for optimal quality/cost balance.
+    Uses source-specific models for optimal quality/cost balance.
 
     Args:
         job_text: Full job posting text
@@ -932,11 +963,7 @@ def classify_job(job_text: str, verbose: bool = False, structured_input: dict = 
     Returns:
         Dictionary with classified job data matching schema
     """
-    if LLM_PROVIDER == "gemini":
-        # Use retry wrapper to ensure summary is included
-        return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input, source=source)
-    else:
-        return classify_job_with_claude(job_text, verbose=verbose, structured_input=structured_input)
+    return classify_job_with_gemini_retry(job_text, verbose=verbose, structured_input=structured_input, source=source)
 
 
 # ============================================
@@ -945,14 +972,13 @@ def classify_job(job_text: str, verbose: bool = False, structured_input: dict = 
 
 def get_model_fallback_count() -> int:
     """Get the number of times classification fell back from primary to fallback model."""
-    return _model_fallback_count if LLM_PROVIDER == "gemini" else 0
+    return _model_fallback_count
 
 
 def reset_model_fallback_count():
     """Reset the fallback counter."""
     global _model_fallback_count
-    if LLM_PROVIDER == "gemini":
-        _model_fallback_count = 0
+    _model_fallback_count = 0
 
 
 # ============================================
@@ -976,13 +1002,13 @@ if __name__ == "__main__":
     Salary: £80,000 - £110,000
     """
 
-    print(f"Testing classification with LLM_PROVIDER={LLM_PROVIDER}...")
+    print("Testing classification with Gemini...")
     result = classify_job(test_job, verbose=True)
 
     print("\n" + "="*60)
     print("CLASSIFICATION RESULT")
     print("="*60)
     print(json.dumps(result, indent=2))
-    print("\n[INFO] Provider used:", result.get('_cost_data', {}).get('provider', 'unknown'))
+    print("\n[INFO] Model used:", result.get('_cost_data', {}).get('model', 'unknown'))
     print("[WARNING] Note: is_agency and agency_confidence are null here")
     print("   They will be populated by pattern matching in fetch script")
