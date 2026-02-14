@@ -50,18 +50,14 @@ PROVIDER_COSTS = {
     "gemini": {"input": 0.10, "output": 0.40},
 }
 
-# Source-specific model configurations
-# Use Gemini 3 Flash for cleaner ATS sources (Lever, Ashby, Workable)
-# Use Gemini 2.5 Flash for complex/high-volume sources (Greenhouse, Adzuna)
+# Source-specific model overrides (default is Gemini 3 Flash)
+# Only list sources that need a different model
 SOURCE_MODEL_CONFIG = {
     "greenhouse": "gemini-2.5-flash",          # Stable (avoids JSON errors on complex titles)
     "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
-    "lever": "gemini-3-flash-preview",         # Better quality for structured data
-    "ashby": "gemini-3-flash-preview",         # Better quality for structured data
-    "workable": "gemini-3-flash-preview",      # Better quality for structured data
 }
 
-# Fallback model for all sources
+GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview"
 GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 _gemini_generation_config = types.GenerateContentConfig(
@@ -74,7 +70,7 @@ def get_gemini_model_for_source(source: str = None) -> str:
     """Get the appropriate Gemini model name based on data source."""
     if source and source.lower() in SOURCE_MODEL_CONFIG:
         return SOURCE_MODEL_CONFIG[source.lower()]
-    return "gemini-2.5-flash"
+    return GEMINI_DEFAULT_MODEL
 
 # Default model name for legacy classify_job_with_gemini()
 _default_model_name = get_gemini_model_for_source("greenhouse")
