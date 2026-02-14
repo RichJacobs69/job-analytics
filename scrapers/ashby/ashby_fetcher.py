@@ -314,21 +314,9 @@ def fetch_ashby_jobs(
                     stats['filtered_by_title'] += 1
                     continue
 
-            # Apply location filter
+            # Apply location filter (location field only)
             if filter_locations and location_patterns:
-                # Check structured location field
-                location_matched = matches_target_location(location_str, location_patterns)
-
-                # Also check description for location keywords (catches multi-location roles)
-                if not location_matched:
-                    description_text = job_data.get('descriptionPlain', '')
-                    description_lower = description_text.lower()
-                    location_matched = any(
-                        pattern.lower() in description_lower
-                        for pattern in location_patterns
-                    )
-
-                if not location_matched:
+                if not matches_target_location(location_str, location_patterns):
                     stats['filtered_by_location'] += 1
                     continue
 

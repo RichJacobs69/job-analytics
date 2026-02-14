@@ -261,23 +261,9 @@ def fetch_lever_jobs(
                     stats['filtered_by_title'] += 1
                     continue
 
-            # Apply location filter
+            # Apply location filter (location field only)
             if filter_locations and location_patterns:
-                # First check structured location field
-                location_matched = matches_target_location(location, location_patterns)
-
-                # If no match in structured field, check job description for location keywords
-                # (catches multi-location roles like "SF / NYC / Denver")
-                if not location_matched:
-                    description_text = job_data.get('descriptionPlain', '') + ' ' + job_data.get('description', '')
-                    description_lower = description_text.lower()
-                    # Simple substring matching is safe now that problematic abbreviations are removed
-                    location_matched = any(
-                        pattern.lower() in description_lower
-                        for pattern in location_patterns
-                    )
-
-                if not location_matched:
+                if not matches_target_location(location, location_patterns):
                     stats['filtered_by_location'] += 1
                     continue
 
