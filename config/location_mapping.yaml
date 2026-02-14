@@ -328,10 +328,12 @@ remote_patterns:
     region: EMEA
     patterns:
       - remote - emea
+      - remote-emea
       - emea remote
       - remote (emea)
       - remote, emea
       - remote - europe
+      - remote-europe
       - remote (europe)
       - europe remote
       - remote, europe
@@ -344,9 +346,11 @@ remote_patterns:
     region: APAC
     patterns:
       - remote - apac
+      - remote-apac
       - apac remote
       - remote (apac)
       - remote - asia
+      - remote-asia
       - asia remote
       - remote (asia)
       - remote, asia
@@ -360,12 +364,15 @@ remote_patterns:
     region: AMER
     patterns:
       - remote - americas
+      - remote-americas
       - americas remote
       - remote (americas)
       - remote - amer
+      - remote-amer
       - amer remote
       - remote, latam
       - remote - latam
+      - remote-latam
       - remote (latam)
       - latam remote
       - remote - latin america
