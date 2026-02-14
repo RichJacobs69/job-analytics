@@ -784,6 +784,12 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
     """
     global _model_fallback_count
 
+    # Select model based on source and fallback flag
+    if _use_fallback:
+        model_name = GEMINI_FALLBACK_MODEL
+    else:
+        model_name = get_gemini_model_for_source(source)
+
     total_cost_data = {
         'input_tokens': 0,
         'output_tokens': 0,
@@ -792,14 +798,9 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
         'total_cost': 0.0,
         'latency_ms': 0.0,
         'provider': 'gemini',
+        'model': model_name,
         'attempts': 0
     }
-
-    # Select model based on source and fallback flag
-    if _use_fallback:
-        model_name = GEMINI_FALLBACK_MODEL
-    else:
-        model_name = get_gemini_model_for_source(source)
 
     for attempt in range(max_retries):
         total_cost_data['attempts'] += 1
