@@ -6,7 +6,7 @@ This test validates:
 2. Resume mode skips those companies
 3. Only unprocessed companies are scraped
 
-NOTE: This is a live integration test that hits Greenhouse, Gemini, and Supabase.
+NOTE: This is a live integration test that hits Greenhouse API, Gemini, and Supabase.
 Run with: pytest tests/test_resume_capability.py -m integration -v
 """
 

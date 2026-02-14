@@ -171,57 +171,28 @@ async def fetch_from_adzuna(city: str, max_jobs_per_query: int, max_days_old: in
 
 
 async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
-    """Fetch jobs from Greenhouse-hosted career pages (LEGACY BATCH MODE)
+    """Fetch jobs from Greenhouse Job Board API (LEGACY BATCH MODE)
 
     NOTE: This function is kept for backwards compatibility.
     For incremental processing, use process_greenhouse_incremental() instead.
     """
     try:
-        from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
+        from scrapers.greenhouse.greenhouse_api_fetcher import fetch_all_greenhouse_companies
 
-        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600)
-        await scraper.init()
+        logger.info("Fetching jobs from Greenhouse API...")
 
-        try:
-            if companies:
-                logger.info(f"Scraping {len(companies)} Greenhouse companies")
-                jobs_dict = await scraper.scrape_all(companies)
-            else:
-                # Load default companies from mapping
-                import json
-                # Look for mapping file at project root config directory
-                mapping_file = Path(__file__).parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
+        gh_jobs, stats = fetch_all_greenhouse_companies(
+            companies=companies,
+            filter_titles=True,
+            filter_locations=True
+        )
 
-                if mapping_file.exists():
-                    with open(mapping_file) as f:
-                        mapping = json.load(f)
-                    # Extract slug field from each company dict
-                    companies = [company_data['slug'] for company_data in mapping.get('greenhouse', {}).values()]
-                    logger.info(f"Scraping all {len(companies)} Greenhouse companies from mapping")
-                    jobs_dict = await scraper.scrape_all(companies)
-                else:
-                    logger.warning("No companies specified and mapping file not found")
-                    return []
-
-            # Flatten dict result into a single list of jobs
-            # scrape_all returns Dict[str, Dict] with 'jobs' and 'stats' - we need to flatten it
-            all_jobs = []
-            total_scraped = 0
-            total_filtered = 0
-            for company_slug, result in jobs_dict.items():
-                all_jobs.extend(result['jobs'])
-                total_scraped += result['stats']['jobs_scraped']
-                total_filtered += result['stats']['jobs_filtered']
-
-            logger.info(f"Successfully scraped {len(all_jobs)} jobs from {len(jobs_dict)} Greenhouse companies")
-            if total_scraped > 0:
-                filter_rate = (total_filtered / total_scraped * 100)
-                logger.info(f"Greenhouse filtering: {total_scraped} total, {len(all_jobs)} kept, {total_filtered} filtered ({filter_rate:.1f}%)")
-                logger.info(f"Cost savings from filtering: ${total_filtered * 0.00388:.2f}")
-            return all_jobs
-
-        finally:
-            await scraper.close()
+        logger.info(f"Successfully fetched {len(gh_jobs)} jobs from {stats['companies_with_jobs']} Greenhouse companies")
+        total_filtered = stats['total_filtered_by_title'] + stats['total_filtered_by_location']
+        if stats['total_jobs_fetched'] > 0:
+            filter_rate = (total_filtered / stats['total_jobs_fetched'] * 100)
+            logger.info(f"Greenhouse filtering: {stats['total_jobs_fetched']} total, {len(gh_jobs)} kept, {total_filtered} filtered ({filter_rate:.1f}%)")
+        return gh_jobs
 
     except Exception as e:
         logger.error(f"Failed to fetch from Greenhouse: {str(e)}")
@@ -335,53 +306,36 @@ async def get_recently_processed_companies(hours: int = 24, source: str = 'green
 async def process_greenhouse_incremental(companies: Optional[List[str]] = None, resume_hours: int = 0) -> Dict:
     """Process Greenhouse jobs incrementally with per-company database writes
 
-    This function implements the incremental architecture:
-    1. Scrape company jobs
+    This function implements the incremental architecture (same as Ashby/Lever):
+    1. Fetch jobs from Greenhouse API (with filtering)
     2. Write to raw_jobs using insert_raw_job_upsert()
     3. Classify jobs immediately
     4. Write to enriched_jobs
     5. Log progress clearly per company
+
+    Greenhouse Advantages (via API):
+    - Structured compensation data (pay_input_ranges with min/max cents)
+    - Department data in dedicated fields
+    - updated_at timestamp for change detection
+    - Single HTTP request per company (no browser needed)
 
     Args:
         companies: Optional list of company slugs to process. If None, processes all from mapping.
         resume_hours: If > 0, skip companies processed within last N hours (resume capability)
 
     Returns:
-        Dict with processing statistics:
-            - companies_processed: int
-            - companies_skipped: int
-            - jobs_scraped: int
-            - jobs_kept: int (after filtering)
-            - jobs_written_raw: int
-            - jobs_classified: int
-            - jobs_written_enriched: int
+        Dict with processing statistics
     """
-    from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper
+    from scrapers.greenhouse.greenhouse_api_fetcher import fetch_greenhouse_jobs, load_company_mapping
     from pipeline.db_connection import (
         insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
         ensure_employer_metadata
     )
     from pipeline.classifier import classify_job
     from pipeline.agency_detection import is_agency_job, validate_agency_classification
-    from pipeline.unified_job_ingester import UnifiedJob, DataSource
+    from pipeline.unified_job_ingester import DataSource
     from datetime import date
     import json
-    from pathlib import Path
-
-    # Load greenhouse config to create slug -> display_name mapping
-    project_root = Path(__file__).parent.parent
-    config_path = project_root / 'config' / 'greenhouse' / 'company_ats_mapping.json'
-    slug_to_display_name = {}
-    if config_path.exists():
-        with open(config_path) as f:
-            gh_config = json.load(f)
-            # Config structure: {"greenhouse": {"DisplayName": {"slug": "company-slug"}, ...}}
-            gh_companies = gh_config.get('greenhouse', gh_config)
-            for display_name, info in gh_companies.items():
-                if isinstance(info, dict) and 'slug' in info:
-                    slug_to_display_name[info['slug']] = display_name
-
-    from datetime import datetime
     import time
 
     start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -393,117 +347,196 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
 
     # Time tracking
     pipeline_start_time = time.time()
-    company_start_times = {}
 
     # Statistics tracking
     stats = {
         'companies_processed': 0,
+        'companies_with_jobs': 0,
         'companies_skipped': 0,
         'companies_total': 0,
         'companies_total_effective': 0,
-        'jobs_scraped': 0,
-        'jobs_kept': 0,
-        'jobs_filtered': 0,
+        'total_jobs_fetched': 0,
+        'total_jobs_kept': 0,
+        'total_filtered_by_title': 0,
+        'total_filtered_by_location': 0,
         'jobs_written_raw': 0,
         'jobs_duplicate': 0,
         'jobs_classified': 0,
         'jobs_agency_filtered': 0,
         'jobs_written_enriched': 0,
+        'jobs_with_salary': 0,
         'cost_saved_filtering': 0.0,
         'cost_classification': 0.0,
-        'start_time': pipeline_start_time,
-        'resume_hours': resume_hours,
+        'errors': [],
         'zero_job_companies': []
     }
 
-    # Callback function to process each company's jobs incrementally
-    def process_company_jobs(company_slug: str, result: Dict):
-        """Process jobs from one company: write raw, classify, write enriched"""
+    # Load company mapping
+    mapping = load_company_mapping()
+    gh_companies = mapping.get('greenhouse', {})
 
-        company_start = time.time()
-        company_stats = result['stats']
-        jobs = result['jobs']
+    # Create slug -> display_name mapping for proper employer names
+    slug_to_display_name = {}
+    for display_name, info in gh_companies.items():
+        if isinstance(info, dict) and 'slug' in info:
+            slug_to_display_name[info['slug']] = display_name
 
-        # Header with company info
+    if not gh_companies:
+        logger.warning("No companies in Greenhouse mapping")
+        return stats
+
+    # Filter to specified companies if provided
+    if companies:
+        companies_to_process = {
+            name: data for name, data in gh_companies.items()
+            if data['slug'] in companies
+        }
+        original_count = len(companies)
+    else:
+        companies_to_process = gh_companies
+        original_count = len(companies_to_process)
+
+    # Resume mode: skip recently processed companies
+    if resume_hours > 0:
+        recently_processed = await get_recently_processed_companies(resume_hours, source='greenhouse')
+        if recently_processed:
+            before = len(companies_to_process)
+            companies_to_process = {
+                name: data for name, data in companies_to_process.items()
+                if data.get('slug') not in recently_processed
+            }
+            skipped = before - len(companies_to_process)
+            stats['companies_skipped'] = skipped
+            logger.info(f"Resume mode: skipping {skipped} companies processed in last {resume_hours}h, {len(companies_to_process)} remaining")
+            if not companies_to_process:
+                logger.info("All companies already processed - nothing to do!")
+                stats['companies_total'] = original_count
+                stats['companies_total_effective'] = 0
+                return stats
+
+    stats['companies_total'] = original_count
+    stats['companies_total_effective'] = len(companies_to_process)
+
+    logger.info(f"Processing {len(companies_to_process)} Greenhouse companies...\n")
+
+    # Cost per classification
+    cost_per_classification = 0.00388
+
+    for company_name, company_data in companies_to_process.items():
+        slug = company_data['slug']
+        company_start_time = time.time()
+
         logger.info(f"\n{'='*80}")
-        logger.info(f"COMPANY: {company_slug.upper()}")
+        logger.info(f"COMPANY: {company_name.upper()} ({slug})")
         logger.info(f"{'='*80}")
-        logger.info(f"Scraping Summary:")
-        logger.info(f"  - Total jobs scraped: {company_stats['jobs_scraped']}")
-        logger.info(f"  - Filtered (title): {company_stats.get('jobs_filtered_title', 0)}")
-        logger.info(f"  - Filtered (location): {company_stats.get('jobs_filtered_location', 0)}")
+
+        # Fetch jobs for this company via API
+        jobs, fetch_stats = fetch_greenhouse_jobs(
+            board_token=slug,
+            filter_titles=True,
+            filter_locations=True
+        )
+
+        # Update stats
+        stats['companies_processed'] += 1
+        stats['total_jobs_fetched'] += fetch_stats['jobs_fetched']
+        stats['total_jobs_kept'] += fetch_stats['jobs_kept']
+        stats['total_filtered_by_title'] += fetch_stats['filtered_by_title']
+        stats['total_filtered_by_location'] += fetch_stats['filtered_by_location']
+
+        # Calculate cost savings from filtering
+        filtered_count = fetch_stats['filtered_by_title'] + fetch_stats['filtered_by_location']
+        stats['cost_saved_filtering'] += filtered_count * cost_per_classification
+
+        logger.info(f"Fetch Summary:")
+        logger.info(f"  - Jobs fetched: {fetch_stats['jobs_fetched']}")
+        logger.info(f"  - Filtered (title): {fetch_stats['filtered_by_title']}")
+        logger.info(f"  - Filtered (location): {fetch_stats['filtered_by_location']}")
         logger.info(f"  - Jobs to process: {len(jobs)}")
-        logger.info(f"  - Filter rate: {company_stats.get('filter_rate', 0):.1f}%")
-        logger.info(f"  - Cost saved: ${company_stats['jobs_filtered'] * 0.00388:.2f}")
+        logger.info(f"  - Cost saved: ${filtered_count * cost_per_classification:.2f}")
+
+        if fetch_stats['error']:
+            stats['errors'].append(f"{slug}: {fetch_stats['error']}")
+            logger.warning(f"  Error: {fetch_stats['error']}")
+            continue
+
+        if not jobs:
+            stats['zero_job_companies'].append(slug)
+            logger.info(f"  No jobs to process for {company_name}")
+            continue
+
+        stats['companies_with_jobs'] += 1
         logger.info(f"{'-'*80}")
 
-        # Track companies where nothing was kept to process
-        if len(jobs) == 0:
-            stats['zero_job_companies'].append(company_slug)
-
-        # Update global stats
-        stats['companies_processed'] += 1
-        stats['jobs_scraped'] += company_stats['jobs_scraped']
-        stats['jobs_filtered'] += company_stats['jobs_filtered']
-        stats['jobs_kept'] += len(jobs)
-        stats['cost_saved_filtering'] += company_stats['jobs_filtered'] * 0.00388
-
-        # Track company-specific metrics
+        # Process each job
         company_jobs_written = 0
         company_jobs_duplicate = 0
-        agencies_blocked = 0
         company_jobs_classified = 0
         company_jobs_enriched = 0
+        company_agencies_blocked = 0
+        company_with_salary = 0
 
-        # Process each job
         for i, job in enumerate(jobs, 1):
             try:
                 # Step 1: Write to raw_jobs using UPSERT
+                greenhouse_location = job.location if job.location and job.location != 'Unspecified' else None
+
                 upsert_result = insert_raw_job_upsert(
                     source='greenhouse',
                     posting_url=job.url,
                     title=job.title,
-                    company=job.company,
+                    company=company_name,
                     raw_text=job.description,
-                    city_code='unk',  # Greenhouse doesn't specify city in listings
-                    source_job_id=job.job_id,
+                    city_code='unk',
+                    source_job_id=job.id,
                     metadata={
-                        'company_slug': company_slug,
-                        'greenhouse_location': job.location if job.location and job.location != 'Unspecified' else None
+                        'company_slug': slug,
+                        'greenhouse_location': greenhouse_location,
+                        'greenhouse_department': job.department,
+                        'greenhouse_salary_min': job.salary_min,
+                        'greenhouse_salary_max': job.salary_max,
+                        'greenhouse_salary_currency': job.salary_currency,
+                        'greenhouse_updated_at': job.updated_at
                     }
                 )
 
                 raw_job_id = upsert_result['id']
-                action = upsert_result['action']
                 was_duplicate = upsert_result['was_duplicate']
 
                 if was_duplicate:
                     stats['jobs_duplicate'] += 1
                     company_jobs_duplicate += 1
-                    logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {job.title[:60]}... (skipped)")
-                    # Skip classification for duplicates (already done previously)
+                    logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {job.title[:50]}... (skipped)")
                     continue
 
                 stats['jobs_written_raw'] += 1
                 company_jobs_written += 1
-                logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:60]}... (classifying...)")
+
+                # Track jobs with structured salary data
+                if job.salary_min or job.salary_max:
+                    stats['jobs_with_salary'] += 1
+                    company_with_salary += 1
+
+                logger.info(f"  [{i}/{len(jobs)}] NEW JOB: {job.title[:50]}... (classifying...)")
 
                 # Step 2: Hard filter - check if agency before classification
-                if is_agency_job(job.company):
+                if is_agency_job(company_name):
                     stats['jobs_agency_filtered'] += 1
+                    company_agencies_blocked += 1
                     logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
                     continue
 
-                # Step 3: Classify the job with structured input (including title)
+                # Step 3: Classify the job
                 try:
                     structured_input = {
                         'title': job.title,
-                        'company': job.company,
+                        'company': company_name,
                         'description': job.description,
                         'location': None,
                         'category': None,
-                        'salary_min': None,
-                        'salary_max': None,
+                        # Pass Greenhouse's structured salary to classifier for validation
+                        'salary_min': job.salary_min,
+                        'salary_max': job.salary_max,
                     }
                     classification = classify_job(
                         job_text=job.description,
@@ -513,7 +546,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     stats['jobs_classified'] += 1
                     company_jobs_classified += 1
 
-                    # Track classification cost (if available)
+                    # Track classification cost
                     if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
                         cost = classification['_cost_data']['total_cost']
                         stats['cost_classification'] += cost
@@ -527,7 +560,7 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
 
                 # Step 4: Soft agency detection
                 is_agency, agency_conf = validate_agency_classification(
-                    employer_name=job.company,
+                    employer_name=company_name,
                     claude_is_agency=None,
                     claude_confidence=None,
                     job_description=job.description
@@ -536,7 +569,6 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 if is_agency:
                     stats['jobs_agency_filtered'] += 1
                     logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
-                    # Continue anyway to store the job, but flag it as agency
 
                 # Inject agency flags
                 if 'employer' not in classification:
@@ -545,14 +577,12 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 classification['employer']['agency_confidence'] = agency_conf
 
                 # Step 5: Write to enriched_jobs
-                logger.info(f"  [{i}/{len(jobs)}] Writing to enriched_jobs...")
                 role = classification.get('role', {})
                 location = classification.get('location', {})
                 compensation = classification.get('compensation', {})
                 employer = classification.get('employer', {})
 
-                # Extract locations from Greenhouse job.location field (Global Location Expansion Epic)
-                greenhouse_location = job.location if job.location and job.location != 'Unspecified' else None
+                # Extract locations from Greenhouse job.location field
                 extracted_locations = extract_locations(
                     greenhouse_location,
                     description_text=job.description
@@ -567,31 +597,31 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                 elif extracted_locations and extracted_locations[0].get('type') == 'remote':
                     legacy_city_code = 'remote'
 
-                # Determine working arrangement with employer metadata fallback
-                wa_from_classifier = location.get('working_arrangement') or 'unknown'
-                if wa_from_classifier == 'unknown':
-                    wa_fallback = get_working_arrangement_fallback(job.company)
-                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
-                else:
-                    working_arrangement = wa_from_classifier
-
-                # Get display name from config (e.g., "Rightmove" instead of "rightmovecareers")
-                employer_display_name = slug_to_display_name.get(company_slug, job.company)
+                # Use Greenhouse's structured salary data if available, fall back to classifier
+                final_salary_min = job.salary_min or compensation.get('base_salary_range', {}).get('min')
+                final_salary_max = job.salary_max or compensation.get('base_salary_range', {}).get('max')
+                final_currency = job.salary_currency or compensation.get('currency')
 
                 # Suppress salary for cities without pay transparency laws
-                gh_currency, gh_salary_min, gh_salary_max = suppress_salary_for_city(
-                    legacy_city_code,
-                    compensation.get('currency'),
-                    compensation.get('base_salary_range', {}).get('min'),
-                    compensation.get('base_salary_range', {}).get('max')
+                final_currency, final_salary_min, final_salary_max = suppress_salary_for_city(
+                    legacy_city_code, final_currency, final_salary_min, final_salary_max
                 )
+
+                # Derive working arrangement: classifier > employer metadata > unknown
+                working_arrangement = location.get('working_arrangement') or 'unknown'
+                if working_arrangement == 'unknown':
+                    wa_fallback = get_working_arrangement_fallback(company_name)
+                    working_arrangement = wa_fallback if wa_fallback else 'unknown'
+
+                # Get display name from config (e.g., "Rightmove" instead of "rightmovecareers")
+                employer_display_name = slug_to_display_name.get(slug, company_name)
 
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
-                    employer_name=job.company,
+                    employer_name=company_name,
                     title_display=job.title,
                     job_family=role.get('job_family') or 'out_of_scope',
-                    city_code=legacy_city_code,  # DEPRECATED - use locations instead
+                    city_code=legacy_city_code,
                     working_arrangement=working_arrangement,
                     position_type=role.get('position_type') or 'full_time',
                     last_seen_date=date.today(),
@@ -602,137 +632,42 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
                     employer_department=employer.get('department'),
                     is_agency=employer.get('is_agency'),
                     agency_confidence=employer.get('agency_confidence'),
-                    currency=gh_currency,
-                    salary_min=gh_salary_min,
-                    salary_max=gh_salary_max,
+                    currency=final_currency,
+                    salary_min=final_salary_min,
+                    salary_max=final_salary_max,
                     equity_eligible=compensation.get('equity_eligible'),
                     skills=classification.get('skills', []),
                     summary=classification.get('summary'),
                     data_source='greenhouse',
                     description_source='greenhouse',
+                    locations=extracted_locations,
                     deduplicated=False,
-                    locations=extracted_locations,  # Structured location data
-                    display_name_hint=employer_display_name  # From config key
+                    display_name_hint=employer_display_name
                 )
 
                 stats['jobs_written_enriched'] += 1
                 company_jobs_enriched += 1
-
                 logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
 
             except Exception as e:
                 logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
                 continue
 
-        # Company completion time
-        company_elapsed = time.time() - company_start
-
         # Company summary
+        company_elapsed = time.time() - company_start_time
         logger.info(f"{'-'*80}")
         logger.info(f"Company Summary:")
         logger.info(f"  - New jobs written: {company_jobs_written}")
         logger.info(f"  - Duplicates skipped: {company_jobs_duplicate}")
-        logger.info(f"  - Agencies blocked: {agencies_blocked}")
+        logger.info(f"  - Agencies blocked: {company_agencies_blocked}")
         logger.info(f"  - Jobs classified: {company_jobs_classified}")
         logger.info(f"  - Jobs enriched: {company_jobs_enriched}")
+        logger.info(f"  - Jobs with salary data: {company_with_salary}")
         logger.info(f"  - Processing time: {company_elapsed:.1f}s")
         logger.info(f"{'='*80}")
 
-        # Pipeline progress
-        elapsed = time.time() - stats['start_time']
-        avg_time_per_company = elapsed / stats['companies_processed'] if stats['companies_processed'] > 0 else 0
-        effective_total_companies = (
-            stats.get('companies_total_effective')
-            or max(stats['companies_total'] - stats.get('companies_skipped', 0), 0)
-        )
-        remaining_companies = max(effective_total_companies - stats['companies_processed'], 0)
-        eta_seconds = avg_time_per_company * remaining_companies
-
-        logger.info(f"Pipeline Progress: {stats['companies_processed']}/{effective_total_companies} companies")
-        logger.info(f"  - Elapsed: {elapsed/60:.1f} min")
-        logger.info(f"  - Avg per company: {avg_time_per_company:.1f}s")
-        logger.info(f"  - ETA: {eta_seconds/60:.1f} min")
-        logger.info(f"  - Total jobs: {stats['jobs_written_enriched']} enriched, {stats['jobs_duplicate']} duplicates")
-        logger.info(f"{'='*80}")
-
-    # Initialize scraper
-    try:
-        scraper = GreenhouseScraper(headless=True, max_concurrent_pages=2, company_timeout_seconds=600)
-        await scraper.init()
-
-        try:
-            # Determine companies to process
-            if companies:
-                logger.info(f"Processing {len(companies)} specified Greenhouse companies")
-                original_count = len(companies)
-            else:
-                # Load default companies from mapping
-                mapping_file = Path(__file__).parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
-
-                if mapping_file.exists():
-                    with open(mapping_file) as f:
-                        mapping = json.load(f)
-                    companies = [company_data['slug'] for company_data in mapping.get('greenhouse', {}).values()]
-                    logger.info(f"Loaded {len(companies)} Greenhouse companies from mapping")
-                    original_count = len(companies)
-                else:
-                    logger.warning("No companies specified and mapping file not found")
-                    return stats
-
-            # Resume capability: Skip recently processed companies
-            if resume_hours > 0:
-                logger.info(f"\n{'='*80}")
-                logger.info(f"RESUME MODE: Checking for companies processed in last {resume_hours} hours")
-                logger.info(f"{'='*80}")
-
-                recently_processed = await get_recently_processed_companies(resume_hours)
-
-                if recently_processed:
-                    logger.info(f"Found {len(recently_processed)} recently processed companies:")
-                    for company_slug in sorted(recently_processed):
-                        logger.info(f"  - {company_slug}")
-
-                    # Filter out recently processed companies
-                    companies_to_skip = [c for c in companies if c in recently_processed]
-                    companies = [c for c in companies if c not in recently_processed]
-
-                    stats['companies_skipped'] = len(companies_to_skip)
-
-                    logger.info(f"\nResume Summary:")
-                    logger.info(f"  - Total companies: {original_count}")
-                    logger.info(f"  - Already processed: {len(companies_to_skip)}")
-                    logger.info(f"  - Remaining to process: {len(companies)}")
-                    logger.info(f"{'='*80}\n")
-
-                    if not companies:
-                        logger.info("All companies already processed - nothing to do!")
-                        stats['companies_total'] = original_count
-                        stats['companies_total_effective'] = len(companies)
-                        return stats
-                else:
-                    logger.info(f"No companies found processed in last {resume_hours} hours")
-                    logger.info(f"Will process all {len(companies)} companies")
-                    logger.info(f"{'='*80}\n")
-
-            stats['companies_total'] = original_count
-            stats['companies_total_effective'] = len(companies)
-
-            # Scrape with incremental callback
-            logger.info(f"Starting incremental scrape of {len(companies)} companies...")
-            logger.info("Jobs will be written to database after each company completes\n")
-
-            await scraper.scrape_all(companies, on_company_complete=process_company_jobs)
-
-        finally:
-            await scraper.close()
-
-    except Exception as e:
-        logger.error(f"Greenhouse incremental processing failed: {str(e)}")
-        import traceback
-        logger.debug(traceback.format_exc())
-
     # Final summary
-    total_elapsed = time.time() - stats['start_time']
+    total_elapsed = time.time() - pipeline_start_time
     end_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     logger.info("\n" + "="*80)
@@ -743,16 +678,15 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     logger.info("="*80)
 
     logger.info(f"\nCompany Processing:")
-    logger.info(f"  - Companies total (after resume filter): {stats.get('companies_total_effective', stats['companies_total'])}")
     logger.info(f"  - Companies processed: {stats['companies_processed']}")
+    logger.info(f"  - Companies with jobs: {stats['companies_with_jobs']}")
     logger.info(f"  - Companies skipped (resume): {stats['companies_skipped']}")
-    logger.info(f"  - Companies in original list: {stats['companies_total']}")
-    logger.info(f"  - Avg time per company: {total_elapsed/stats['companies_processed'] if stats['companies_processed'] > 0 else 0:.1f}s")
 
-    logger.info(f"\nJob Scraping & Filtering:")
-    logger.info(f"  - Jobs scraped: {stats['jobs_scraped']}")
-    logger.info(f"  - Jobs filtered: {stats['jobs_filtered']} ({stats['jobs_filtered']/stats['jobs_scraped']*100 if stats['jobs_scraped'] > 0 else 0:.1f}%)")
-    logger.info(f"  - Jobs kept: {stats['jobs_kept']}")
+    logger.info(f"\nJob Fetching & Filtering:")
+    logger.info(f"  - Jobs fetched: {stats['total_jobs_fetched']}")
+    logger.info(f"  - Filtered (title): {stats['total_filtered_by_title']}")
+    logger.info(f"  - Filtered (location): {stats['total_filtered_by_location']}")
+    logger.info(f"  - Jobs kept: {stats['total_jobs_kept']}")
 
     logger.info(f"\nDatabase Writes:")
     logger.info(f"  - New raw jobs: {stats['jobs_written_raw']}")
@@ -761,18 +695,21 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
     logger.info(f"  - Enriched jobs: {stats['jobs_written_enriched']}")
     logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
 
+    logger.info(f"\nGreenhouse Data Quality:")
+    logger.info(f"  - Jobs with structured salary: {stats['jobs_with_salary']}")
+    if stats['jobs_written_enriched'] > 0:
+        salary_rate = (stats['jobs_with_salary'] / stats['jobs_written_enriched'] * 100)
+        logger.info(f"  - Salary data rate: {salary_rate:.1f}%")
+
     logger.info(f"\nCost Analysis:")
     logger.info(f"  - Saved from filtering: ${stats['cost_saved_filtering']:.2f}")
     logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
     logger.info(f"  - Net cost: ${stats['cost_classification']:.2f}")
-    logger.info(f"  - Cost per job enriched: ${stats['cost_classification']/stats['jobs_written_enriched'] if stats['jobs_written_enriched'] > 0 else 0:.4f}")
 
-    logger.info(f"\nCompanies with 0 jobs kept:")
     if stats['zero_job_companies']:
+        logger.info(f"\nCompanies with 0 jobs kept:")
         for slug in stats['zero_job_companies']:
             logger.info(f"  - {slug}")
-    else:
-        logger.info("  - none")
 
     logger.info("="*80)
 

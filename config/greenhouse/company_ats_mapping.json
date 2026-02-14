@@ -280,9 +280,6 @@
     "Comply Advantage": {
       "slug": "complyadvantage"
     },
-    "Conductor": {
-      "slug": "conductor"
-    },
     "Consensys": {
       "slug": "consensys",
       "url_type": "embed"
@@ -587,9 +584,6 @@
     "Harry's": {
       "slug": "harrys"
     },
-    "Havenly": {
-      "slug": "havenly"
-    },
     "Hebbia": {
       "slug": "hebbia"
     },
@@ -661,9 +655,6 @@
     },
     "Iwf": {
       "slug": "iwf"
-    },
-    "Jasper": {
-      "slug": "jasper"
     },
     "Jetbrains": {
       "slug": "jetbrains"
@@ -794,10 +785,6 @@
     "Momentic": {
       "slug": "momentic"
     },
-    "MoneyLion": {
-      "slug": "moneylion",
-      "url_type": "embed"
-    },
     "MongoDB": {
       "slug": "mongodb",
       "url_type": "embed"
@@ -834,9 +821,6 @@
     },
     "New York City Economic Development Corporation": {
       "slug": "nycedc"
-    },
-    "Niantic": {
-      "slug": "niantic"
     },
     "Nimble Gravity": {
       "slug": "nimblegravity"
@@ -1067,9 +1051,6 @@
     "RippleMatch": {
       "slug": "ripplematch"
     },
-    "RippleMatch Interns": {
-      "slug": "ripplematchinterns"
-    },
     "Risk Ledger": {
       "slug": "riskledger"
     },
@@ -1144,9 +1125,6 @@
     "Shift Technology": {
       "slug": "shifttechnology"
     },
-    "SideByCare": {
-      "slug": "sidebycare"
-    },
     "Sigma Computing": {
       "slug": "sigmacomputing"
     },
@@ -1164,10 +1142,6 @@
     },
     "Sixfold": {
       "slug": "sixfold"
-    },
-    "Skydio": {
-      "slug": "skydio",
-      "url_type": "embed"
     },
     "Slickdeals": {
       "slug": "slickdeals"
@@ -1252,9 +1226,6 @@
     },
     "SurveyMonkey": {
       "slug": "surveymonkey"
-    },
-    "Synthesia": {
-      "slug": "synthesia"
     },
     "System": {
       "slug": "system"
@@ -1352,9 +1323,6 @@
     "Underdogfantasy": {
       "slug": "underdogfantasy"
     },
-    "Uniswap Labs": {
-      "slug": "uniswaplabs"
-    },
     "Unybrands": {
       "slug": "unybrands"
     },
@@ -1373,17 +1341,11 @@
     "Vim": {
       "slug": "vim"
     },
-    "Vimeo": {
-      "slug": "vimeo"
-    },
     "Voxmedia": {
       "slug": "voxmedia"
     },
     "VTS": {
       "slug": "vts"
-    },
-    "Warby Parker": {
-      "slug": "warbyparker"
     },
     "Watchmaker Genomics": {
       "slug": "watchmakergenomics",

@@ -184,18 +184,18 @@ def make_smartrecruiters_job(**overrides):
 
 
 def make_greenhouse_job(**overrides):
-    from scrapers.greenhouse.greenhouse_scraper import Job
+    from scrapers.greenhouse.greenhouse_api_fetcher import GreenhouseJob
 
     defaults = dict(
-        company="Acme Corp",
+        id="gh-123",
         title="Senior Data Engineer",
+        company_slug="acme",
         location="London, UK",
         description="Build data pipelines using Python and Spark.",
         url="https://boards.greenhouse.io/acme/jobs/123",
-        job_id="gh-123",
     )
     defaults.update(overrides)
-    return Job(**defaults)
+    return GreenhouseJob(**defaults)
 
 
 # ---------------------------------------------------------------------------
@@ -716,9 +716,10 @@ class TestWorkablePipelineIntegration:
 # ---------------------------------------------------------------------------
 
 class TestGreenhousePipelineIntegration:
-    """Test process_greenhouse_incremental() -- callback pattern."""
+    """Test process_greenhouse_incremental() -- API-based pattern (same as Ashby/Lever)."""
 
-    @patch("scrapers.greenhouse.greenhouse_scraper.GreenhouseScraper")
+    @patch("scrapers.greenhouse.greenhouse_api_fetcher.load_company_mapping")
+    @patch("scrapers.greenhouse.greenhouse_api_fetcher.fetch_greenhouse_jobs")
     @patch("pipeline.fetch_jobs.extract_locations")
     @patch("pipeline.agency_detection.validate_agency_classification")
     @patch("pipeline.agency_detection.is_agency_job")
@@ -737,37 +738,19 @@ class TestGreenhousePipelineIntegration:
         mock_is_agency,
         mock_validate_agency,
         mock_extract_loc,
-        mock_scraper_class,
+        mock_fetch_gh,
+        mock_load_mapping,
     ):
-        """Mock scraper invokes callback with 2 jobs, full flow verified."""
+        """2 jobs for 1 company: upsert x2, classify x2, enriched x2."""
         from pipeline.fetch_jobs import process_greenhouse_incremental
 
-        # Configure mock scraper
-        mock_scraper = AsyncMock()
-
-        async def mock_scrape_all(company_slugs, on_company_complete=None):
-            """Simulate scraper invoking callback with test jobs."""
-            for slug in company_slugs:
-                result = {
-                    "jobs": [
-                        make_greenhouse_job(job_id="gh-1"),
-                        make_greenhouse_job(job_id="gh-2", title="ML Engineer"),
-                    ],
-                    "stats": {
-                        "jobs_scraped": 5,
-                        "jobs_kept": 2,
-                        "jobs_filtered": 3,
-                        "jobs_filtered_title": 2,
-                        "jobs_filtered_location": 1,
-                        "filter_rate": 60.0,
-                    },
-                }
-                if on_company_complete:
-                    on_company_complete(slug, result)
-
-        mock_scraper.scrape_all = mock_scrape_all
-        mock_scraper_class.return_value = mock_scraper
-
+        mock_load_mapping.return_value = {
+            "greenhouse": {"Acme Corp": {"slug": "acme"}}
+        }
+        mock_fetch_gh.return_value = (
+            [make_greenhouse_job(id="gh-1"), make_greenhouse_job(id="gh-2", title="ML Engineer")],
+            copy.deepcopy(MOCK_FETCH_STATS),
+        )
         mock_upsert.side_effect = [
             make_upsert_result(raw_id=1),
             make_upsert_result(raw_id=2),
@@ -785,6 +768,7 @@ class TestGreenhousePipelineIntegration:
         assert mock_classify.call_count == 2
         assert mock_enriched.call_count == 2
         assert stats["companies_processed"] == 1
+        assert stats["companies_with_jobs"] == 1
         assert stats["jobs_written_enriched"] == 2
 
         # Verify classifier called with source="greenhouse"
@@ -792,7 +776,8 @@ class TestGreenhousePipelineIntegration:
         assert call_kwargs.kwargs.get("source") == "greenhouse"
 
     @patch("pipeline.fetch_jobs.get_recently_processed_companies")
-    @patch("scrapers.greenhouse.greenhouse_scraper.GreenhouseScraper")
+    @patch("scrapers.greenhouse.greenhouse_api_fetcher.load_company_mapping")
+    @patch("scrapers.greenhouse.greenhouse_api_fetcher.fetch_greenhouse_jobs")
     @patch("pipeline.fetch_jobs.extract_locations")
     @patch("pipeline.agency_detection.validate_agency_classification")
     @patch("pipeline.agency_detection.is_agency_job")
@@ -811,17 +796,17 @@ class TestGreenhousePipelineIntegration:
         mock_is_agency,
         mock_validate_agency,
         mock_extract_loc,
-        mock_scraper_class,
+        mock_fetch_gh,
+        mock_load_mapping,
         mock_get_recent,
     ):
         """Resume mode should skip recently processed companies."""
         from pipeline.fetch_jobs import process_greenhouse_incremental
 
+        mock_load_mapping.return_value = {
+            "greenhouse": {"Acme Corp": {"slug": "acme"}}
+        }
         mock_get_recent.return_value = {"acme"}
-
-        mock_scraper = AsyncMock()
-        mock_scraper.scrape_all = AsyncMock()
-        mock_scraper_class.return_value = mock_scraper
 
         stats = await process_greenhouse_incremental(companies=["acme"], resume_hours=24)
 

@@ -82,8 +82,11 @@ scrapers/
 ├── adzuna/                           # Adzuna Jobs API client
 │   └── fetch_adzuna_jobs.py          # Paginated API fetcher
 │
-├── greenhouse/                       # Greenhouse ATS scraper
-│   └── greenhouse_scraper.py         # Browser automation (Playwright)
+├── common/                           # Shared scraper utilities
+│   └── filters.py                    # Title/location filtering, HTML stripping
+│
+├── greenhouse/                       # Greenhouse ATS fetcher
+│   └── greenhouse_api_fetcher.py     # REST API client (Job Board API)
 │
 ├── lever/                            # Lever ATS fetcher
 │   └── lever_fetcher.py              # Public JSON API client
@@ -213,8 +216,7 @@ tests/
 ├── test_ashby_fetcher.py               # Ashby fetcher tests
 ├── test_db_upsert.py                   # Database upsert logic
 ├── test_e2e_greenhouse_filtered.py     # E2E pipeline tests
-├── test_embed_extraction.py            # Embed URL extraction tests
-├── test_greenhouse_scraper_filtered.py # Scraper integration tests
+├── test_greenhouse_scraper_filtered.py # API fetcher integration tests
 ├── test_greenhouse_title_filter_unit.py # Title filter unit tests
 ├── test_incremental_pipeline.py        # Incremental upsert tests
 ├── test_inline_summary.py             # Inline summary generation tests

@@ -221,20 +221,20 @@ def fetch_workable_jobs(
 
         # Load filter patterns if filtering enabled
         if filter_titles and title_patterns is None:
-            from scrapers.greenhouse.greenhouse_scraper import load_title_patterns
+            from scrapers.common.filters import load_title_patterns
             title_patterns = load_title_patterns(
                 Path(__file__).parent.parent.parent / 'config' / 'workable' / 'title_patterns.yaml'
             )
 
         if filter_locations and location_patterns is None:
-            from scrapers.greenhouse.greenhouse_scraper import load_location_patterns
+            from scrapers.common.filters import load_location_patterns
             location_patterns = load_location_patterns(
                 Path(__file__).parent.parent.parent / 'config' / 'workable' / 'location_patterns.yaml'
             )
 
         # Import filter functions
         if filter_titles or filter_locations:
-            from scrapers.greenhouse.greenhouse_scraper import is_relevant_role, matches_target_location
+            from scrapers.common.filters import is_relevant_role, matches_target_location
 
         # Parse and filter jobs
         jobs = []
@@ -382,7 +382,7 @@ def fetch_all_workable_companies(
 
     if filter_titles:
         try:
-            from scrapers.greenhouse.greenhouse_scraper import load_title_patterns
+            from scrapers.common.filters import load_title_patterns
             title_patterns = load_title_patterns(
                 Path(__file__).parent.parent.parent / 'config' / 'workable' / 'title_patterns.yaml'
             )
@@ -391,7 +391,7 @@ def fetch_all_workable_companies(
 
     if filter_locations:
         try:
-            from scrapers.greenhouse.greenhouse_scraper import load_location_patterns
+            from scrapers.common.filters import load_location_patterns
             location_patterns = load_location_patterns(
                 Path(__file__).parent.parent.parent / 'config' / 'workable' / 'location_patterns.yaml'
             )

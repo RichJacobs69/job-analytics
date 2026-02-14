@@ -1,94 +1,15 @@
 #!/usr/bin/env python3
 """
-Integration tests for Greenhouse scraper with title filtering.
+Integration tests for Greenhouse API fetcher with title/location filtering.
 
-Tests the full scraper with filtering enabled/disabled and validates metrics.
-Requires browser automation (Playwright), so tests may be slower.
+Tests the API-based fetcher with filtering enabled/disabled and validates metrics.
 """
 
 import pytest
-import asyncio
 import tempfile
 import yaml
 from pathlib import Path
-from scrapers.greenhouse.greenhouse_scraper import GreenhouseScraper, load_title_patterns
-
-
-@pytest.mark.asyncio
-class TestScraperInitialization:
-    """Test scraper initialization with different filtering configs"""
-
-    async def test_scraper_initialization_with_filtering(self):
-        """Test that scraper initializes with filtering enabled by default"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
-
-        # Should have patterns loaded
-        assert scraper.filter_titles == True
-        assert len(scraper.title_patterns) > 0
-
-        # Filter stats should be initialized
-        assert scraper.filter_stats is not None
-        assert 'jobs_scraped' in scraper.filter_stats
-        assert 'jobs_kept' in scraper.filter_stats
-        assert 'jobs_filtered' in scraper.filter_stats
-
-    async def test_scraper_initialization_without_filtering(self):
-        """Test that scraper can be initialized with filtering disabled"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=False)
-
-        # Should NOT have patterns loaded
-        assert scraper.filter_titles == False
-        assert len(scraper.title_patterns) == 0
-
-        # Filter stats should still be initialized (but won't be used)
-        assert scraper.filter_stats is not None
-
-    async def test_scraper_with_custom_patterns(self):
-        """Test that custom pattern file can be loaded"""
-        # Create temporary custom pattern file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            custom_config = {
-                'relevant_title_patterns': [
-                    'custom pattern 1',
-                    'custom pattern 2',
-                ]
-            }
-            yaml.dump(custom_config, f)
-            temp_path = Path(f.name)
-
-        try:
-            scraper = GreenhouseScraper(
-                headless=True,
-                filter_titles=True,
-                pattern_config_path=temp_path
-            )
-
-            # Should load custom patterns
-            assert len(scraper.title_patterns) == 2
-            assert 'custom pattern 1' in scraper.title_patterns
-            assert 'custom pattern 2' in scraper.title_patterns
-        finally:
-            temp_path.unlink()
-
-    async def test_scraper_filter_stats_reset(self):
-        """Test that filter stats reset between scrapes"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
-
-        # Initial stats should be zeroed
-        assert scraper.filter_stats['jobs_scraped'] == 0
-        assert scraper.filter_stats['jobs_kept'] == 0
-        assert scraper.filter_stats['jobs_filtered'] == 0
-
-        # Manually modify stats (simulate a scrape)
-        scraper.filter_stats['jobs_scraped'] = 100
-        scraper.filter_stats['jobs_kept'] = 30
-        scraper.filter_stats['jobs_filtered'] = 70
-
-        # Reset should clear everything
-        scraper.reset_filter_stats()
-        assert scraper.filter_stats['jobs_scraped'] == 0
-        assert scraper.filter_stats['jobs_kept'] == 0
-        assert scraper.filter_stats['jobs_filtered'] == 0
+from scrapers.common.filters import load_title_patterns, is_relevant_role
 
 
 class TestFilteringMetrics:
@@ -96,31 +17,19 @@ class TestFilteringMetrics:
 
     def test_filter_stats_accuracy(self):
         """Test that filter stats calculations are correct"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
+        # Simulate fetch_greenhouse_jobs stats
+        stats = {
+            'jobs_fetched': 100,
+            'jobs_kept': 35,
+            'filtered_by_title': 45,
+            'filtered_by_location': 20,
+        }
 
-        # Simulate scraping with filtering
-        scraper.filter_stats['jobs_scraped'] = 100
-        scraper.filter_stats['jobs_kept'] = 35
-        scraper.filter_stats['jobs_filtered'] = 65
-
-        # Calculate filter rate
-        filter_rate = (scraper.filter_stats['jobs_filtered'] / scraper.filter_stats['jobs_scraped'] * 100)
+        total_filtered = stats['filtered_by_title'] + stats['filtered_by_location']
+        filter_rate = (total_filtered / stats['jobs_fetched'] * 100)
 
         assert filter_rate == 65.0
-        assert scraper.filter_stats['jobs_scraped'] == scraper.filter_stats['jobs_kept'] + scraper.filter_stats['jobs_filtered']
-
-    def test_filtered_titles_captured(self):
-        """Test that filtered titles are logged in stats"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
-
-        # Manually add some filtered titles
-        filtered_titles = ['Sales Executive', 'Marketing Manager', 'HR Business Partner']
-        scraper.filter_stats['filtered_titles'] = filtered_titles
-
-        # Should be captured in stats
-        assert len(scraper.filter_stats['filtered_titles']) == 3
-        assert 'Sales Executive' in scraper.filter_stats['filtered_titles']
-        assert 'Marketing Manager' in scraper.filter_stats['filtered_titles']
+        assert stats['jobs_fetched'] == stats['jobs_kept'] + total_filtered
 
     def test_cost_savings_calculation(self):
         """Test that cost savings calculation matches expected formula"""
@@ -145,167 +54,117 @@ class TestFilteringMetrics:
     def test_filter_rate_calculation(self):
         """Test that filter rate percentage calculation is correct"""
         test_cases = [
-            # (jobs_scraped, jobs_filtered, expected_filter_rate)
+            # (jobs_fetched, jobs_filtered, expected_filter_rate)
             (100, 60, 60.0),
             (100, 70, 70.0),
             (66, 58, 87.9),  # Monzo example
             (69, 67, 97.1),  # Stripe example (97.1%)
         ]
 
-        for jobs_scraped, jobs_filtered, expected_rate in test_cases:
-            filter_rate = (jobs_filtered / jobs_scraped * 100)
+        for jobs_fetched, jobs_filtered, expected_rate in test_cases:
+            filter_rate = (jobs_filtered / jobs_fetched * 100)
             assert abs(filter_rate - expected_rate) < 0.1, f"Expected {expected_rate}% but got {filter_rate}%"
 
 
-@pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.slow
-class TestLiveScraperFiltering:
+class TestLiveAPIFiltering:
     """
-    Integration tests that actually scrape a company.
+    Integration tests that actually call the Greenhouse API.
 
     These tests are marked as 'slow' and 'integration' because they:
     1. Require network access
-    2. Launch a real browser
-    3. May take 10-30 seconds per test
+    2. Hit the Greenhouse API
 
     Run with: pytest -m integration
     """
 
-    async def test_return_format_includes_stats(self):
-        """Test that scraper returns dict with 'jobs' and 'stats' keys"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
+    def test_return_format_includes_stats(self):
+        """Test that API fetcher returns correct stats structure"""
+        from scrapers.greenhouse.greenhouse_api_fetcher import fetch_greenhouse_jobs
 
-        try:
-            await scraper.init()
+        jobs, stats = fetch_greenhouse_jobs('figma', filter_titles=True, filter_locations=True)
 
-            # Scrape a small company (should be fast)
-            result = await scraper.scrape_company('figma')
+        # Stats should have expected keys
+        assert 'jobs_fetched' in stats
+        assert 'jobs_kept' in stats
+        assert 'filtered_by_title' in stats
+        assert 'filtered_by_location' in stats
+        assert 'error' in stats
 
-            # Should return dict with both keys
-            assert isinstance(result, dict)
-            assert 'jobs' in result
-            assert 'stats' in result
+        # Jobs should be a list
+        assert isinstance(jobs, list)
 
-            # Jobs should be a list
-            assert isinstance(result['jobs'], list)
-
-            # Stats should be a dict with expected keys
-            stats = result['stats']
-            assert 'jobs_scraped' in stats
-            assert 'jobs_kept' in stats
-            assert 'jobs_filtered' in stats
-            assert 'filter_rate' in stats
-            assert 'cost_savings_estimate' in stats
-            assert 'filtered_titles_sample' in stats
-
-        finally:
-            await scraper.close()
-
-    async def test_filtering_with_real_company(self):
+    def test_filtering_with_real_company(self):
         """Test filtering works on a real company (Figma)"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
+        from scrapers.greenhouse.greenhouse_api_fetcher import fetch_greenhouse_jobs
 
-        try:
-            await scraper.init()
+        jobs, stats = fetch_greenhouse_jobs('figma', filter_titles=True, filter_locations=True)
 
-            # Scrape Figma
-            result = await scraper.scrape_company('figma')
+        # Should have fetched some jobs
+        assert stats['jobs_fetched'] > 0, "Should have fetched at least some jobs"
 
-            jobs = result['jobs']
-            stats = result['stats']
+        # Should have filtered some jobs (unless ALL jobs are Data/Product, which is unlikely)
+        if stats['jobs_fetched'] > 10:
+            total_filtered = stats['filtered_by_title'] + stats['filtered_by_location']
+            assert total_filtered > 0, "Should filter out at least some non-Data/Product jobs"
 
-            # Should have scraped some jobs
-            assert stats['jobs_scraped'] > 0, "Should have scraped at least some jobs"
+        # All kept jobs should be Data/Product roles
+        patterns = load_title_patterns()
+        for job in jobs:
+            assert is_relevant_role(job.title, patterns), f"Job '{job.title}' should match Data/Product patterns"
 
-            # Should have filtered some jobs (unless ALL jobs are Data/Product, which is unlikely)
-            # Most companies have sales, marketing, engineering, etc.
-            # We expect at least 20% filter rate for most companies
-            if stats['jobs_scraped'] > 10:  # Only check if we have enough data
-                assert stats['jobs_filtered'] > 0, "Should filter out at least some non-Data/Product jobs"
-
-            # Filter rate should be reasonable (0-100%)
-            assert 0 <= stats['filter_rate'] <= 100
-
-            # All kept jobs should be Data/Product roles
-            patterns = load_title_patterns()
-            from scrapers.greenhouse.greenhouse_scraper import is_relevant_role
-
-            for job in jobs:
-                assert is_relevant_role(job.title, patterns), f"Job '{job.title}' should match Data/Product patterns"
-
-        finally:
-            await scraper.close()
-
-    async def test_filtering_disabled_returns_all_jobs(self):
+    def test_filtering_disabled_returns_all_jobs(self):
         """Test that disabling filtering returns all jobs without filtering"""
-        # Scrape same company with filtering ON and OFF, compare counts
-        scraper_filtered = GreenhouseScraper(headless=True, filter_titles=True)
-        scraper_unfiltered = GreenhouseScraper(headless=True, filter_titles=False)
+        from scrapers.greenhouse.greenhouse_api_fetcher import fetch_greenhouse_jobs
 
-        try:
-            await scraper_filtered.init()
-            await scraper_unfiltered.init()
+        # Fetch with and without filtering
+        jobs_filtered, stats_filtered = fetch_greenhouse_jobs(
+            'figma', filter_titles=True, filter_locations=True
+        )
+        jobs_unfiltered, stats_unfiltered = fetch_greenhouse_jobs(
+            'figma', filter_titles=False, filter_locations=False
+        )
 
-            # Scrape with filtering
-            result_filtered = await scraper_filtered.scrape_company('figma')
+        # Unfiltered should have more or equal jobs
+        assert len(jobs_unfiltered) >= len(jobs_filtered), \
+            "Unfiltered fetch should return at least as many jobs"
 
-            # Scrape without filtering
-            result_unfiltered = await scraper_unfiltered.scrape_company('figma')
+        # Unfiltered stats should show 0 filtered
+        assert stats_unfiltered['filtered_by_title'] == 0
+        assert stats_unfiltered['filtered_by_location'] == 0
+        assert stats_unfiltered['jobs_kept'] == stats_unfiltered['jobs_fetched']
 
-            # Unfiltered should have more or equal jobs (should be more in most cases)
-            jobs_filtered = len(result_filtered['jobs'])
-            jobs_unfiltered = len(result_unfiltered['jobs'])
+    def test_structured_salary_data(self):
+        """Test that API returns structured salary data for some jobs"""
+        from scrapers.greenhouse.greenhouse_api_fetcher import fetch_greenhouse_jobs
 
-            assert jobs_unfiltered >= jobs_filtered, "Unfiltered scrape should return at least as many jobs"
+        # Fetch without filtering to get more jobs
+        jobs, stats = fetch_greenhouse_jobs('figma', filter_titles=False, filter_locations=False)
 
-            # Unfiltered stats should show 0 filtered
-            assert result_unfiltered['stats']['jobs_filtered'] == 0
-            assert result_unfiltered['stats']['jobs_kept'] == result_unfiltered['stats']['jobs_scraped']
-
-        finally:
-            await scraper_filtered.close()
-            await scraper_unfiltered.close()
-
-    async def test_cost_savings_estimate_in_result(self):
-        """Test that cost savings estimate is included and formatted correctly"""
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
-
-        try:
-            await scraper.init()
-            result = await scraper.scrape_company('figma')
-
-            stats = result['stats']
-
-            # Should have cost_savings_estimate
-            assert 'cost_savings_estimate' in stats
-
-            # Should be formatted as dollar amount (e.g., "$0.27")
-            cost_savings = stats['cost_savings_estimate']
-            assert cost_savings.startswith('$'), "Cost savings should be formatted with $ prefix"
-
-            # Extract numeric value
-            numeric_value = float(cost_savings.replace('$', ''))
-
-            # Should match formula: jobs_filtered * 0.00388
-            expected_savings = stats['jobs_filtered'] * 0.00388
-            assert abs(numeric_value - expected_savings) < 0.01, "Cost savings calculation mismatch"
-
-        finally:
-            await scraper.close()
+        # Check if any jobs have salary data
+        jobs_with_salary = [j for j in jobs if j.salary_min or j.salary_max]
+        # Note: Not all companies provide pay_input_ranges, so we just check the structure
+        for job in jobs_with_salary:
+            if job.salary_min:
+                assert isinstance(job.salary_min, int)
+                assert job.salary_min > 0
+            if job.salary_max:
+                assert isinstance(job.salary_max, int)
+                assert job.salary_max > 0
+            if job.salary_currency:
+                assert isinstance(job.salary_currency, str)
 
 
 class TestFilteringLogic:
-    """Test the actual filtering logic during scraping"""
+    """Test the actual filtering logic"""
 
-    def test_filtering_prevents_description_fetch_simulation(self):
+    def test_filtering_prevents_classification(self):
         """
-        Test that filtering prevents expensive description fetching.
-
-        This is a simulation test - we don't actually scrape, but we verify the logic.
+        Test that filtering prevents expensive classification.
+        This is a simulation test - we verify the logic without API calls.
         """
-        scraper = GreenhouseScraper(headless=True, filter_titles=True)
-        patterns = scraper.title_patterns
+        patterns = load_title_patterns()
 
         # Simulate titles that would be filtered
         filtered_titles = [
@@ -323,19 +182,12 @@ class TestFilteringLogic:
             'Data Engineer',
         ]
 
-        from scrapers.greenhouse.greenhouse_scraper import is_relevant_role
-
         # Verify filtering logic
         for title in filtered_titles:
-            # These should be filtered (not relevant)
             assert is_relevant_role(title, patterns) == False, f"{title} should be filtered out"
 
         for title in kept_titles:
-            # These should be kept (relevant)
             assert is_relevant_role(title, patterns) == True, f"{title} should be kept"
-
-        # In production, filtered jobs would NOT have descriptions fetched
-        # This saves network calls and processing time
 
 
 if __name__ == '__main__':

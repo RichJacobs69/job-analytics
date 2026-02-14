@@ -52,7 +52,6 @@ Validates the title filtering feature that reduces classification costs by 60-70
 
 ### Scraper Tests
 
-- `test_greenhouse_scraper_simple.py` - Basic scraper functionality
 - `test_figma_location_filter.py` - Location filtering validation
 - `test_two_companies.py` - Multi-company scraping
 
@@ -83,8 +82,8 @@ python tests/test_monzo_filtering.py
 - Real company test shows expected filter rate (70-90%)
 - No Data/Product jobs filtered out (check `filtered_titles_sample`)
 
-### 3. After Modifying Scraper Code
-When you change `scrapers/greenhouse/greenhouse_scraper.py`:
+### 3. After Modifying Fetcher Code
+When you change `scrapers/greenhouse/greenhouse_api_fetcher.py` or `scrapers/common/filters.py`:
 
 ```bash
 # Run integration tests
@@ -244,7 +243,7 @@ FAILED test_filter_stats_accuracy - AssertionError: expected filter_rate 65.0 bu
 ```
 
 **Cause:** Filter rate calculation mismatch  
-**Fix:** Check `greenhouse_scraper.py:329-337` for filter rate calculation logic
+**Fix:** Check `scrapers/greenhouse/greenhouse_api_fetcher.py` for filter stats logic
 
 #### Monzo Test Shows Different Numbers
 **Expected:** Job listings change frequently  
@@ -394,7 +393,8 @@ relevant_title_patterns:
 - `pytest.ini` - Pytest configuration
 
 **Implementation:**
-- `scrapers/greenhouse/greenhouse_scraper.py` - Filtering logic
+- `scrapers/greenhouse/greenhouse_api_fetcher.py` - API client
+- `scrapers/common/filters.py` - Shared filtering logic
 - `pipeline/classifier.py` - LLM classification
 - `pipeline/db_connection.py` - Database operations
 
@@ -448,8 +448,7 @@ pytest tests/ -x
 
 **Integration issues:**
 - Check network connectivity
-- Verify Playwright browser installed: `playwright install chromium`
-- Check company still uses Greenhouse ATS
+- Check company still uses Greenhouse ATS (API: `boards-api.greenhouse.io/v1/boards/{slug}/jobs`)
 - Review CLAUDE.md for pipeline architecture
 
 

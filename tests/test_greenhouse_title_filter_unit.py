@@ -9,7 +9,7 @@ import pytest
 from pathlib import Path
 import tempfile
 import yaml
-from scrapers.greenhouse.greenhouse_scraper import (
+from scrapers.common.filters import (
     load_title_patterns,
     is_relevant_role
 )

@@ -1,23 +1,32 @@
 """
-Lever Postings API Client
+Greenhouse Job Board API Client
 
 PURPOSE:
-Fetch job postings from Lever's public Postings API (no auth required).
-Similar to Adzuna client but with Greenhouse-quality full descriptions.
+Fetch job postings from Greenhouse's public Job Board API (no auth required).
+Replaces the Playwright-based browser automation scraper with a simple REST API
+client, following the same pattern as ashby_fetcher.py.
 
-API Documentation: https://github.com/lever/postings-api
+API Endpoint:
+    GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true
+
+Key Advantages over Playwright scraper:
+- Single HTTP request per company (vs browser launch + page navigation)
+- Structured salary data (pay_input_ranges with min/max cents)
+- Department and office data in dedicated fields
+- updated_at timestamp for change detection
+- ~30x faster per company (~1-2s vs ~47s)
+- No browser dependency
 
 USAGE:
-    from scrapers.lever.lever_fetcher import fetch_lever_jobs, fetch_all_lever_companies
+    from scrapers.greenhouse.greenhouse_api_fetcher import (
+        fetch_greenhouse_jobs, load_company_mapping, GreenhouseJob
+    )
 
     # Fetch from single company
-    jobs = fetch_lever_jobs('spotify')
-
-    # Fetch from all companies in mapping
-    all_jobs = fetch_all_lever_companies()
+    jobs, stats = fetch_greenhouse_jobs('figma')
 
     # With filtering
-    jobs = fetch_lever_jobs('spotify', filter_titles=True, filter_locations=True)
+    jobs, stats = fetch_greenhouse_jobs('figma', filter_titles=True, filter_locations=True)
 """
 
 import sys
@@ -25,11 +34,9 @@ import json
 import time
 import logging
 import requests
-import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
-from html import unescape
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,145 +51,125 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Lever API endpoints
-LEVER_API_URLS = {
-    "global": "https://api.lever.co/v0/postings",
-    "eu": "https://api.eu.lever.co/v0/postings"
-}
+# Greenhouse Job Board API endpoint
+GREENHOUSE_API_URL = "https://boards-api.greenhouse.io/v1/boards"
 
-# Rate limiting: 1 request per second (conservative)
-RATE_LIMIT_DELAY = 1.0
+# Rate limiting: lighter than Playwright since API is heavily cached
+RATE_LIMIT_DELAY = 0.5
 
 
 @dataclass
-class LeverJob:
-    """Parsed Lever job posting."""
+class GreenhouseJob:
+    """Parsed Greenhouse job posting from the Job Board API."""
     id: str
     title: str
     company_slug: str
     location: str
     description: str
     url: str
-    apply_url: str
-    team: Optional[str] = None
     department: Optional[str] = None
-    commitment: Optional[str] = None  # Full-time, Part-time, etc.
-    workplace_type: Optional[str] = None  # onsite, hybrid, remote, unspecified
-    instance: str = "global"
+    updated_at: Optional[str] = None
+    # Structured compensation (from pay_input_ranges)
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    salary_currency: Optional[str] = None
 
 
-def strip_html(html_content: str) -> str:
+def parse_compensation(pay_ranges: Optional[List[Dict]]) -> Dict:
     """
-    Strip HTML tags and decode entities from content.
+    Extract salary from Greenhouse pay_input_ranges.
+
+    Greenhouse provides compensation in cents with currency_type.
+    We convert cents to whole dollars/pounds.
 
     Args:
-        html_content: Raw HTML string
+        pay_ranges: List of pay range dicts from API response
 
     Returns:
-        Plain text string
+        Dict with keys: min, max, currency
     """
-    if not html_content:
-        return ""
+    if not pay_ranges:
+        return {}
 
-    # Remove HTML tags
-    clean = re.sub(r'<[^>]+>', ' ', html_content)
-    # Decode HTML entities
-    clean = unescape(clean)
-    # Normalize whitespace
-    clean = re.sub(r'\s+', ' ', clean).strip()
-    return clean
+    result = {}
+
+    # Use first pay range (primary compensation)
+    pay_range = pay_ranges[0]
+
+    min_cents = pay_range.get('min_cents')
+    max_cents = pay_range.get('max_cents')
+    currency = pay_range.get('currency_type')
+
+    if min_cents is not None:
+        result['min'] = min_cents // 100
+    if max_cents is not None:
+        result['max'] = max_cents // 100
+    if currency:
+        result['currency'] = currency
+
+    return result
 
 
-def build_full_description(job_data: Dict) -> str:
+def parse_greenhouse_job(job_data: Dict, company_slug: str) -> GreenhouseJob:
     """
-    Build full job description from all available Lever fields.
+    Parse raw Greenhouse API job data into GreenhouseJob object.
 
-    Concatenates:
-    - descriptionPlain (main description)
-    - lists (Responsibilities, Requirements, etc.)
-    - additional (extra info)
+    Converts HTML content field to plain text using strip_html().
 
     Args:
-        job_data: Raw job dict from Lever API
+        job_data: Raw job dict from Greenhouse API
+        company_slug: The company's Greenhouse board token
 
     Returns:
-        Combined plain text description
+        GreenhouseJob object
     """
-    parts = []
+    from scrapers.common.filters import strip_html
 
-    # Main description (plain text version)
-    if job_data.get('descriptionPlain'):
-        parts.append(job_data['descriptionPlain'])
+    # Extract location
+    location_data = job_data.get('location', {})
+    location = location_data.get('name', '') if isinstance(location_data, dict) else str(location_data)
 
-    # Lists (Responsibilities, Requirements, etc.)
-    for list_item in job_data.get('lists', []):
-        list_text = list_item.get('text', '')
-        list_content = strip_html(list_item.get('content', ''))
-        if list_text and list_content:
-            parts.append(f"\n{list_text}:\n{list_content}")
+    # Extract department (first department if multiple)
+    departments = job_data.get('departments', [])
+    department = departments[0].get('name') if departments else None
 
-    # Additional info
-    if job_data.get('additional'):
-        additional = strip_html(job_data['additional'])
-        if additional:
-            parts.append(f"\nAdditional Information:\n{additional}")
+    # Parse compensation
+    comp = parse_compensation(job_data.get('pay_input_ranges'))
 
-    return '\n\n'.join(parts)
+    # Convert HTML content to plain text
+    content_html = job_data.get('content', '')
+    description = strip_html(content_html) if content_html else ''
 
-
-def parse_lever_job(job_data: Dict, company_slug: str, instance: str = "global") -> LeverJob:
-    """
-    Parse raw Lever API job data into LeverJob object.
-
-    Args:
-        job_data: Raw job dict from Lever API
-        company_slug: The company's Lever site slug
-        instance: 'global' or 'eu'
-
-    Returns:
-        LeverJob object
-    """
-    categories = job_data.get('categories', {})
-
-    # Use allLocations if available (contains full list like ["Paris", "London"])
-    # Fall back to single location field if allLocations not present
-    all_locations = categories.get('allLocations', [])
-    if all_locations and isinstance(all_locations, list):
-        location = ' / '.join(all_locations)
-    else:
-        location = categories.get('location', '')
-
-    return LeverJob(
-        id=job_data.get('id', ''),
-        title=job_data.get('text', ''),
+    return GreenhouseJob(
+        id=str(job_data.get('id', '')),
+        title=job_data.get('title', ''),
         company_slug=company_slug,
         location=location,
-        description=build_full_description(job_data),
-        url=job_data.get('hostedUrl', ''),
-        apply_url=job_data.get('applyUrl', ''),
-        team=categories.get('team'),
-        department=categories.get('department'),
-        commitment=categories.get('commitment'),
-        workplace_type=job_data.get('workplaceType'),  # onsite, hybrid, remote, unspecified
-        instance=instance
+        description=description,
+        url=job_data.get('absolute_url', ''),
+        department=department,
+        updated_at=job_data.get('updated_at'),
+        salary_min=comp.get('min'),
+        salary_max=comp.get('max'),
+        salary_currency=comp.get('currency'),
     )
 
 
-def fetch_lever_jobs(
-    site_slug: str,
-    instance: str = "global",
+def fetch_greenhouse_jobs(
+    board_token: str,
     filter_titles: bool = False,
     filter_locations: bool = False,
     title_patterns: Optional[List[str]] = None,
     location_patterns: Optional[List[str]] = None,
     rate_limit: float = RATE_LIMIT_DELAY
-) -> Tuple[List[LeverJob], Dict]:
+) -> Tuple[List[GreenhouseJob], Dict]:
     """
-    Fetch all jobs for a single Lever site.
+    Fetch all jobs for a single Greenhouse company via the Job Board API.
+
+    Single request per company with ?content=true to inline full descriptions.
 
     Args:
-        site_slug: The company's Lever site slug (e.g., 'spotify')
-        instance: 'global' or 'eu'
+        board_token: The company's Greenhouse board token/slug
         filter_titles: Apply title filtering to remove non-target roles
         filter_locations: Apply location filtering to remove non-target cities
         title_patterns: Regex patterns for title filtering (loaded from config if None)
@@ -190,7 +177,7 @@ def fetch_lever_jobs(
         rate_limit: Seconds to wait after request
 
     Returns:
-        Tuple of (list of LeverJob objects, stats dict)
+        Tuple of (list of GreenhouseJob objects, stats dict)
     """
     stats = {
         'jobs_fetched': 0,
@@ -200,27 +187,28 @@ def fetch_lever_jobs(
         'error': None
     }
 
-    base_url = LEVER_API_URLS.get(instance, LEVER_API_URLS['global'])
-    url = f"{base_url}/{site_slug}?mode=json"
+    url = f"{GREENHOUSE_API_URL}/{board_token}/jobs"
+    params = {'content': 'true'}
 
     headers = {
-        'User-Agent': 'job-analytics-bot/1.0',
+        'User-Agent': 'job-analytics-bot/1.0 (github.com/job-analytics)',
         'Accept': 'application/json'
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=30)
+        response = requests.get(url, headers=headers, params=params, timeout=30)
 
         if response.status_code == 404:
-            logger.warning(f"Lever site not found: {site_slug} ({instance})")
-            stats['error'] = 'Site not found'
+            logger.warning(f"Greenhouse board not found: {board_token}")
+            stats['error'] = 'Board not found'
             return [], stats
 
         response.raise_for_status()
-        jobs_data = response.json()
+        data = response.json()
 
+        jobs_data = data.get('jobs', [])
         if not isinstance(jobs_data, list):
-            logger.warning(f"Unexpected response format from {site_slug}")
+            logger.warning(f"Unexpected response format from {board_token}")
             stats['error'] = 'Invalid response format'
             return [], stats
 
@@ -230,13 +218,13 @@ def fetch_lever_jobs(
         if filter_titles and title_patterns is None:
             from scrapers.common.filters import load_title_patterns
             title_patterns = load_title_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'title_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'title_patterns.yaml'
             )
 
         if filter_locations and location_patterns is None:
             from scrapers.common.filters import load_location_patterns
             location_patterns = load_location_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'location_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'location_patterns.yaml'
             )
 
         # Import filter functions
@@ -246,14 +234,11 @@ def fetch_lever_jobs(
         # Parse and filter jobs
         jobs = []
         for job_data in jobs_data:
-            title = job_data.get('text', '')
-            # Use allLocations if available for filtering (contains full list like ["Paris", "London"])
-            categories = job_data.get('categories', {})
-            all_locations = categories.get('allLocations', [])
-            if all_locations and isinstance(all_locations, list):
-                location = ' / '.join(all_locations)
-            else:
-                location = categories.get('location', '')
+            title = job_data.get('title', '')
+
+            # Build location string for filtering
+            location_data = job_data.get('location', {})
+            location = location_data.get('name', '') if isinstance(location_data, dict) else str(location_data)
 
             # Apply title filter
             if filter_titles and title_patterns:
@@ -263,41 +248,39 @@ def fetch_lever_jobs(
 
             # Apply location filter
             if filter_locations and location_patterns:
-                # First check structured location field
                 location_matched = matches_target_location(location, location_patterns)
 
-                # If no match in structured field, check job description for location keywords
-                # (catches multi-location roles like "SF / NYC / Denver")
+                # Also check description for location keywords (catches multi-location roles)
                 if not location_matched:
-                    description_text = job_data.get('descriptionPlain', '') + ' ' + job_data.get('description', '')
-                    description_lower = description_text.lower()
-                    # Simple substring matching is safe now that problematic abbreviations are removed
-                    location_matched = any(
-                        pattern.lower() in description_lower
-                        for pattern in location_patterns
-                    )
+                    content = job_data.get('content', '')
+                    if content:
+                        content_lower = content.lower()
+                        location_matched = any(
+                            pattern.lower() in content_lower
+                            for pattern in location_patterns
+                        )
 
                 if not location_matched:
                     stats['filtered_by_location'] += 1
                     continue
 
-            job = parse_lever_job(job_data, site_slug, instance)
+            job = parse_greenhouse_job(job_data, board_token)
             jobs.append(job)
 
         stats['jobs_kept'] = len(jobs)
 
     except requests.exceptions.Timeout:
-        logger.error(f"Timeout fetching from {site_slug}")
+        logger.error(f"Timeout fetching from {board_token}")
         stats['error'] = 'Timeout'
         return [], stats
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Request error for {site_slug}: {e}")
+        logger.error(f"Request error for {board_token}: {e}")
         stats['error'] = str(e)[:100]
         return [], stats
 
     except json.JSONDecodeError:
-        logger.error(f"Invalid JSON from {site_slug}")
+        logger.error(f"Invalid JSON from {board_token}")
         stats['error'] = 'Invalid JSON'
         return [], stats
 
@@ -313,29 +296,29 @@ def load_company_mapping(mapping_path: Optional[Path] = None) -> Dict:
     Load company mapping from config file.
 
     Args:
-        mapping_path: Path to lever/company_mapping.json
+        mapping_path: Path to greenhouse/company_ats_mapping.json
 
     Returns:
-        Dict with 'lever' key containing company data
+        Dict with 'greenhouse' key containing company data
     """
     if mapping_path is None:
-        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'lever' / 'company_mapping.json'
+        mapping_path = Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'company_ats_mapping.json'
 
     if not mapping_path.exists():
         logger.warning(f"Company mapping not found: {mapping_path}")
-        return {'lever': {}}
+        return {'greenhouse': {}}
 
     with open(mapping_path) as f:
         return json.load(f)
 
 
-def fetch_all_lever_companies(
+def fetch_all_greenhouse_companies(
     companies: Optional[List[str]] = None,
     filter_titles: bool = True,
     filter_locations: bool = True,
     rate_limit: float = RATE_LIMIT_DELAY,
     on_company_complete: Optional[callable] = None
-) -> Tuple[List[LeverJob], Dict]:
+) -> Tuple[List[GreenhouseJob], Dict]:
     """
     Fetch jobs from all companies in mapping (or specified list).
 
@@ -362,20 +345,20 @@ def fetch_all_lever_companies(
 
     # Load mapping
     mapping = load_company_mapping()
-    lever_companies = mapping.get('lever', {})
+    gh_companies = mapping.get('greenhouse', {})
 
-    if not lever_companies:
-        logger.warning("No companies in mapping")
+    if not gh_companies:
+        logger.warning("No companies in Greenhouse mapping")
         return [], combined_stats
 
     # Filter to specified companies if provided
     if companies:
         companies_to_process = {
-            name: data for name, data in lever_companies.items()
+            name: data for name, data in gh_companies.items()
             if data['slug'] in companies
         }
     else:
-        companies_to_process = lever_companies
+        companies_to_process = gh_companies
 
     # Load filter patterns once
     title_patterns = None
@@ -385,7 +368,7 @@ def fetch_all_lever_companies(
         try:
             from scrapers.common.filters import load_title_patterns
             title_patterns = load_title_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'title_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'title_patterns.yaml'
             )
         except Exception as e:
             logger.warning(f"Could not load title patterns: {e}")
@@ -394,22 +377,20 @@ def fetch_all_lever_companies(
         try:
             from scrapers.common.filters import load_location_patterns
             location_patterns = load_location_patterns(
-                Path(__file__).parent.parent.parent / 'config' / 'lever' / 'location_patterns.yaml'
+                Path(__file__).parent.parent.parent / 'config' / 'greenhouse' / 'location_patterns.yaml'
             )
         except Exception as e:
             logger.warning(f"Could not load location patterns: {e}")
 
-    logger.info(f"Fetching from {len(companies_to_process)} Lever companies...")
+    logger.info(f"Fetching from {len(companies_to_process)} Greenhouse companies...")
 
     for company_name, company_data in companies_to_process.items():
         slug = company_data['slug']
-        instance = company_data.get('instance', 'global')
 
         logger.info(f"  Fetching: {company_name} ({slug})")
 
-        jobs, stats = fetch_lever_jobs(
-            site_slug=slug,
-            instance=instance,
+        jobs, stats = fetch_greenhouse_jobs(
+            board_token=slug,
             filter_titles=filter_titles,
             filter_locations=filter_locations,
             title_patterns=title_patterns,
@@ -448,7 +429,7 @@ def fetch_all_lever_companies(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Fetch jobs from Lever API')
+    parser = argparse.ArgumentParser(description='Fetch jobs from Greenhouse API')
     parser.add_argument('--slug', type=str, help='Single company slug to test')
     parser.add_argument('--all', action='store_true', help='Fetch from all companies in mapping')
     parser.add_argument('--no-filter', action='store_true', help='Disable title/location filtering')
@@ -456,7 +437,7 @@ if __name__ == "__main__":
 
     if args.slug:
         # Test single company
-        jobs, stats = fetch_lever_jobs(
+        jobs, stats = fetch_greenhouse_jobs(
             args.slug,
             filter_titles=not args.no_filter,
             filter_locations=not args.no_filter
@@ -464,12 +445,14 @@ if __name__ == "__main__":
         print(f"\nFetched {len(jobs)} jobs from {args.slug}")
         for job in jobs[:5]:
             print(f"  - {job.title} ({job.location})")
+            print(f"    Salary: {job.salary_min}-{job.salary_max} {job.salary_currency}")
+            print(f"    Department: {job.department}")
             print(f"    Description: {len(job.description)} chars")
         print(f"\nStats: {json.dumps(stats, indent=2)}")
 
     elif args.all:
         # Fetch from all companies
-        jobs, stats = fetch_all_lever_companies(
+        jobs, stats = fetch_all_greenhouse_companies(
             filter_titles=not args.no_filter,
             filter_locations=not args.no_filter
         )
@@ -477,15 +460,17 @@ if __name__ == "__main__":
         print(f"Stats: {json.dumps(stats, indent=2)}")
 
     else:
-        # Quick test with Spotify
-        print("Testing with Spotify...")
-        jobs, stats = fetch_lever_jobs('spotify', filter_titles=False, filter_locations=False)
+        # Quick test with Figma
+        print("Testing with Figma...")
+        jobs, stats = fetch_greenhouse_jobs('figma', filter_titles=False, filter_locations=False)
         print(f"Fetched {len(jobs)} jobs")
         if jobs:
             job = jobs[0]
             print(f"\nSample job:")
             print(f"  Title: {job.title}")
             print(f"  Location: {job.location}")
+            print(f"  Department: {job.department}")
+            print(f"  Salary: {job.salary_min}-{job.salary_max} {job.salary_currency}")
             print(f"  URL: {job.url}")
             print(f"  Description length: {len(job.description)} chars")
-            print(f"  Description preview: {job.description[:500]}...")
+            print(f"  Description preview: {job.description[:300]}...")

@@ -6,7 +6,7 @@ Purpose:
 --------
 Main entry point for fetching jobs from multiple sources:
 - Adzuna API (aggregated job listings)
-- Greenhouse scraper (direct ATS, Playwright-based)
+- Greenhouse API (direct ATS, REST API)
 - Lever API (direct ATS, HTTP API)
 - Ashby API (direct ATS, HTTP API with structured compensation)
 

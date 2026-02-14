@@ -1,17 +1,14 @@
-name: Scrape Greenhouse (Mon/Tue/Thu/Fri 7AM UTC)
+name: Scrape Greenhouse (Mon/Thu 7AM UTC)
 
 on:
   schedule:
-    # Weekday-only schedule (jobs are posted Mon-Fri)
-    # Staggered with Adzuna (Wed) to avoid Gemini rate limits
-    - cron: '0 7 * * 1'  # Monday at 7:00 AM UTC (Batch 1)
-    - cron: '0 7 * * 2'  # Tuesday at 7:00 AM UTC (Batch 2)
-    - cron: '0 7 * * 4'  # Thursday at 7:00 AM UTC (Batch 3)
-    - cron: '0 7 * * 5'  # Friday at 7:00 AM UTC (Batch 4)
+    # 2 batches per week (API-based, ~10 min each vs ~85 min with Playwright)
+    - cron: '0 7 * * 1'  # Monday at 7:00 AM UTC (Batch 1: companies 0-225)
+    - cron: '0 7 * * 4'  # Thursday at 7:00 AM UTC (Batch 2: companies 226-452)
   workflow_dispatch:
     inputs:
       batch_override:
-        description: 'Force specific batch (1-4), or auto based on day'
+        description: 'Force specific batch (1-2), or auto based on day'
         required: false
         default: 'auto'
         type: choice
@@ -19,13 +16,11 @@ on:
           - 'auto'
           - '1'
           - '2'
-          - '3'
-          - '4'
 
 jobs:
   greenhouse:
     runs-on: ubuntu-latest
-    timeout-minutes: 150  # ~108 companies, some high-volume (Launch2: 138 jobs)
+    timeout-minutes: 30  # API-based: ~226 companies in ~10 min
 
     steps:
       - name: Checkout repository
@@ -37,28 +32,8 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps
-
-      - name: Restore URL cache
-        uses: actions/cache@v4
-        with:
-          path: output/greenhouse_scraper_cache.json
-          key: greenhouse-url-cache-${{ github.run_id }}
-          restore-keys: |
-            greenhouse-url-cache-
-
-      # URL overrides are now in config/greenhouse/company_ats_mapping.json (url_type field)
-      # No seed step needed - scraper reads url_type from config directly
+        run: pip install -r requirements.txt
 
       - name: Compute batch and run scraper
         env:
@@ -82,21 +57,19 @@ jobs:
           greenhouse = data.get('greenhouse', {})
           companies = sorted(greenhouse.keys())
           total_companies = len(companies)
-          batch_size = total_companies // 4 + 1
+          batch_size = total_companies // 2 + 1
 
           # Determine batch number (allow manual override)
-          # Weekday schedule: Mon=Batch1, Tue=Batch2, Thu=Batch3, Fri=Batch4
+          # Mon=Batch1, Thu=Batch2
           day_to_batch = {
               0: 0,  # Monday -> Batch 1 (index 0)
-              1: 1,  # Tuesday -> Batch 2 (index 1)
-              3: 2,  # Thursday -> Batch 3 (index 2)
-              4: 3,  # Friday -> Batch 4 (index 3)
+              3: 1,  # Thursday -> Batch 2 (index 1)
           }
-          day_names = {0: 'Monday', 1: 'Tuesday', 3: 'Thursday', 4: 'Friday'}
+          day_names = {0: 'Monday', 3: 'Thursday'}
 
           override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
           if override and override != 'auto':
-              batch_num = int(override) - 1  # Convert 1-4 to 0-3
+              batch_num = int(override) - 1  # Convert 1-2 to 0-1
               print(f"Using manual override: Batch {override}")
           else:
               weekday = datetime.now().weekday()
@@ -130,14 +103,6 @@ jobs:
           exit(result.returncode)
           EOF
 
-      - name: Upload URL cache as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: greenhouse-url-cache
-          path: output/greenhouse_scraper_cache.json
-          if-no-files-found: ignore
-
       - name: Summary
         if: always()
         env:
@@ -153,10 +118,9 @@ jobs:
 
           greenhouse = data.get('greenhouse', {})
           companies = sorted(greenhouse.keys())
-          batch_size = len(companies) // 4 + 1
+          batch_size = len(companies) // 2 + 1
 
-          # Weekday schedule: Mon=Batch1, Tue=Batch2, Thu=Batch3, Fri=Batch4
-          day_to_batch = {0: 0, 1: 1, 3: 2, 4: 3}  # Mon/Tue/Thu/Fri
+          day_to_batch = {0: 0, 3: 1}  # Mon/Thu
 
           override = os.environ.get('BATCH_OVERRIDE', 'auto').strip()
           if override and override != 'auto':
@@ -172,8 +136,9 @@ jobs:
               f.write(f"## Greenhouse Batch {batch_num + 1} Complete\n\n")
               f.write(f"| Metric | Value |\n")
               f.write(f"|--------|-------|\n")
-              f.write(f"| **Batch** | {batch_num + 1} of 4 |\n")
+              f.write(f"| **Batch** | {batch_num + 1} of 2 |\n")
               f.write(f"| **Companies** | {len(batch_companies)} |\n")
               f.write(f"| **Range** | {batch_companies[0]} -> {batch_companies[-1]} |\n")
+              f.write(f"| **Method** | REST API (no browser) |\n")
               f.write(f"| **Timestamp** | {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} |\n")
           EOF

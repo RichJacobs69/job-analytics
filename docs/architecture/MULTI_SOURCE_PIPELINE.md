@@ -10,13 +10,13 @@ Six-source job ingestion strategy combining mass-market coverage (Adzuna) with p
 
 ```
 PIPELINE A: Adzuna   PIPELINE B: Greenhouse  PIPELINE C: Lever  PIPELINE D: Ashby  PIPELINE E: Workable  PIPELINE F: SmartRecruiters
-(Mass market)        (Browser automation)    (Public API)       (Public API)       (Public API)          (Public API)
+(Mass market)        (REST API)             (Public API)       (Public API)       (Public API)          (Public API)
 
-Adzuna Job API       Greenhouse Pages        Lever API          Ashby API          Workable API          SmartRecruiters API
+Adzuna Job API       Greenhouse Job Board API  Lever API          Ashby API          Workable API          SmartRecruiters API
     |                    |                       |                  |                  |                      |
-fetch_adzuna_jobs.py greenhouse_scraper.py   lever_fetcher.py   ashby_fetcher.py   workable_fetcher.py   smartrecruiters_fetcher.py
-|- Paginated results |- Playwright browser   |- JSON API        |- JSON API        |- JSON API            |- JSON API
-|- Deduplication     |- Full descriptions    |- EU + Global     |- Structured comp  |- workplace_type      |- locationType
+fetch_adzuna_jobs.py greenhouse_api_fetcher.py lever_fetcher.py   ashby_fetcher.py   workable_fetcher.py   smartrecruiters_fetcher.py
+|- Paginated results |- Single request/company|- JSON API        |- JSON API        |- JSON API            |- JSON API
+|- Deduplication     |- Structured salary     |- EU + Global     |- Structured comp  |- workplace_type      |- locationType
     |                |- Title/location filter     |                  |              |- salary               |- experienceLevel
     |                    |                       |                  |                  |                      |
     +--------+-----------+-----------+-----------+------------------+----------------------+
@@ -187,42 +187,20 @@ Result: Deep analysis of ~970+ premium companies (5 ATS sources)
 - **Status:** Production-ready, running daily
 
 ### Pipeline B: Greenhouse - COMPLETE
-- **File:** `scrapers/greenhouse/greenhouse_scraper.py`
+- **File:** `scrapers/greenhouse/greenhouse_api_fetcher.py`
+- **API:** `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`
 - **Config:** `config/greenhouse/company_ats_mapping.json` (452 companies)
-- **Filtering:** `config/greenhouse/title_patterns.yaml`, `config/greenhouse/location_patterns.yaml`
+- **Filtering:** `config/greenhouse/title_patterns.yaml`, `config/greenhouse/location_patterns.yaml` (shared via `scrapers/common/filters.py`)
+- **Reliability:** High (REST API, no browser dependency)
+- **Performance:** ~1-2s per company (single HTTP request)
 - **Status:** Production-ready, 94.7% filter rate achieved
 
-#### Greenhouse URL Resolution
-
-Companies use different Greenhouse URL patterns depending on their setup. The scraper uses **config-driven resolution** with automatic fallback:
-
-| `url_type` | URL Pattern | Count | Use Case |
-|------------|-------------|-------|----------|
-| _(default)_ | `job-boards.greenhouse.io/{slug}` | 279 | Standard companies |
-| `embed` | `boards.greenhouse.io/embed/job_board?for={slug}` | 69 | Companies that redirect to custom pages |
-| `eu` | `job-boards.eu.greenhouse.io/{slug}` | - | EU-hosted companies |
-
-**Resolution Priority:**
-```
-1. Config url_type    →  Build URL directly (fast, authoritative)
-2. Runtime cache      →  Use proven URL from previous run
-3. BASE_URLS fallback →  Try patterns in order (auto-discovery)
-   └─ Redirect detection: If URL redirects to non-greenhouse domain,
-      automatically tries next pattern and logs suggestion
-```
-
-**Config Example:**
-```json
-{
-  "Stripe": {"slug": "stripe"},
-  "Cloudflare": {"slug": "cloudflare", "url_type": "embed"},
-  "JetBrains": {"slug": "jetbrains", "url_type": "eu"}
-}
-```
-
-**Adding New Companies:**
-- Add with just `slug` - scraper auto-discovers working URL
-- If redirect detected, logs: `"Consider adding url_type=embed to config"`
+#### Greenhouse API Features
+- Single HTTP request per company (vs Playwright browser automation)
+- Structured salary data via `pay_input_ranges` (min/max cents with currency)
+- Department and office data in dedicated fields
+- `updated_at` timestamp for change detection
+- No Playwright browser dependency required
 - Optionally add `url_type` for faster resolution
 
 ### Pipeline C: Lever - COMPLETE
