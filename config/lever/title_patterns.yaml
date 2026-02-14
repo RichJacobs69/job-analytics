@@ -15,18 +15,23 @@ relevant_title_patterns:
 
   # Data Analyst family
   - 'data analyst'
+  - 'product analyst'
+  - 'growth analyst'
+  - 'insight analyst'
   - 'analytics (engineer|lead|manager)'
   - '(manager|lead|director)[,\s]+(data\s+)?analytics'  # Reversed: "Manager, Data Analytics"
-  - 'business intelligence|bi (engineer|analyst|developer)'
+  - 'business intelligence|bi (engineer|analyst|developer|lead|manager)'
   - 'bi engineer|bi analyst'
 
   # Data Engineer family
   - 'data engineer'
-  - 'data platform'
-  - '(engineer|manager|lead)[,\s]+data\s+(engineering|platform)'  # Reversed: "Engineer, Data Platform"
+  - 'data platform (engineer|manager|lead|architect)'
+  - 'data engineering (manager|lead)'
+  - '(engineer|manager|lead)[,\s]+data\s+engineering'  # Reversed: "Engineer, Data Engineering"
 
   # Data Scientist family
   - 'data scientist'
+  - 'data science (engineer|manager|lead)'
   - '(scientist|manager|lead|director)[,\s]+data\s+science'  # Reversed: "Scientist, Data Science"
   - 'machine learning scientist'
   - 'research scientist.*(ml|ai|machine learning|data)'
@@ -35,11 +40,21 @@ relevant_title_patterns:
   # ML/AI Engineer family
   - 'ml engineer|machine learning engineer'
   - 'ai engineer'
+  - 'ai/ml'
   - 'mlops'
-  - '(engineer|manager|lead)[,\s]+(ml|machine learning|ai)'  # Reversed: "Engineer, ML"
+  - '(ml|machine learning|ai) (engineer|manager|lead|architect)'
+  - '^(ml|machine learning|ai)\s+(engineer|manager|lead)'  # "ML Engineer", "AI Manager" at start of title
 
   # Data Architect family
   - 'data architect'
+
+  # Data/Analytics Leadership (Director+)
+  # Use \b word boundaries to avoid matching "Data Center", "Development", "Retail"
+  - 'director.*\b(data science|data analytics|data engineering|machine learning|mlops)\b'
+  - '\b(data science|data analytics|data engineering|machine learning|mlops)\b.*director'
+  - '(vp|vice president).*\b(data science|data analytics|data engineering|machine learning)\b'
+  - 'head of (data(?!\s*center)|analytics|data science|machine learning)'
+  - 'chief (data|analytics|ai) officer|cdo|cao|caio'
 
   # ===== PRODUCT ROLES =====
 
@@ -47,12 +62,12 @@ relevant_title_patterns:
   - 'product manager'
   - 'product owner'
   - 'technical product manager'
-  - '(manager|lead|director)[,\s]+product'  # Reversed: "Manager, Product"
+  - '(manager|lead|director)[,\s]+product(?!\s*(design|market|operat))'  # Reversed: "Manager, Product" but NOT Product Design/Marketing/Operations
 
   # Product Leadership (Director+)
-  - 'director.*(product|pm)'
-  - '(vp|vice president).*(product|pm)'
-  - 'head of product'
+  - 'director.*product\s*manag'
+  - '(vp|vice president).*product\s*manag'
+  - 'head of product(?!\s*(design|market|operat))'
   - 'chief product officer|cpo'
 
   # Growth PM
@@ -62,8 +77,9 @@ relevant_title_patterns:
   - 'platform (pm|product manager)'
 
   # AI/ML Product Manager
-  - '(ai|ml|data).*(product manager|pm)'
+  - '(ai|ml|data).*product manager'
   - 'product manager.*(ai|ml|data)'
+  - '(ai|ml|data)\s+pm\b'  # "Data PM", "ML PM" (standalone PM only)
 
   # ===== DELIVERY ROLES =====
 
@@ -81,9 +97,8 @@ relevant_title_patterns:
   - 'senior project manager'
 
   # Programme Manager family
-  - 'program(me)? manager'
-  - 'senior program(me)? manager'
-  - '(manager|lead|director)[,\s]+program(me)?s?'  # Reversed: "Manager, Programs"
+  - '^(senior |staff |principal |lead )?(technical )?program(me)? manager'
+  - '(manager|lead|director)[,\s]+program(me)?s?\b(?!\s*manag)'  # Reversed: "Manager, Programs"
 
   # Scrum Master family
   - 'scrum master'
