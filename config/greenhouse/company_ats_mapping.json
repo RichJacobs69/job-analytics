@@ -688,9 +688,6 @@
       "slug": "lattice",
       "url_type": "embed"
     },
-    "Launch2": {
-      "slug": "launch2"
-    },
     "LaunchDarkly": {
       "slug": "launchdarkly"
     },

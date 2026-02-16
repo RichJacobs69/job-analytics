@@ -5,8 +5,8 @@
 
 metadata:
   version: 1.7
-  last_updated: "2026-02-09"
-  total_agencies: 337
+  last_updated: "2026-02-16"
+  total_agencies: 338
   usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
 
 # =========================
@@ -403,6 +403,9 @@ hard_filter:
 
   # Added 2026-02-07: Hiring platform (aggregates jobs from other employers)
   - fuku
+
+  # Added 2026-02-16: Staffing firm disguised as product company (1110 jobs, all generic titles)
+  - launch2
 
   # Added 2026-02-09: Graduate recruitment agencies and job boards
   - frazer jones
