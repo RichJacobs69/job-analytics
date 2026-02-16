@@ -20,7 +20,7 @@ on:
 jobs:
   greenhouse:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # API fetch is fast, but LLM classification ~20s/job
+    timeout-minutes: 90  # API fetch is fast, but LLM classification ~20s/job
 
     steps:
       - name: Checkout repository
