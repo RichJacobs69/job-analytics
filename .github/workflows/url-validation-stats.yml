@@ -1,10 +1,10 @@
 name: URL Validation & Stats (Mon-Fri 9AM UTC)
 
-# Validates job URLs for 404s and computes employer fill statistics
+# Checks job freshness across all 5 ATS sources and computes employer fill statistics
 # Part of: EPIC-008 Curated Job Feed
 #
-# NOTE: Summary generation has moved inline to classifier.py
-# The summary_generator.py script remains as a backfill utility only.
+# All 5 sources (Greenhouse, Ashby, Lever, Workable, SmartRecruiters) use the same
+# model: job present in API listing = active; job absent = closed (soft_404).
 
 on:
   schedule:
@@ -12,13 +12,8 @@ on:
     - cron: '0 9 * * 1-5'  # Monday-Friday (weekday schedule)
   workflow_dispatch:
     inputs:
-      url_limit:
-        description: 'Limit for Greenhouse URL validation (blank = check all)'
-        required: false
-        default: ''
-        type: string
       run_employer_stats:
-        description: 'Run employer_stats.py after URL validation'
+        description: 'Run employer_stats.py after freshness check'
         required: false
         default: true
         type: boolean
@@ -26,7 +21,7 @@ on:
 jobs:
   url-validation-stats:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # API freshness check (with per-job verification) + Greenhouse URL validation
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -42,42 +37,18 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Install Playwright browsers
-        run: |
-          playwright install chromium --with-deps
-
-      # Step 1: API Freshness Check (Lever, Ashby, Workable, SmartRecruiters)
-      # Includes per-job verification for Lever/SmartRecruiters
-      - name: Run api_freshness_checker.py (SPA sources)
+      # Step 1: API Freshness Check (all 5 ATS sources)
+      - name: Run api_freshness_checker.py (all ATS sources)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 1: API Freshness Check"
+          echo "STEP 1: API Freshness Check (all sources)"
           echo "=========================================="
           python pipeline/api_freshness_checker.py
 
-      # Step 2: Greenhouse URL Validation (must run before employer_stats)
-      # SPA sources (Lever, Ashby, Workable, SmartRecruiters) handled by api_freshness_checker above
-      - name: Run url_validator.py (Greenhouse only)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: |
-          echo "=========================================="
-          echo "STEP 2: Greenhouse URL Validation"
-          echo "=========================================="
-          LIMIT="${{ github.event.inputs.url_limit }}"
-          if [ -z "$LIMIT" ]; then
-            echo "Checking all Greenhouse URLs..."
-            python pipeline/url_validator.py
-          else
-            echo "Checking up to $LIMIT Greenhouse URLs..."
-            python pipeline/url_validator.py --limit=$LIMIT
-          fi
-
-      # Step 3: Employer Stats (depends on 404 data from URL validation)
+      # Step 2: Employer Stats (depends on freshness data)
       - name: Run employer_stats.py
         if: ${{ github.event.inputs.run_employer_stats != 'false' }}
         env:
@@ -85,7 +56,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           echo "=========================================="
-          echo "STEP 3: Employer Fill Stats"
+          echo "STEP 2: Employer Fill Stats"
           echo "=========================================="
           python pipeline/employer_stats.py
 
@@ -100,9 +71,7 @@ jobs:
               f.write("## URL Validation & Stats Complete\n\n")
               f.write(f"| Step | Scope | Status |\n")
               f.write(f"|------|-------|--------|\n")
-              f.write(f"| **API Freshness Check** | Lever, Ashby, Workable, SmartRecruiters | Complete |\n")
-              f.write(f"| **Greenhouse URL Validator** | Greenhouse | Complete |\n")
+              f.write(f"| **API Freshness Check** | Greenhouse, Ashby, Lever, Workable, SmartRecruiters | Complete |\n")
               f.write(f"| **Employer Stats** | All sources | Complete |\n")
               f.write(f"\n**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-              f.write(f"\n_API freshness checker includes per-job verification for Lever/SmartRecruiters._\n")
           EOF
