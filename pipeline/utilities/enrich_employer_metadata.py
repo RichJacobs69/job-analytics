@@ -38,6 +38,7 @@ import time
 import argparse
 import requests
 from datetime import date, datetime
+from collections import defaultdict
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 from urllib.parse import urlparse
@@ -105,6 +106,25 @@ ATS_URL_TEMPLATES = {
     'smartrecruiters': {
         'default': 'https://jobs.smartrecruiters.com/{slug}',
     },
+}
+
+ATS_LOGO_PATTERNS = {
+    'ashby': [
+        'app.ashbyhq.com/api/images/org-theme-wordmark',
+        'app.ashbyhq.com/api/images/org-theme-logo',
+    ],
+    'greenhouse': [
+        'cdn.greenhouse.io/external_greenhouse_job_boards/logos',
+    ],
+    'smartrecruiters': [
+        'smartrecruiters.com/sr-company-logo',
+    ],
+    'workable': [
+        'workablehr.s3.amazonaws.com/uploads/account/logo',
+    ],
+    'lever': [
+        'lever-client-logos.s3',
+    ],
 }
 
 CONFIG_PATHS = {
@@ -433,7 +453,21 @@ def fetch_page(url: str, timeout: int = 15, retries: int = 2) -> Tuple[Optional[
     return None, -3  # Max retries exceeded
 
 
-def extract_scraped_fields(html: str, url: str) -> Dict:
+def extract_ats_logo(soup, ats_source, base_url=None):
+    """Extract company logo URL from ATS-specific <img> tags."""
+    patterns = ATS_LOGO_PATTERNS.get(ats_source, [])
+    for pattern in patterns:
+        img = soup.find('img', src=lambda s: s and pattern in s)
+        if img and img.get('src'):
+            src = img['src']
+            if src.startswith('/') and base_url:
+                parsed = urlparse(base_url)
+                src = f"{parsed.scheme}://{parsed.netloc}{src}"
+            return src
+    return None
+
+
+def extract_scraped_fields(html: str, url: str, ats_source=None) -> Dict:
     """
     Extract metadata from HTML using BeautifulSoup.
 
@@ -450,6 +484,12 @@ def extract_scraped_fields(html: str, url: str) -> Dict:
     og_image = soup.find('meta', property='og:image')
     if og_image and og_image.get('content'):
         result['logo_url'] = og_image['content']
+
+    # Fallback: ATS-specific <img> logo
+    if not result['logo_url'] and ats_source:
+        ats_logo = extract_ats_logo(soup, ats_source, url)
+        if ats_logo:
+            result['logo_url'] = ats_logo
 
     # Fallback: look for apple-touch-icon or favicon
     if not result['logo_url']:
@@ -710,7 +750,22 @@ def get_employers_to_enrich(
     - OR force=True
     """
     # Get canonical names from ATS companies
-    ats_canonical_names = {c['canonical_name']: c for c in ats_companies}
+    # Build ranked source list: ATS sources first (in load order), adzuna last.
+    # When multiple ATS sources exist for the same employer, the enrichment loop
+    # will try each in order and use the first one whose page loads successfully.
+    ats_sources_by_name = defaultdict(list)
+    for c in ats_companies:
+        ats_sources_by_name[c['canonical_name']].append(c)
+
+    ats_canonical_names = {}
+    for name, sources in ats_sources_by_name.items():
+        ats_entries = [s for s in sources if s['ats_source'] != 'adzuna']
+        adzuna_entries = [s for s in sources if s['ats_source'] == 'adzuna']
+        ranked = ats_entries + adzuna_entries  # ATS sources first, adzuna last
+        # Primary entry is the first; alternates stored for fallback on scrape fail
+        primary = ranked[0]
+        primary['alt_sources'] = ranked[1:] if len(ranked) > 1 else []
+        ats_canonical_names[name] = primary
 
     # Apply employer filter if specified
     if employer_filter:
@@ -959,30 +1014,39 @@ def enrich_employer_metadata(
         if i > 0 and i % 20 == 0:
             print(f"  ... processed {i}/{len(employers)}")
 
-        # Build career page URL (None for Adzuna - no career page)
-        if emp.get('slug'):
-            career_url = build_career_page_url(
-                emp['slug'],
-                emp['ats_source'],
-                emp.get('url_type'),
-                emp.get('instance')
+        # Build ranked list of sources to try (primary + alternates)
+        sources_to_try = [emp] + emp.get('alt_sources', [])
+
+        # Try each source until one loads successfully
+        html = None
+        career_url = None
+        active_source = emp
+
+        for source_entry in sources_to_try:
+            if not source_entry.get('slug'):
+                continue  # Skip adzuna entries (no career page)
+            url = build_career_page_url(
+                source_entry['slug'],
+                source_entry['ats_source'],
+                source_entry.get('url_type'),
+                source_entry.get('instance')
             )
-        else:
-            career_url = None  # Adzuna - LLM-only enrichment
-
-        # Scrape career page (skip for Adzuna)
-        if career_url:
-            html, status = fetch_page(career_url)
-
-            if not html:
-                print(f"  [{i+1}] {display[:30]:<30} [SCRAPE FAIL: {status}]")
-                stats['scrape_failed'] += 1
-                # Still try LLM with just company name
-                scraped = {'logo_url': None, 'website': None, 'page_text': ''}
+            html, status = fetch_page(url)
+            if html:
+                career_url = url
+                active_source = source_entry
+                break
             else:
-                scraped = extract_scraped_fields(html, career_url)
+                if len(sources_to_try) > 1:
+                    print(f"  [{i+1}] {display[:30]:<30} [{source_entry['ats_source']} {status}] trying next source...")
+
+        # Extract scraped fields
+        if html:
+            scraped = extract_scraped_fields(html, career_url, ats_source=active_source.get('ats_source'))
         else:
-            # Adzuna: LLM-only, no scraping
+            if career_url or any(s.get('slug') for s in sources_to_try):
+                print(f"  [{i+1}] {display[:30]:<30} [SCRAPE FAIL: all sources exhausted]")
+                stats['scrape_failed'] += 1
             scraped = {'logo_url': None, 'website': None, 'page_text': ''}
 
         # Call LLM for enrichment (includes industry classification)
@@ -1086,6 +1150,12 @@ def enrich_employer_metadata(
     else:
         print(f"\n[DONE] Updated {stats['success']} employers")
 
+    # Propagate logos to duplicate employer records
+    if not dry_run and stats['fields_updated'].get('logo_url', 0) > 0:
+        propagated = propagate_logos_to_siblings()
+        if propagated:
+            print(f"\n[PROPAGATE] Copied logos to {propagated} sibling records")
+
     # Export if requested
     if export_path and results:
         import csv
@@ -1094,6 +1164,51 @@ def enrich_employer_metadata(
             writer.writeheader()
             writer.writerows(results)
         print(f"\n[EXPORT] Results saved to {export_path}")
+
+
+def propagate_logos_to_siblings():
+    """Propagate logos from enriched employers to duplicate records with the same display name.
+
+    Duplicate records arise because adzuna-sourced employers use spaced names
+    (e.g. 'new relic') while ATS-sourced ones use slugs ('newrelic').
+    When one record gets a logo via scraping, siblings should inherit it.
+    """
+    all_records = []
+    offset = 0
+    while True:
+        res = supabase.table('employer_metadata').select(
+            'canonical_name, display_name, logo_url'
+        ).range(offset, offset + 999).execute()
+        all_records.extend(res.data)
+        if len(res.data) < 1000:
+            break
+        offset += 1000
+
+    def _normalize(name):
+        n = (name or '').lower().strip()
+        n = re.sub(r'\s*careers?\s*', '', n)
+        n = re.sub(r'[^a-z0-9]', '', n)
+        return n
+
+    by_norm = defaultdict(list)
+    for r in all_records:
+        key = _normalize(r['display_name'] or r['canonical_name'])
+        if key:
+            by_norm[key].append(r)
+
+    updated = 0
+    for records in by_norm.values():
+        has_logo = [r for r in records if r['logo_url']]
+        no_logo = [r for r in records if not r['logo_url']]
+        if has_logo and no_logo:
+            logo = has_logo[0]['logo_url']
+            for r in no_logo:
+                supabase.table('employer_metadata').update(
+                    {'logo_url': logo}
+                ).eq('canonical_name', r['canonical_name']).execute()
+                updated += 1
+
+    return updated
 
 
 # ============================================
