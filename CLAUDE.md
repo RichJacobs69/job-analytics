@@ -32,7 +32,7 @@ Before starting any task, check if it matches a skill in `.claude/skills/`. If i
 
 ## Project Overview
 
-LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings. Ingests from Adzuna API + Greenhouse/Lever/Ashby/Workable scrapers, classifies via Gemini 2.5 Flash, stores in Supabase PostgreSQL.
+LLM-powered job market intelligence platform that fetches, classifies, and analyzes job postings. Ingests from Greenhouse/Lever/Ashby/Workable/SmartRecruiters ATS scrapers, classifies via Gemini 2.5 Flash, stores in Supabase PostgreSQL.
 
 **Live Dashboard:** [richjacobs.me/projects/hiring-market](https://richjacobs.me/projects/hiring-market)
 
@@ -51,8 +51,7 @@ python wrappers/fetch_jobs.py --sources lever                # Lever only
 python wrappers/fetch_jobs.py --sources ashby                # Ashby only (best salary data)
 python wrappers/fetch_jobs.py --sources workable             # Workable only (workplace_type)
 python wrappers/fetch_jobs.py --sources smartrecruiters      # SmartRecruiters only (locationType, experienceLevel)
-python wrappers/fetch_jobs.py lon 100 --sources adzuna       # Adzuna only
-python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters  # All sources
+python wrappers/fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters  # All sources
 
 # With resume capability
 python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
@@ -107,8 +106,6 @@ pytest tests/ -v
 
 Required in `.env`:
 ```
-ADZUNA_APP_ID=<app_id>
-ADZUNA_API_KEY=<api_key>
 GOOGLE_API_KEY=<key>              # Gemini 2.5 Flash (default classifier)
 ANTHROPIC_API_KEY=<key>           # Claude fallback (set LLM_PROVIDER=anthropic)
 SUPABASE_URL=<url>
@@ -118,10 +115,10 @@ SUPABASE_KEY=<key>
 ## Architecture
 
 ```
-Adzuna API ─────┐                    ┌───── Greenhouse/Lever/Ashby/Workable/SmartRecruiters Scrapers
-                │                    │
-                v                    v
-         unified_job_ingester.py (merge & dedupe)
+Greenhouse/Lever/Ashby/Workable/SmartRecruiters Scrapers
+                         │
+                         v
+         unified_job_ingester.py (dedupe)
                          │
                          v
               [Agency Blocklist Filter]
@@ -161,7 +158,7 @@ job-analytics/
 ├── wrappers/          # Entry points (thin wrappers)
 ├── pipeline/          # Core production code
 │   └── utilities/     # Backfill & maintenance
-├── scrapers/          # Adzuna, Greenhouse, Lever, Ashby, Workable, SmartRecruiters
+├── scrapers/          # Greenhouse, Lever, Ashby, Workable, SmartRecruiters
 ├── config/            # YAML/JSON configs
 │   ├── greenhouse/    # Greenhouse-specific
 │   ├── lever/         # Lever-specific
@@ -241,7 +238,7 @@ Uses JSONB array for flexible multi-location support:
 ## Cost Optimization
 
 - **Pre-filters:** Title + location filtering achieves 94.7% reduction before LLM
-- **Classifier:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse/Adzuna, Gemini 3.0 Flash ($0.002435/job) for others
+- **Classifier:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse, Gemini 3.0 Flash ($0.002435/job) for others
 - **Agency blocklist:** Blocks 10-15% before classification
 
 ## Current Work: Epic 8 Job Feed
@@ -269,7 +266,6 @@ Uses JSONB array for flexible multi-location support:
 
 Located in `.github/workflows/`:
 - `scrape-greenhouse.yml` - Mon/Thu 7AM UTC (2 batches via REST API, ~226 companies each)
-- `scrape-adzuna.yml` - Wed 7AM UTC (5 cities, weekly)
 - `scrape-lever.yml` - Mon/Thu 6PM UTC (evening slot)
 - `scrape-ashby.yml` - Tue/Thu 6PM UTC (evening slot)
 - `scrape-workable.yml` - Wed/Sat 7PM UTC (staggered after Lever)
@@ -300,7 +296,7 @@ while True:
     offset += 1000
 ```
 
-**Classification issues:** Check if text is truncated (Adzuna limitation)
+**Classification issues:** Check classifier output for missing fields
 
 **Agency spam:** Add to `config/agency_blacklist.yaml`, run backfill
 
