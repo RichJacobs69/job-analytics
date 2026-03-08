@@ -27,7 +27,7 @@ import sys
 from datetime import datetime, timedelta, date
 from typing import List, Dict
 sys.path.insert(0, '.')
-from pipeline.db_connection import supabase, insert_enriched_job
+from pipeline.db_connection import supabase, insert_enriched_job, generate_job_hash
 from pipeline.classifier import classify_job
 from pipeline.agency_detection import is_agency_job, validate_agency_classification
 from pipeline.location_extractor import extract_locations
@@ -120,6 +120,88 @@ def find_missing_enriched_jobs(hours_back: int = None, limit: int = None, source
     missing_jobs = [job for job in raw_jobs if job['id'] not in enriched_raw_ids]
 
     logger.info(f"  {len(missing_jobs)} raw_jobs are missing from enriched_jobs")
+
+    # Pre-filter: skip jobs whose hash already exists in enriched_jobs
+    # This avoids wasting LLM API calls on jobs that will be no-op upserts
+    logger.info("  Fetching existing enriched_jobs hashes for pre-filter...")
+    existing_hashes = set()
+    offset = 0
+    while True:
+        hash_response = supabase.table('enriched_jobs')\
+            .select('job_hash')\
+            .range(offset, offset + page_size - 1)\
+            .execute()
+        if not hash_response.data:
+            break
+        for row in hash_response.data:
+            if row.get('job_hash'):
+                existing_hashes.add(row['job_hash'])
+        if len(hash_response.data) < page_size:
+            break
+        offset += page_size
+
+    logger.info(f"  Found {len(existing_hashes)} existing hashes")
+
+    # Pre-compute hash for each missing job and skip duplicates
+    # Uses metadata location fields (same as process_missing_job) for accurate city
+    city_code_to_name = {
+        'lon': 'London', 'nyc': 'New York', 'den': 'Denver',
+        'sfo': 'San Francisco', 'sgp': 'Singapore',
+    }
+    city_to_code = {
+        'london': 'lon', 'new_york': 'nyc', 'denver': 'den',
+        'san_francisco': 'sfo', 'singapore': 'sgp',
+    }
+
+    pre_filter_count = len(missing_jobs)
+    filtered_jobs = []
+    for job in missing_jobs:
+        company = (job.get('company') or 'unknown').lower().strip()
+        title = (job.get('title') or 'unknown').lower().strip()
+
+        # Resolve city from metadata (mirrors process_missing_job logic)
+        metadata = job.get('metadata') or {}
+        if isinstance(metadata, str):
+            import json
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                metadata = {}
+
+        source_location = (
+            metadata.get('adzuna_city') or
+            metadata.get('adzuna_location') or
+            metadata.get('ashby_city') or
+            metadata.get('ashby_location') or
+            metadata.get('lever_location') or
+            metadata.get('greenhouse_location') or
+            metadata.get('workable_location') or
+            metadata.get('smartrecruiters_location')
+        )
+
+        # Convert to city code for hash
+        if source_location and source_location.lower() in city_code_to_name:
+            source_location = city_code_to_name[source_location.lower()]
+
+        city = 'unk'
+        if source_location:
+            extracted = extract_locations(source_location)
+            if extracted and extracted[0].get('type') == 'city':
+                city = city_to_code.get(extracted[0].get('city', ''), 'unk')
+            elif extracted and extracted[0].get('type') == 'remote':
+                city = 'remote'
+
+        # Fall back to URL heuristic if metadata had nothing
+        if city == 'unk':
+            city = infer_city_from_url(job.get('posting_url', ''))
+
+        pre_hash = generate_job_hash(company, title, city)
+        if pre_hash not in existing_hashes:
+            filtered_jobs.append(job)
+
+    missing_jobs = filtered_jobs
+    skipped = pre_filter_count - len(missing_jobs)
+    logger.info(f"  Hash pre-filter: skipped {skipped} jobs already in enriched_jobs, {len(missing_jobs)} remain")
 
     if limit and len(missing_jobs) > limit:
         logger.info(f"  Limiting to first {limit} jobs")
@@ -236,12 +318,16 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             except (json.JSONDecodeError, TypeError):
                 metadata = {}
 
-        # Prefer adzuna_city (normalized code) over adzuna_location (free text)
+        # Check all ATS metadata keys for location info
         source_location = (
             metadata.get('adzuna_city') or  # Normalized city code (lon, nyc, etc.)
             metadata.get('adzuna_location') or  # Free text fallback
+            metadata.get('ashby_city') or  # Ashby structured city
+            metadata.get('ashby_location') or  # Ashby full location string
             metadata.get('lever_location') or
-            metadata.get('greenhouse_location')
+            metadata.get('greenhouse_location') or
+            metadata.get('workable_location') or
+            metadata.get('smartrecruiters_location')
         )
 
         # Convert short city codes to full names for location extractor
@@ -290,6 +376,8 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
             salary_max=compensation.get('base_salary_range', {}).get('max'),
             equity_eligible=compensation.get('equity_eligible'),
             skills=classification.get('skills', []),
+            summary=classification.get('summary'),
+            summary_model=classification.get('_cost_data', {}).get('model'),
             # Source tracking
             data_source=source,
             description_source=source,
