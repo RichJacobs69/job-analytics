@@ -64,7 +64,7 @@
 | **Summary in enriched_jobs column** | Simpler than separate table; no JOIN needed; `job_summaries` table deprecated |
 | **REST not GraphQL** | 2 endpoints don't justify new tooling/patterns |
 | **localStorage + URL params** | No auth needed, shareable URLs |
-| **Greenhouse + Lever + Ashby sources** | All three provide direct ATS links; Ashby has best salary data |
+| **5 ATS sources** | All provide direct ATS links; Ashby has best salary data |
 | **Industry dropdown + grouped Roles dropdown** | 19 industries grouped by category; 19 subfamilies nested under families |
 | **US-only salary filter** | Only NY, CO, CA have transparency laws; honest about data limits |
 | **Muted skill badges** | Prevents rage clicks; skills are display-only, not filters |
@@ -131,13 +131,13 @@ A curated feed of high-relevance jobs organised by intent, with transparent cont
 2. **Explainability** — Every recommendation comes with context ("why this might be a fit")
 3. **Transparency** — No black-box algorithms; users see exactly how we filtered and grouped
 4. **Honesty about limits** — We show what we know; we caveat what's ambiguous
-5. **Direct apply only** — Greenhouse/Lever sources mean you land on the real ATS, not a redirect chain
+5. **Direct apply only** — ATS sources mean you land on the real company posting, not a redirect chain
 
 ### Differentiation from LinkedIn/Indeed/Aggregators
 
 | Their Problem | Our Solution | Honest Limitation |
 |---------------|--------------|-------------------|
-| Ghost jobs, dead listings | Direct ATS sources only (Greenhouse/Lever) | Can't verify budget is still approved |
+| Ghost jobs, dead listings | Direct ATS sources only | Can't verify budget is still approved |
 | Agency spam, redirect chains | No agencies, no aggregators | Smaller total volume |
 | Generic "Data" category | Precise taxonomy (Analytics Engineer ≠ Data Engineer) | — |
 | Black-box "relevance" ranking | Transparent grouping with explained logic | — |
@@ -309,7 +309,7 @@ The feed is organised into **semantic groups**, each curated to max 5 jobs. This
 - A job can appear in multiple groups (e.g., fresh + remote + top comp)
 - Groups with 0 matching jobs are hidden
 - Each group shows max 7 jobs, sorted by relevance within group
-- Source filter: Greenhouse + Lever + Ashby (no Adzuna) for direct-apply UX
+- Source filter: Greenhouse + Lever + Ashby + Workable + SmartRecruiters for direct-apply UX
 - "Show more" available if group has additional matches beyond 7
 
 ```
@@ -482,7 +482,7 @@ When user clicks "Show more" or "View all X matching jobs", show compact list vi
 - `seniority`, `job_subfamily`, `posted_date`, `posting_url`
 - `salary_min`, `salary_max`, `currency`
 - `description` (full text for summary generation)
-- `source` (for filtering to Greenhouse/Lever only)
+- `source` (for filtering to ATS sources)
 
 **New/derived fields needed:**
 - `days_open`: Calculated from `posted_date`
@@ -628,14 +628,13 @@ function getScalingCaveat(): string {
 
 ### Source Filtering
 
-**Critical:** Only Greenhouse, Lever, and Ashby jobs appear in the curated feed.
+**Critical:** Only ATS source jobs appear in the curated feed.
 
 ```sql
-WHERE data_source IN ('greenhouse', 'lever', 'ashby')
+WHERE data_source IN ('greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters')
 ```
 
-Adzuna jobs excluded due to poor apply UX (redirect chains, registration gates).
-Ashby added 2026-01-03 for best-in-class salary data (structured compensation fields).
+All five ATS sources provide direct-apply links to the real company posting.
 
 ### Role Summary Generation
 
@@ -676,7 +675,7 @@ The fit reasoning should be deterministic and transparent—no ML black box. Gen
 | Company activity | `company_role_count >= 3` | "Monzo hiring 3 similar roles" | "Check Glassdoor reviews for context on growth vs turnover" |
 | Salary fit | Salary >= 75th percentile for role/city | "£95k is 75th percentile for London Analytics Engineers" | US cities only; caveats for wide ranges |
 | Freshness | `days_open < 3` | "Posted today — be an early applicant" | — |
-| Direct apply | Source is Greenhouse/Lever | "Apply direct to company ATS" | — |
+| Direct apply | Source is ATS | "Apply direct to company ATS" | — |
 
 **Seniority-aware longevity interpretation:**
 
@@ -811,7 +810,7 @@ Questions to ask beta users:
 - [ ] Fit reasoning is rule-based and transparent (no black box)
 - [ ] Ambiguous signals include caveats (e.g., "Still Hiring" contextualised by seniority)
 - [ ] Employer fill-time comparison shown where data available
-- [ ] "Apply" links directly to Greenhouse/Lever posting (no Adzuna)
+- [ ] "Apply" links directly to ATS posting
 - [ ] "View all" shows full matching list (paginated)
 - [ ] Mobile-responsive layout
 - [ ] 3+ beta users have tested and provided feedback

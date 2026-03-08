@@ -13,7 +13,6 @@ This directory contains all specifications, guides, and architectural documentat
 | Ashby (169 companies) | Tue/Thu 6PM UTC | ![Ashby](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-ashby.yml/badge.svg) |
 | Workable (135 companies) | Wed/Sat 6PM UTC | ![Workable](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-workable.yml/badge.svg) |
 | SmartRecruiters (35 companies) | Thu/Sun 8PM UTC | ![SmartRecruiters](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-smartrecruiters.yml/badge.svg) |
-| Adzuna | Wed 7AM UTC | ![Adzuna](https://github.com/RichJacobs69/job-analytics/actions/workflows/scrape-adzuna.yml/badge.svg) |
 | URL Validation | Mon-Fri 9AM UTC | ![Validation](https://github.com/RichJacobs69/job-analytics/actions/workflows/url-validation-stats.yml/badge.svg) |
 | Employer Metadata | Sun 8AM UTC | ![Metadata](https://github.com/RichJacobs69/job-analytics/actions/workflows/refresh-employer-metadata.yml/badge.svg) |
 
@@ -47,7 +46,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
   - Guides all development priorities
 
 - **PRODUCT_BRIEF.md** - Product specification & requirements
-  - Scope: 5 cities (London, NYC, Denver, SF, Singapore), 6 data sources
+  - Scope: 5 cities (London, NYC, Denver, SF, Singapore), 5 data sources
   - Data & Product role families with detailed subfamilies
   - Success metrics: coverage, freshness, reliability, latency
 
@@ -61,7 +60,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 - **system_architecture.yaml** - System design document
   - High-level architecture diagram
   - Module responsibilities & interactions
-  - Data flow: Adzuna/Greenhouse/Lever/Ashby/Workable/SmartRecruiters → Classifier (Gemini 2.5 Flash) → Database → Analytics
+  - Data flow: Greenhouse/Lever/Ashby/Workable/SmartRecruiters → Classifier (Gemini 2.5 Flash) → Database → Analytics
   - Cost optimization strategies
 
 ## Reference Guides
@@ -74,7 +73,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ## Architecture Deep-Dives
 
 ### directory: `architecture/`
-- **MULTI_SOURCE_PIPELINE.md** - Multi-source pipeline architecture (Adzuna, Greenhouse, Lever, Ashby, Workable, SmartRecruiters)
+- **MULTI_SOURCE_PIPELINE.md** - Multi-source pipeline architecture (Greenhouse, Lever, Ashby, Workable, SmartRecruiters)
 - **INCREMENTAL_UPSERT_DESIGN.md** - Upsert-based deduplication and incremental processing
 - **ADDING_NEW_LOCATIONS.md** - How to add new cities to the location system
 - **SECURITY_AUDIT_REPORT.md** - Security assessment of the platform
@@ -109,7 +108,7 @@ See [`LICENSE.md`](./LICENSE.md) for full details.
 ### directory: `costs/`
 - **COST_METRICS.md** - Current Gemini cost metrics + historical Claude Haiku snapshot
 - CSV exports from early Claude Haiku era (archived for reference)
-- **Current:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse/Adzuna, Gemini 3.0 Flash ($0.002435/job) for other sources. See `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md` for migration details.
+- **Current:** Gemini 2.5 Flash ($0.000629/job) for Greenhouse, Gemini 3.0 Flash ($0.002435/job) for other sources. See `docs/archive/EPIC_LLM_COST_OPTIMIZATION.md` for migration details.
 
 ## Historical Archive
 

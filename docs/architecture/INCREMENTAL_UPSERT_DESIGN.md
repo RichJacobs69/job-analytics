@@ -66,10 +66,10 @@ ALTER TABLE raw_jobs ADD CONSTRAINT raw_jobs_hash_unique UNIQUE (hash);
 **Current:** In-memory deduplication via UnifiedJobIngester
 **Proposed:** Database-level deduplication via UPSERT
 
-**Cross-Source Deduplication (Adzuna + Greenhouse):**
-- Same job may appear from both sources
+**Cross-Source Deduplication:**
+- Same job may appear from multiple ATS sources
 - **Rule:** UPSERT with source priority:
-  - If raw_jobs has Adzuna version, Greenhouse version UPDATES it (better description)
+  - Prefer the source with the richer description
   - `description_source` field tracks which source provided the description
   - `data_source` field tracks which source originally found the job
 
@@ -563,12 +563,7 @@ async def scrape_all_incremental(
    - Decision: Classify immediately after each company scraped
    - Reasoning: Simplicity > optimization, early error detection valuable
 
-2. **✅ Adzuna stays as batch**
-   - Decision: Keep Adzuna as-is (batch process at end)
-   - Reasoning: Already performant, no changes needed
-   - Only Greenhouse uses incremental per-company writes
-
-3. **✅ NO transactions - embrace partial success**
+2. **✅ NO transactions - embrace partial success**
    - Decision: Do NOT wrap raw + enriched inserts in transactions
    - Reasoning:
      - Partial success is valuable (raw data saved even if classification fails)
@@ -577,7 +572,7 @@ async def scrape_all_incremental(
      - Supabase Python client has limited transaction support
    - Trade-off: Accept some orphaned raw_jobs as "classification failure markers"
 
-4. **✅ Logging to both file AND console**
+3. **✅ Logging to both file AND console**
    - Decision: Write to both timestamped log file + pretty console output
    - Console: Rich formatting with unicode boxes, colors, progress bars
    - Log file: Plain text for parsing/searching

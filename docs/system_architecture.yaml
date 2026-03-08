@@ -7,34 +7,13 @@ metadata:
   version: 1.1
   last_updated: "2025-12-04"
   project_name: "Job Market Intelligence Platform"
-  primary_pipeline: "Adzuna + Greenhouse → Claude 3.5 Haiku → Supabase"
+  primary_pipeline: "Greenhouse/Lever/Ashby/Workable/SmartRecruiters → Gemini 2.5 Flash → Supabase"
 
 # ============================================
 # PROJECT FILES
 # ============================================
 
 scripts:
-  fetch_adzuna_jobs:
-    file: "fetch_adzuna_jobs.py"
-    role: "Main orchestrator"
-    purpose: "Data ingestion pipeline"
-    responsibilities:
-      - "Fetch jobs from Adzuna API"
-      - "Format jobs for classification"
-      - "Check for duplicates"
-      - "Orchestrate classification workflow"
-      - "Store results in database"
-    imports:
-      - "classifier.py"
-      - "db_connection.py"
-      - ".env"
-    key_functions:
-      - "fetch_adzuna_jobs() - API calls to Adzuna"
-      - "format_job_for_classification() - JSON to text conversion"
-      - "check_if_job_exists() - Deduplication logic"
-      - "process_adzuna_jobs() - Main pipeline orchestration"
-    execution: "python fetch_adzuna_jobs.py [city] [max_jobs]"
-    
   classifier:
     file: "classifier.py"
     role: "Claude integration"
@@ -99,9 +78,8 @@ configuration:
     role: "Configuration"
     purpose: "Store API credentials and secrets"
     required_variables:
-      - "ADZUNA_APP_ID"
-      - "ADZUNA_API_KEY"
       - "ANTHROPIC_API_KEY"
+      - "GOOGLE_API_KEY"
       - "SUPABASE_URL"
       - "SUPABASE_KEY"
     security: "Never commit to Git (in .gitignore)"
@@ -139,25 +117,6 @@ data_files:
 # ============================================
 
 external_services:
-  adzuna_api:
-    service: "Adzuna Job Board API"
-    role: "Job data source"
-    purpose: "Fetch raw job postings"
-    provides:
-      - "Job title"
-      - "Company name"
-      - "Location"
-      - "Full description"
-      - "Salary (when available)"
-      - "Contract type"
-      - "Posted date"
-    endpoints:
-      uk: "https://api.adzuna.com/v1/api/jobs/gb/search"
-      us: "https://api.adzuna.com/v1/api/jobs/us/search"
-    authentication: "API ID + API Key"
-    rate_limits: "250 calls/month (free tier)"
-    cost: "Free"
-    
   claude_api:
     service: "Claude API (Anthropic)"
     role: "LLM classifier"
@@ -191,10 +150,10 @@ external_services:
         purpose: "Store unprocessed job text"
         columns:
           - "id (primary key)"
-          - "source (e.g., 'adzuna')"
+          - "source (e.g., 'greenhouse')"
           - "posting_url (unique)"
           - "raw_text (full job posting)"
-          - "source_job_id (Adzuna's ID)"
+          - "source_job_id (ATS source ID)"
           - "scraped_at (timestamp)"
           - "metadata (JSONB)"
       enriched_jobs:
@@ -228,36 +187,21 @@ external_services:
 
 data_flow:
   step_1:
-    stage: "Fetch from Adzuna"
-    script: "fetch_adzuna_jobs.py"
-    function: "fetch_adzuna_jobs()"
-    input: "Search query (e.g., 'Data Scientist'), city code"
-    output: "List of job dictionaries (JSON from Adzuna)"
-    
+    stage: "Fetch from ATS sources"
+    script: "pipeline/fetch_jobs.py"
+    function: "process_company_incremental()"
+    input: "Company slug, ATS source"
+    output: "List of job dictionaries from ATS API"
+
   step_2:
-    stage: "Format for classification"
-    script: "fetch_adzuna_jobs.py"
-    function: "format_job_for_classification()"
-    input: "Adzuna job JSON"
-    output: "Human-readable job posting text"
-    
-  step_3:
-    stage: "Check for duplicates"
-    script: "fetch_adzuna_jobs.py"
-    function: "check_if_job_exists()"
-    input: "Job URL"
-    output: "Boolean (exists in database?)"
-    action: "Skip job if already processed"
-    
-  step_4:
-    stage: "Store raw job"
+    stage: "Store raw job (UPSERT)"
     script: "db_connection.py"
-    function: "insert_raw_job()"
+    function: "insert_raw_job_upsert()"
     input: "Job text, URL, metadata"
     output: "raw_job_id"
     database_table: "raw_jobs"
-    
-  step_5:
+
+  step_3:
     stage: "Classify with LLM"
     script: "classifier.py"
     function: "classify_job()"
@@ -267,8 +211,8 @@ data_flow:
       - "Route to Gemini (default) or Claude based on LLM_PROVIDER"
       - "Parse JSON response"
     output: "Structured classification (Python dict)"
-    
-  step_6:
+
+  step_4:
     stage: "Store enriched job"
     script: "db_connection.py"
     function: "insert_enriched_job()"
@@ -281,27 +225,24 @@ data_flow:
 # ============================================
 
 execution_patterns:
-  initial_test:
-    command: "python fetch_adzuna_jobs.py lon 10"
-    description: "Fetch 10 jobs per query from London (50 total)"
-    duration: "~3-5 minutes"
-    cost: "~$0.05"
-    
-  scale_up:
-    command: "python wrappers/fetch_jobs.py lon 100 --sources adzuna"
-    description: "Fetch 100 jobs per query from London (~1100 total)"
-    duration: "~15-20 minutes"
-    cost: "~$6 (at $0.006/job)"
-    
-  multi_city:
-    commands:
-      - "python wrappers/fetch_jobs.py lon 150 --sources adzuna"
-      - "python wrappers/fetch_jobs.py nyc 150 --sources adzuna"
-      - "python wrappers/fetch_jobs.py den 150 --sources adzuna"
-    description: "Fetch from all 3 cities (~1650 new jobs/day)"
-    duration: "~45-60 minutes"
-    cost: "~$10 (depends on new job rate)"
-    
+  single_source:
+    command: "python wrappers/fetch_jobs.py --sources greenhouse"
+    description: "Fetch jobs from all Greenhouse companies"
+    duration: "~30-60 minutes"
+    cost: "~$0.12 (at $0.000629/job)"
+
+  all_sources:
+    command: "python wrappers/fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters"
+    description: "Fetch from all 5 ATS sources"
+    duration: "~2-3 hours"
+    cost: "Varies by new job count"
+
+  resume_mode:
+    command: "python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24"
+    description: "Skip companies processed in last 24 hours"
+    duration: "Depends on remaining companies"
+    cost_impact: "Only pays for new jobs"
+
   re_run_safety:
     description: "Re-running same command skips duplicate jobs"
     behavior: "Deduplication prevents re-processing"
@@ -312,20 +253,6 @@ execution_patterns:
 # ============================================
 
 dependencies:
-  fetch_adzuna_jobs_py:
-    imports:
-      - module: "classifier"
-        function: "classify_job()"
-      - module: "db_connection"
-        functions:
-          - "insert_raw_job()"
-          - "insert_enriched_job()"
-          - "supabase (client)"
-      - module: "requests"
-        purpose: "HTTP calls to Adzuna"
-      - module: "dotenv"
-        purpose: "Load .env variables"
-    
   classifier_py:
     imports:
       - module: "anthropic"
@@ -378,16 +305,10 @@ current_state:
   status: "Production pipeline operational - Epic 4 COMPLETE"
   last_updated: "2025-12-04"
   data_collection:
-    adzuna:
-      status: "Active - Daily runs"
-      jobs_processed: "8,600+ raw jobs"
-      jobs_enriched: "6,000+ enriched jobs"
-      cities: "London, NYC, Denver"
-      role_types: "11 (Data Scientist, Data Engineer, ML Engineer, Analytics Engineer, Data Analyst, AI Engineer, Data Architect, Product Manager, Technical PM, Growth PM, AI PM)"
     greenhouse:
       status: "Active - Incremental pipeline"
-      verified_companies: "24+"
-      notes: "Dual pipeline with Adzuna"
+      verified_companies: "452+"
+      notes: "Primary high-volume source"
   accuracy: "93% on ground truth"
   ready_for: "Epic 5: Analytics Query Layer"
 
@@ -404,7 +325,7 @@ cost_metrics:
 
   models:
     gemini_2_5_flash:
-      sources: ["greenhouse", "adzuna"]
+      sources: ["greenhouse"]
       pricing:
         input_per_1m_tokens: "$0.15"
         output_per_1m_tokens: "$0.60"

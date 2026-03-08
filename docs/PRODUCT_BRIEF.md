@@ -82,7 +82,7 @@ Competitive intelligence on hiring patterns, compensation benchmarking, talent a
 | San Francisco | USA | ~70%+ (California law) |
 | Singapore | SG | Variable |
 
-### Data Sources (6 sources)
+### Data Sources (5 sources)
 
 | Source | Type | Coverage | Description Quality | Use in Job Feed |
 |--------|------|----------|---------------------|-----------------|
@@ -91,11 +91,6 @@ Competitive intelligence on hiring patterns, compensation benchmarking, talent a
 | Ashby | API | 169 companies | Full + structured salary (best) | Yes |
 | Workable | API | 135 companies | Full + workplace_type | Yes |
 | SmartRecruiters | API | 35 companies | Full + locationType, experienceLevel | Yes |
-| Adzuna | API | Broad aggregator | Truncated (100-200 chars) | No (poor UX) |
-
-**Why no Adzuna in job feed:** Candidates would land on Adzuna, hit a registration gate, then redirect to the actual company page. 3-4 clicks vs. 1 for direct ATS links. Violates our "verified, direct apply" promise.
-
-**Adzuna remains useful for:** Market analytics, trend tracking, coverage breadth.
 
 ### Role Families
 
@@ -161,8 +156,6 @@ Competitive intelligence on hiring patterns, compensation benchmarking, talent a
 ### Data Pipeline
 
 ```
-Adzuna API ---------+
-                    |
 Greenhouse ---------+
                     |
 Lever --------------+---> unified_job_ingester.py ---> Agency Filter
@@ -177,13 +170,12 @@ SmartRecruiters ----+     Supabase PostgreSQL
                      |                           |
                      v                           v
            Market Trends Dashboard      Curated Job Feed
-            (all sources)            (ATS sources only)
 ```
 
 ### Core Capabilities
 
 **Data Layer:**
-- **Ingestion:** Adzuna API + 5 ATS scrapers (Greenhouse/Lever/Ashby/Workable/SmartRecruiters) with incremental updates
+- **Ingestion:** 5 ATS scrapers (Greenhouse/Lever/Ashby/Workable/SmartRecruiters) with incremental updates
 - **Extraction:** Titles, locations, compensation, skills, seniority from raw descriptions
 - **Storage:** Raw and enriched layers in Supabase PostgreSQL with JSONB for flexible schema
 - **Derived tables:** `employer_fill_stats` (median time-to-fill by company)
@@ -210,7 +202,7 @@ SmartRecruiters ----+     Supabase PostgreSQL
 | Data Coverage | Enriched jobs in database | 5,000+ | 18,000+ |
 | Companies Tracked | All ATS sources combined | 300+ | 970+ |
 | Classification Cost | Cost per classified job | <$0.005 | ~$0.0005 (Gemini 2.5 Flash) |
-| Data Freshness | Pipeline runs successfully | Daily | Automated via GitHub Actions (6 ATS + Adzuna) |
+| Data Freshness | Pipeline runs successfully | Daily | Automated via GitHub Actions (5 ATS sources) |
 
 ### Job Feed Metrics (New)
 
@@ -237,7 +229,6 @@ SmartRecruiters ----+     Supabase PostgreSQL
 ### Completed
 
 - [DONE] Epic 1: Data model & taxonomy design
-- [DONE] Epic 2: Adzuna API integration
 - [DONE] Epic 3: Greenhouse scraper (452 companies)
 - [DONE] Epic 4: Cost tracking & validation
 - [DONE] Epic 5: Next.js dashboard (5 visualizations)

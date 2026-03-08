@@ -79,9 +79,6 @@ See `pipeline/utilities/archive/DEPRECATION.md` for details.
 
 ```
 scrapers/
-├── adzuna/                           # Adzuna Jobs API client
-│   └── fetch_adzuna_jobs.py          # Paginated API fetcher
-│
 ├── common/                           # Shared scraper utilities
 │   └── filters.py                    # Title/location filtering, HTML stripping
 │
@@ -185,7 +182,7 @@ docs/
 ├── REPOSITORY_STRUCTURE.md             # This file
 ├── PRODUCT_BRIEF.md                    # Product requirements
 ├── architecture/                       # Architecture design docs
-│   ├── MULTI_SOURCE_PIPELINE.md       # 6-source pipeline architecture
+│   ├── MULTI_SOURCE_PIPELINE.md       # 5-source pipeline architecture
 │   ├── INCREMENTAL_UPSERT_DESIGN.md   # Incremental upsert architecture
 │   ├── ADDING_NEW_LOCATIONS.md        # Guide for adding new cities/countries/regions
 │   ├── SECURITY_AUDIT_REPORT.md       # Security assessment
@@ -247,11 +244,8 @@ python wrappers/fetch_jobs.py --sources greenhouse --resume-hours 24
 # Specific companies
 python wrappers/fetch_jobs.py --sources greenhouse --companies stripe,figma
 
-# All 6 sources
-python wrappers/fetch_jobs.py --sources adzuna,greenhouse,lever,ashby,workable,smartrecruiters
-
-# Adzuna only (batch mode)
-python wrappers/fetch_jobs.py lon 100 --sources adzuna
+# All 5 sources
+python wrappers/fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
 
 # Reports
 python pipeline/report_generator.py --city lon --family data --start 2025-12-01 --end 2025-12-31
@@ -326,16 +320,16 @@ main()
 | Core pipeline | 13 | Python scripts (incl. report_generator, 3 Epic 8 scripts) |
 | Utilities (active) | 14 | Python scripts |
 | Utilities (archived) | 17 | Python scripts (pipeline/utilities/archive/) |
-| Scrapers | 12 | Python scripts (across 7 directories) |
+| Scrapers | 10 | Python scripts (across 6 directories) |
 | Migrations | 32 | SQL scripts (001-029 incl. sub-versions) |
-| Config files | 23 | YAML/JSON (6 shared + 3x5 ATS-specific + 2 greenhouse extras) |
+| Config files | 21 | YAML/JSON (6 shared + 3x5 ATS-specific) |
 | Test files | 20 | Python scripts |
-| **Total active** | **122** | **Scripts + configs** |
+| **Total active** | **118** | **Scripts + configs** |
 
 ## Current Status
 
 ### Implemented Features
-- **6-Source Pipeline:** Adzuna + Greenhouse + Lever + Ashby + Workable + SmartRecruiters
+- **5-Source Pipeline:** Greenhouse + Lever + Ashby + Workable + SmartRecruiters
 - **Incremental Upserts:** Per-company database writes (no more 3-hour batch failures)
 - **Resume Capability:** `--resume-hours N` skips recently processed companies
 - **Hash-based Deduplication:** UPSERT by company+title+city hash
@@ -347,7 +341,7 @@ main()
 ### Completed Epics
 - **Epic 5: Analytics Query Layer** - Next.js API routes at `richjacobs.me/projects/hiring-market`
 - **Epic 6: Dashboard & Visualization** - Interactive dashboard with 5 chart types
-- **Epic 7: Automation & Operational** - GitHub Actions for all 6 ATS sources + Adzuna
+- **Epic 7: Automation & Operational** - GitHub Actions for all 5 ATS sources
 - **Ashby Integration** - 169 companies, structured compensation data
 - **Workable Integration** - 135 companies, workplace_type and salary data
 - **SmartRecruiters Integration** - 35 companies, locationType and experienceLevel
@@ -367,4 +361,4 @@ main()
 
 **Last Updated:** 2026-02-07
 **Changes:** Comprehensive documentation refresh -- updated all file counts, added SmartRecruiters/Workable/Ashby throughout, updated migrations to 029, test files to 20, updated classifier to Gemini 2.5 Flash.
-**Status:** Clean structure, 6-source pipeline, employer_metadata is source of truth for employer attributes
+**Status:** Clean structure, 5-source pipeline, employer_metadata is source of truth for employer attributes

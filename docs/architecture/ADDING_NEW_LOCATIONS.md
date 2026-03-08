@@ -52,23 +52,7 @@ cities:
 - Include common variations (e.g., "atx" for Austin)
 - **Use lowercase** for all patterns (matching is case-insensitive)
 
-### 2. Add to Adzuna Endpoints (if applicable)
-
-If the city's country has an Adzuna API endpoint, add it to the `adzuna_endpoints` section:
-
-```yaml
-adzuna_endpoints:
-  US:
-    base_url: https://api.adzuna.com/v1/api/jobs/us/search
-    cities:
-      - new_york
-      - san_francisco
-      - denver
-      - seattle
-      - austin  # ADD NEW CITY HERE
-```
-
-### 3. Update Frontend Constants
+### 2. Update Frontend Constants
 
 Add the city to `portfolio-site/lib/location-queries.ts`:
 
@@ -108,7 +92,7 @@ export function getCityDisplayName(city: string): string {
 }
 ```
 
-### 4. Add to UI Dropdown
+### 3. Add to UI Dropdown
 
 Update `portfolio-site/app/projects/hiring-market/components/GlobalFilters.tsx`:
 
@@ -131,7 +115,7 @@ Update `portfolio-site/app/projects/hiring-market/components/GlobalFilters.tsx`:
 />
 ```
 
-### 5. Update Description Text
+### 4. Update Description Text
 
 Update the dashboard description in `GlobalFilters.tsx` and `layout.tsx` to include the new city:
 
@@ -414,12 +398,6 @@ regions:
       - emea
       - europe
     countries: [GB, DE, NL, IE, SE]  # DE already in list
-
-adzuna_endpoints:
-  DE:
-    base_url: https://api.adzuna.com/v1/api/jobs/de/search
-    cities:
-      - berlin
 ```
 
 ### 2. Frontend Changes

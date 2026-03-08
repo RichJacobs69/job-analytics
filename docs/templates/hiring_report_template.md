@@ -768,7 +768,7 @@ Salary distribution:
 
 **Purpose:** Surface trending skills and capability expectations.
 
-**INTERNAL NOTE (not for publication): Exclude Adzuna-sourced jobs from this analysis.** Adzuna provides truncated descriptions that don't reliably capture skills. Only use sources with full job text.
+**INTERNAL NOTE (not for publication): Use only ATS sources (Greenhouse, Lever, Ashby, Workable, SmartRecruiters) for this analysis.** All sources provide full job text for reliable skills extraction.
 
 **Required fields:**
 - `skills.items.name`
@@ -1006,7 +1006,7 @@ employer_metadata_coverage:
 ```
 
 **Do not:**
-- Quote specific data source names or percentages (e.g., "Adzuna 68%, Greenhouse 32%")
+- Quote specific data source names or percentages (e.g., "Greenhouse 45%, Lever 20%")
 - Quote exact agency filtering counts
 - Use precise job counts in methodology (use approximations)
 

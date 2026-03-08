@@ -12,9 +12,11 @@ metadata:
 
   # Data sources (priority order for deduplication)
   data_sources:
-    - {name: "Greenhouse", type: "scraper", companies: 302, description_quality: "full"}
-    - {name: "Lever", type: "scraper", companies: 61, description_quality: "full"}
-    - {name: "Adzuna", type: "api", description_quality: "truncated"}
+    - {name: "Greenhouse", type: "scraper", companies: 452, description_quality: "full"}
+    - {name: "Lever", type: "scraper", companies: 182, description_quality: "full"}
+    - {name: "Ashby", type: "api", companies: 169, description_quality: "full"}
+    - {name: "Workable", type: "api", companies: 135, description_quality: "full"}
+    - {name: "SmartRecruiters", type: "api", companies: 35, description_quality: "full"}
   extraction_complexity:
     simple: [employer.name, role.title_display, location.city_code, posting.posted_date]
     moderate: [job_subfamily, skills.items.name, working_arrangement, position_type, seniority]
@@ -171,7 +173,7 @@ fields:
     source: 
       type: string
       required: true
-      extraction_note: "Source identifier: 'greenhouse', 'lever', or 'adzuna'"
+      extraction_note: "Source identifier: 'greenhouse', 'lever', 'ashby', 'workable', or 'smartrecruiters'"
     
     req_id: 
       type: string
