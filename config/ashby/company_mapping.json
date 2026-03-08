@@ -99,9 +99,6 @@
     "Convey": {
       "slug": "convey"
     },
-    "Cursor (Anysphere)": {
-      "slug": "cursor"
-    },
     "Datastealth": {
       "slug": "datastealth"
     },
@@ -158,9 +155,6 @@
     },
     "Flowengineering": {
       "slug": "flowengineering"
-    },
-    "Form Energy": {
-      "slug": "formenergy"
     },
     "Found": {
       "slug": "Found"
@@ -270,9 +264,6 @@
     "Legora": {
       "slug": "legora"
     },
-    "Lemonade": {
-      "slug": "lemonade"
-    },
     "Linear": {
       "slug": "linear"
     },
@@ -377,9 +368,6 @@
     },
     "PostHog": {
       "slug": "posthog"
-    },
-    "Profound": {
-      "slug": "profound"
     },
     "Promise Studios": {
       "slug": "promise-studios"
@@ -507,9 +495,6 @@
     "thatgamecompany": {
       "slug": "thatgamecompany"
     },
-    "Tokenmetrics": {
-      "slug": "tokenmetrics"
-    },
     "Topline Pro": {
       "slug": "topline-pro"
     },
@@ -563,8 +548,8 @@
       "company_curator_2025-12-30",
       "ashby_customers_page_2026-02-06"
     ],
-    "total_companies": 185,
+    "total_companies": 180,
     "notes": "Added 30 companies from ashbyhq.com/customers cross-reference, plus Manus AI",
-    "last_updated": "2026-02-14"
+    "last_updated": "2026-03-08"
   }
 }
