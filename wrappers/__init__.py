@@ -5,7 +5,7 @@ This directory contains thin wrapper scripts that serve as the main entry points
 Each wrapper imports from the pipeline/ directory to avoid code duplication.
 
 Users call these scripts from the project root:
-    python wrapper/fetch_jobs.py lon 100 --sources adzuna,greenhouse
+    python wrapper/fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
     python wrapper/check_pipeline_status.py
     python wrapper/backfill_missing_enriched.py --dry-run
 

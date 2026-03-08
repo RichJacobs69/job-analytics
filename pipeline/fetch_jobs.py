@@ -1,51 +1,45 @@
 """
-Unified Job Fetcher: Adzuna + Greenhouse + Lever Triple Pipeline Orchestrator
+Unified Job Fetcher: Multi-ATS Pipeline Orchestrator
 
 Purpose:
 --------
-Main entry point for fetching jobs from multiple sources (Adzuna API, Greenhouse scraper, Lever API).
-Orchestrates the full pipeline: fetch -> merge -> classify -> store.
+Main entry point for fetching jobs from multiple ATS sources
+(Greenhouse, Lever, Ashby, Workable, SmartRecruiters).
+Orchestrates the full pipeline: fetch -> classify -> store.
 
 Supports:
-- Single, dual, or triple source fetching (--sources adzuna,greenhouse,lever)
-- Multiple cities (lon, nyc, den)
+- Single or multi-source fetching (--sources greenhouse,lever,ashby,workable,smartrecruiters)
+- Multiple cities (lon, nyc, den, sfo, sgp)
 - Agency filtering (hard + soft detection)
-- Classification via Claude 3.5 Haiku
+- Classification via Gemini LLM
 - Storage in Supabase PostgreSQL
 
 Data Sources:
-- Adzuna: REST API, mass market jobs, 100-200 char descriptions
-- Greenhouse: Browser scraping, premium companies, 9,000-15,000+ char descriptions
+- Greenhouse: REST API, premium companies, full job descriptions
 - Lever: REST API (no auth), full descriptions like Greenhouse
+- Ashby: REST API, best structured compensation data
+- Workable: REST API, structured workplace_type and salary
+- SmartRecruiters: Public Posting API, structured locationType and experienceLevel
 
 Usage:
 ------
-# Triple pipeline (all sources):
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever
+# All ATS sources:
+python fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
 
-# Adzuna only:
-python fetch_jobs.py lon 100 --sources adzuna
-
-# Greenhouse only (browser scraping):
+# Greenhouse only:
 python fetch_jobs.py --sources greenhouse
 
 # Lever only (simple HTTP API):
 python fetch_jobs.py --sources lever
 
-# NYC with more jobs:
-python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever
+# Ashby only (best compensation data):
+python fetch_jobs.py --sources ashby
 
-# With filtering:
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever --min-description-length 500
+# With companies filter (applies to Greenhouse, Lever, and Ashby):
+python fetch_jobs.py --sources greenhouse,lever --companies "spotify,plaid,figma"
 
-# With companies filter (applies to Greenhouse and Lever):
-python fetch_jobs.py lon 100 --sources greenhouse,lever --companies "spotify,plaid,figma"
-
-# With resume hours (Greenhouse only):
-python fetch_jobs.py lon 100 --sources adzuna,greenhouse --resume-hours 24
-
-# With adzuna max days old:
-python fetch_jobs.py lon 100 --sources adzuna --adzuna-max-days-old 30
+# With resume hours:
+python fetch_jobs.py --sources greenhouse --resume-hours 24
 
 Author: Claude Code
 """
@@ -84,90 +78,6 @@ def suppress_salary_for_city(city_code: str, currency, salary_min, salary_max):
     if city_code in NO_SALARY_TRANSPARENCY_CITIES:
         return None, None, None
     return currency, salary_min, salary_max
-
-
-async def fetch_from_adzuna(city: str, max_jobs_per_query: int, max_days_old: int = 30) -> List:
-    """Fetch jobs from Adzuna API for ALL role types and convert to UnifiedJob objects
-    
-    Now supports pagination with rate limiting to fetch more than 50 jobs per query.
-    Rate limited to ~24 calls/minute to stay within Adzuna's 25 calls/minute limit.
-    """
-    try:
-        from scrapers.adzuna.fetch_adzuna_jobs import (
-            fetch_adzuna_jobs_paginated, 
-            DEFAULT_SEARCH_QUERIES,
-            calculate_api_calls
-        )
-        from pipeline.unified_job_ingester import UnifiedJob, DataSource
-
-        logger.info(f"Fetching jobs from Adzuna API for {city}")
-        logger.info(f"Will search {len(DEFAULT_SEARCH_QUERIES)} role types with up to {max_jobs_per_query} jobs per query")
-        logger.info(f"Filtering Adzuna results to jobs posted in last {max_days_old} days")
-        
-        # Show API call estimate
-        estimate = calculate_api_calls(
-            num_queries=len(DEFAULT_SEARCH_QUERIES),
-            num_cities=1,  # This function handles one city at a time
-            results_per_query=max_jobs_per_query
-        )
-        logger.info(f"  API calls needed: {estimate['total_api_calls']} (ETA: ~{estimate['estimated_time_minutes']} min)")
-
-        all_unified_jobs = []
-
-        # Loop through all role queries (Data Scientist, Data Engineer, ML Engineer, etc.)
-        for query in DEFAULT_SEARCH_QUERIES:
-            logger.info(f"  Searching: '{query}' in {city}")
-
-            # Fetch raw dicts from Adzuna with pagination and rate limiting
-            raw_jobs = fetch_adzuna_jobs_paginated(
-                city_code=city,
-                search_query=query,
-                max_results=max_jobs_per_query,
-                max_days_old=max_days_old,
-                verbose=True
-            )
-
-            logger.info(f"    Found {len(raw_jobs)} jobs for '{query}'")
-
-            # Convert dicts to UnifiedJob objects
-            for job_dict in raw_jobs:
-                try:
-                    # Extract Adzuna-specific metadata for classifier context
-                    category_info = job_dict.get("category", {})
-                    category_label = category_info.get("label") if isinstance(category_info, dict) else None
-                    
-                    salary_min = job_dict.get("salary_min")
-                    salary_max = job_dict.get("salary_max")
-                    salary_predicted = job_dict.get("salary_is_predicted") == "1"
-                    
-                    unified_job = UnifiedJob(
-                        company=job_dict.get("company", {}).get("display_name", "Unknown Company"),
-                        title=job_dict.get("title", "Unknown Title"),
-                        location=job_dict.get("location", {}).get("display_name", city),
-                        description=job_dict.get("description", ""),
-                        url=job_dict.get("redirect_url", f"adzuna-{job_dict.get('id')}"),
-                        job_id=str(job_dict.get("id", "")),
-                        job_type=job_dict.get("contract_type"),
-                        source=DataSource.ADZUNA,
-                        description_source=DataSource.ADZUNA,
-                        adzuna_description=job_dict.get("description", ""),
-                        # New: Adzuna metadata for classifier
-                        adzuna_category=category_label,
-                        adzuna_salary_min=salary_min,
-                        adzuna_salary_max=salary_max,
-                        adzuna_salary_predicted=salary_predicted
-                    )
-                    all_unified_jobs.append(unified_job)
-                except Exception as e:
-                    logger.warning(f"Failed to convert Adzuna job: {str(e)}")
-                    continue
-
-        logger.info(f"Successfully fetched {len(all_unified_jobs)} total jobs from Adzuna across all role types")
-        return all_unified_jobs
-
-    except Exception as e:
-        logger.error(f"Failed to fetch from Adzuna: {str(e)}")
-        return []
 
 
 async def fetch_from_greenhouse(companies: Optional[List[str]] = None) -> List:
@@ -714,259 +624,6 @@ async def process_greenhouse_incremental(companies: Optional[List[str]] = None, 
 
     logger.info("="*80)
 
-    return stats
-
-
-async def process_adzuna_incremental(city_code: str, max_jobs: int = 100, max_days_old: int = 30) -> Dict:
-    """
-    Process Adzuna jobs incrementally with upsert pattern.
-    
-    Follows the same pattern as process_greenhouse_incremental():
-    1. Fetch jobs from Adzuna API
-    2. For each job: upsert to raw_jobs (updates last_seen for existing)
-    3. If new job: classify with Claude
-    4. Write to enriched_jobs
-    
-    This avoids paying for classification of jobs that already exist in the database.
-    
-    Args:
-        city_code: City to fetch jobs for (lon, nyc, den)
-        max_jobs: Maximum jobs to fetch
-        
-    Returns:
-        Stats dictionary with processing metrics
-    """
-    from pipeline.db_connection import (
-        insert_raw_job_upsert, insert_enriched_job, get_working_arrangement_fallback,
-        ensure_employer_metadata
-    )
-    from pipeline.classifier import classify_job
-    from pipeline.agency_detection import is_agency_job, validate_agency_classification
-    from pipeline.unified_job_ingester import UnifiedJob, DataSource
-    from datetime import date
-    import time
-
-    logger.info(f"\n{'='*80}")
-    logger.info(f"ADZUNA INCREMENTAL PIPELINE - {city_code.upper()}")
-    logger.info(f"{'='*80}\n")
-    
-    # Initialize stats
-    stats = {
-        'start_time': time.time(),
-        'jobs_fetched': 0,
-        'jobs_written_raw': 0,
-        'jobs_duplicate': 0,
-        'jobs_classified': 0,
-        'jobs_written_enriched': 0,
-        'jobs_agency_filtered': 0,
-        'cost_classification': 0.0,
-        'cost_saved_duplicates': 0.0,
-    }
-    
-    # Fetch jobs from Adzuna
-    jobs = await fetch_from_adzuna(city_code, max_jobs, max_days_old=max_days_old)
-    
-    if not jobs:
-        logger.warning(f"No Adzuna jobs fetched for {city_code}")
-        return stats
-    
-    stats['jobs_fetched'] = len(jobs)
-    logger.info(f"Fetched {len(jobs)} jobs from Adzuna for {city_code.upper()}")
-    logger.info(f"{'-'*80}")
-    
-    # Process each job incrementally
-    for i, job in enumerate(jobs, 1):
-        try:
-            # Extract job data
-            company = job.company
-            title = job.title
-            description = job.description
-            url = job.url
-            job_id = job.job_id
-            source = job.source.value if isinstance(job.source, DataSource) else str(job.source)
-            
-            # Step 1: Upsert to raw_jobs (updates last_seen for existing jobs)
-            # Store both the search city code AND the actual location from Adzuna API
-            adzuna_location = job.location if hasattr(job, 'location') else None
-            upsert_result = insert_raw_job_upsert(
-                source='adzuna',
-                posting_url=url,
-                title=title,
-                company=company,
-                raw_text=description,
-                city_code=city_code,
-                source_job_id=job_id,
-                metadata={
-                    'adzuna_city': city_code,
-                    'adzuna_location': adzuna_location  # Actual location from API for accurate extraction
-                }
-            )
-            
-            raw_job_id = upsert_result['id']
-            action = upsert_result['action']
-            was_duplicate = upsert_result['was_duplicate']
-            
-            if was_duplicate:
-                stats['jobs_duplicate'] += 1
-                stats['cost_saved_duplicates'] += 0.00388  # Cost of one classification
-                logger.info(f"  [{i}/{len(jobs)}] DUPLICATE: {title[:50]}... (skipped)")
-                continue
-            
-            stats['jobs_written_raw'] += 1
-            logger.info(f"  [{i}/{len(jobs)}] NEW: {title[:50]}... (classifying...)")
-            
-            # Step 2: Hard filter - check if agency before classification
-            if is_agency_job(company):
-                stats['jobs_agency_filtered'] += 1
-                logger.info(f"  [{i}/{len(jobs)}] AGENCY (hard filter): Skipped")
-                continue
-            
-            # Step 3: Check description length (relaxed - we now have structured input)
-            if not description or len(description.strip()) < 20:
-                logger.warning(f"  [{i}/{len(jobs)}] Skipping - insufficient description (<20 chars)")
-                continue
-            
-            # Step 4: Classify the job with STRUCTURED INPUT
-            # Pass title, company, category, and other metadata to help the classifier
-            try:
-                # Build structured input for classifier
-                structured_input = {
-                    'title': title,
-                    'company': company,
-                    'description': description,
-                    'location': None,  # Location extracted deterministically via extract_locations()
-                    'category': job.adzuna_category if hasattr(job, 'adzuna_category') else None,
-                    'salary_min': None,  # Adzuna salary is unreliable (predicted/agency data)
-                    'salary_max': None,  # Adzuna salary is unreliable (predicted/agency data)
-                }
-                
-                classification = classify_job(
-                    job_text=description,  # Fallback
-                    structured_input=structured_input,
-                        source="adzuna"
-                )
-                stats['jobs_classified'] += 1
-                
-                # Track classification cost
-                if '_cost_data' in classification and 'total_cost' in classification['_cost_data']:
-                    cost = classification['_cost_data']['total_cost']
-                    stats['cost_classification'] += cost
-                    
-            except Exception as e:
-                logger.warning(f"  [{i}/{len(jobs)}] Classification FAILED: {str(e)[:100]}")
-                continue
-            
-            # Step 5: Soft agency detection
-            is_agency, agency_conf = validate_agency_classification(
-                employer_name=company,
-                claude_is_agency=None,
-                claude_confidence=None,
-                job_description=description
-            )
-            
-            if is_agency:
-                stats['jobs_agency_filtered'] += 1
-                logger.info(f"  [{i}/{len(jobs)}] AGENCY (soft detection): Flagged")
-            
-            # Inject agency flags
-            if 'employer' not in classification:
-                classification['employer'] = {}
-            classification['employer']['is_agency'] = is_agency
-            classification['employer']['agency_confidence'] = agency_conf
-            
-            # Step 6: Write to enriched_jobs
-            role = classification.get('role', {})
-            location = classification.get('location', {})
-            compensation = classification.get('compensation', {})
-            employer = classification.get('employer', {})
-
-            # Extract locations from Adzuna API location field (Global Location Expansion Epic)
-            # This replaces the legacy city_code approach
-            # Note: Adzuna descriptions are truncated (100-200 chars) so patterns may not match
-            extracted_locations = extract_locations(
-                adzuna_location,
-                description_text=description
-            ) if adzuna_location else [{"type": "unknown"}]
-
-            # Derive legacy city_code from locations for backward compatibility (DEPRECATED)
-            # This will be removed once all queries use the locations JSONB column
-            legacy_city_code = 'unk'
-            if extracted_locations and extracted_locations[0].get('type') == 'city':
-                city_name = extracted_locations[0].get('city', '')
-                city_to_code = {'london': 'lon', 'new_york': 'nyc', 'denver': 'den', 'san_francisco': 'sfo', 'singapore': 'sgp'}
-                legacy_city_code = city_to_code.get(city_name, 'unk')
-            elif extracted_locations and extracted_locations[0].get('type') == 'remote':
-                legacy_city_code = 'remote'
-
-            # Determine working arrangement with employer metadata fallback
-            wa_from_classifier = location.get('working_arrangement')
-            if not wa_from_classifier or wa_from_classifier == 'unknown':
-                wa_fallback = get_working_arrangement_fallback(company)
-                working_arrangement = wa_fallback if wa_fallback else 'onsite'  # Adzuna defaults to onsite
-            else:
-                working_arrangement = wa_from_classifier
-
-            enriched_job_id = insert_enriched_job(
-                raw_job_id=raw_job_id,
-                employer_name=company,
-                title_display=title,
-                job_family=role.get('job_family') or 'out_of_scope',
-                city_code=legacy_city_code,  # DEPRECATED - use locations instead
-                working_arrangement=working_arrangement,
-                position_type=role.get('position_type') or 'full_time',
-                last_seen_date=date.today(),
-                job_subfamily=role.get('job_subfamily'),
-                seniority=role.get('seniority'),
-                track=role.get('track'),
-                experience_range=role.get('experience_range'),
-                employer_department=employer.get('department'),
-                is_agency=employer.get('is_agency'),
-                agency_confidence=employer.get('agency_confidence'),
-                currency=None,  # Adzuna salary is unreliable (predicted/agency data)
-                salary_min=None,
-                salary_max=None,
-                equity_eligible=compensation.get('equity_eligible'),
-                skills=classification.get('skills', []),
-                summary=classification.get('summary'),
-                summary_model=classification.get('_cost_data', {}).get('model'),
-                data_source='adzuna',
-                description_source='adzuna',
-                deduplicated=False,
-                locations=extracted_locations  # NEW: Structured location data
-            )
-
-            # Ensure employer exists in metadata table (for working_arrangement fallback)
-            ensure_employer_metadata(company, display_name=company)
-
-            stats['jobs_written_enriched'] += 1
-            logger.info(f"  [{i}/{len(jobs)}] SUCCESS: Stored (raw_id={raw_job_id}, enriched_id={enriched_job_id})")
-            
-        except Exception as e:
-            logger.error(f"  [{i}/{len(jobs)}] ERROR: {str(e)[:100]}")
-            continue
-    
-    # Final summary
-    elapsed = time.time() - stats['start_time']
-    
-    logger.info(f"\n{'='*80}")
-    logger.info(f"ADZUNA {city_code.upper()} COMPLETE - {elapsed:.1f}s")
-    logger.info(f"{'='*80}")
-    
-    logger.info(f"\nJobs:")
-    logger.info(f"  - Fetched: {stats['jobs_fetched']}")
-    logger.info(f"  - New (written to raw): {stats['jobs_written_raw']}")
-    logger.info(f"  - Duplicates (last_seen updated): {stats['jobs_duplicate']}")
-    logger.info(f"  - Classified: {stats['jobs_classified']}")
-    logger.info(f"  - Enriched: {stats['jobs_written_enriched']}")
-    logger.info(f"  - Agency flags: {stats['jobs_agency_filtered']}")
-    
-    logger.info(f"\nCost Analysis:")
-    logger.info(f"  - Classification cost: ${stats['cost_classification']:.2f}")
-    logger.info(f"  - Saved (duplicates skipped): ${stats['cost_saved_duplicates']:.2f}")
-    logger.info(f"  - Cost per new job: ${stats['cost_classification']/stats['jobs_written_enriched'] if stats['jobs_written_enriched'] > 0 else 0:.4f}")
-    
-    logger.info("="*80)
-    
     return stats
 
 
@@ -2954,7 +2611,6 @@ async def process_custom_incremental(employers: Optional[List[str]] = None) -> D
 
 
 async def merge_jobs(
-    adzuna_jobs: List,
     greenhouse_jobs: List,
     min_description_length: int = 0
 ) -> Dict:
@@ -2966,7 +2622,6 @@ async def merge_jobs(
 
     ingester = UnifiedJobIngester(verbose=True)
     merged_jobs, stats = await ingester.merge(
-        adzuna_jobs=adzuna_jobs,
         greenhouse_jobs=greenhouse_jobs
     )
 
@@ -3136,7 +2791,6 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
 
                 # Step 3: Insert enriched job
                 # Use extracted location > source city > 'unk' (unknown)
-                # This way: Adzuna jobs use source_city if extraction fails, Greenhouse jobs use 'unk'
                 enriched_job_id = insert_enriched_job(
                     raw_job_id=raw_job_id,
                     employer_name=company,
@@ -3165,7 +2819,7 @@ async def store_jobs(jobs: List, source_city: str = 'unk', table: str = "enriche
                     data_source=source,
                     description_source=description_source,
                     deduplicated=deduplicated,
-                    display_name_hint=company  # From Adzuna API
+                    display_name_hint=company
                 )
 
                 stored_count += 1
@@ -3193,17 +2847,14 @@ async def main():
     """Main orchestration function"""
 
     parser = argparse.ArgumentParser(
-        description='Unified job fetcher: Adzuna + Greenhouse + Lever + Ashby multi-source pipeline',
+        description='Unified job fetcher: Greenhouse + Lever + Ashby + Workable + SmartRecruiters multi-ATS pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # All sources
-  python fetch_jobs.py lon 100 --sources adzuna,greenhouse,lever,ashby
+  # All ATS sources
+  python fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
 
-  # Adzuna only
-  python fetch_jobs.py lon 100 --sources adzuna
-
-  # Greenhouse only (browser scraping)
+  # Greenhouse only
   python fetch_jobs.py --sources greenhouse
 
   # Lever only (simple HTTP API)
@@ -3212,8 +2863,8 @@ Examples:
   # Ashby only (simple HTTP API, best compensation data)
   python fetch_jobs.py --sources ashby
 
-  # NYC with more jobs
-  python fetch_jobs.py nyc 200 --sources adzuna,greenhouse,lever,ashby
+  # With companies filter
+  python fetch_jobs.py --sources greenhouse,lever --companies "spotify,plaid,figma"
         """
     )
 
@@ -3229,13 +2880,13 @@ Examples:
         nargs='?',
         type=int,
         default=100,
-        help='Max jobs to fetch per role query from Adzuna (11 role types total). Default: 100'
+        help='Max jobs to fetch per source. Default: 100'
     )
 
     parser.add_argument(
         '--sources',
         required=True,
-        help='Comma-separated sources: adzuna, greenhouse, lever, ashby, workable, smartrecruiters, custom (required). Example: --sources adzuna,greenhouse,ashby,smartrecruiters,custom'
+        help='Comma-separated sources: greenhouse, lever, ashby, workable, smartrecruiters, custom (required). Example: --sources greenhouse,lever,ashby,workable,smartrecruiters'
     )
 
     parser.add_argument(
@@ -3274,13 +2925,6 @@ Examples:
         help='Resume mode: Skip companies processed within last N hours (0 = disabled). Example: --resume-hours 24'
     )
 
-    parser.add_argument(
-        '--adzuna-max-days-old',
-        type=int,
-        default=30,
-        help='Adzuna only: filter to jobs posted within last N days (max_days_old). Default: 30'
-    )
-
     args = parser.parse_args()
 
     # Parse sources first
@@ -3291,14 +2935,6 @@ Examples:
     logger.info("="*80)
     logger.info(f"Sources: {args.sources}")
     logger.info(f"Min description length: {args.min_description_length}")
-
-    # Only show Adzuna-specific options if Adzuna is being used
-    if 'adzuna' in sources:
-        logger.info(f"Adzuna city: {args.city}")
-        logger.info(f"Adzuna max jobs per role query: {args.max_jobs}")
-        from scrapers.adzuna.fetch_adzuna_jobs import DEFAULT_SEARCH_QUERIES
-        logger.info(f"Adzuna will search {len(DEFAULT_SEARCH_QUERIES)} role types")
-        logger.info(f"Adzuna max_days_old filter: {args.adzuna_max_days_old} days")
 
     # Only show Greenhouse-specific options if Greenhouse is being used
     if 'greenhouse' in sources:
@@ -3313,7 +2949,6 @@ Examples:
     # Track total statistics
     total_stats = {
         'greenhouse': None,
-        'adzuna': None,
         'lever': None,
         'ashby': None,
         'workable': None,
@@ -3335,16 +2970,6 @@ Examples:
 
         greenhouse_stats = await process_greenhouse_incremental(companies, resume_hours=args.resume_hours)
         total_stats['greenhouse'] = greenhouse_stats
-
-    # ADZUNA PIPELINE: Incremental processing (same pattern as Greenhouse)
-    # Upserts to raw_jobs first, only classifies NEW jobs to save API costs
-    if 'adzuna' in sources:
-        adzuna_stats = await process_adzuna_incremental(
-            args.city,
-            args.max_jobs,
-            max_days_old=args.adzuna_max_days_old
-        )
-        total_stats['adzuna'] = adzuna_stats
 
     # LEVER PIPELINE: Incremental processing (same pattern as Greenhouse)
     # Simple HTTP API (no browser automation), full job descriptions like Greenhouse

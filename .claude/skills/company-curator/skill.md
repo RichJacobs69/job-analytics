@@ -24,9 +24,11 @@ Trigger when user asks to:
 
 | Source | Companies | Config File |
 |--------|-----------|-------------|
-| Greenhouse | 302 | `config/greenhouse/company_ats_mapping.json` |
-| Lever | 61 | `config/lever/company_mapping.json` |
-| Adzuna | N/A (API) | Cities configured in workflows |
+| Greenhouse | 452 | `config/greenhouse/company_ats_mapping.json` |
+| Lever | 182 | `config/lever/company_mapping.json` |
+| Ashby | 180 | `config/ashby/company_mapping.json` |
+| Workable | 135 | `config/workable/company_mapping.json` |
+| SmartRecruiters | 35 | `config/smartrecruiters/company_mapping.json` |
 
 ### Config File Formats
 
@@ -202,19 +204,13 @@ ORDER BY last_seen;
 # Review industry reports
 ```
 
-**2. Job board mining:**
-```bash
-# Search Adzuna results for companies using Greenhouse/Lever
-# Look for patterns in application URLs
-```
-
-**3. Greenhouse/Lever directories:**
+**2. Greenhouse/Lever directories:**
 ```bash
 # Greenhouse customer list (limited public info)
 # Lever customer case studies
 ```
 
-**4. Tech company lists:**
+**3. Tech company lists:**
 ```bash
 # YC company directory
 # Crunchbase filters
@@ -224,8 +220,8 @@ ORDER BY last_seen;
 ### Discovery Script
 
 ```bash
-# Find potential Greenhouse companies from Adzuna data
-python pipeline/utilities/discover_greenhouse_slugs.py
+# Discover new companies via Google CSE
+python pipeline/utilities/discover_ats_companies.py all
 
 # Find potential Lever companies
 python scrapers/lever/discover_lever_companies.py

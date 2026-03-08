@@ -169,8 +169,6 @@ def find_missing_enriched_jobs(hours_back: int = None, limit: int = None, source
                 metadata = {}
 
         source_location = (
-            metadata.get('adzuna_city') or
-            metadata.get('adzuna_location') or
             metadata.get('ashby_city') or
             metadata.get('ashby_location') or
             metadata.get('lever_location') or
@@ -309,7 +307,7 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
         employer = classification.get('employer', {})
 
         # Extract locations from source metadata (Global Location Expansion Epic)
-        # Priority: adzuna_location > lever_location > greenhouse_location > fallback
+        # Priority: ashby_city > ashby_location > lever_location > greenhouse_location > fallback
         metadata = raw_job.get('metadata') or {}
         if isinstance(metadata, str):
             import json
@@ -320,8 +318,6 @@ def process_missing_job(raw_job: Dict, source_city: str = 'lon') -> bool:
 
         # Check all ATS metadata keys for location info
         source_location = (
-            metadata.get('adzuna_city') or  # Normalized city code (lon, nyc, etc.)
-            metadata.get('adzuna_location') or  # Free text fallback
             metadata.get('ashby_city') or  # Ashby structured city
             metadata.get('ashby_location') or  # Ashby full location string
             metadata.get('lever_location') or

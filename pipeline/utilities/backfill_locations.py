@@ -125,12 +125,14 @@ def extract_location_from_metadata(metadata: Dict) -> Tuple[List[Dict], str]:
     Returns:
         Tuple of (locations list, legacy city_code)
     """
-    # Prefer adzuna_city (normalized code) over adzuna_location (free text)
+    # Check ATS metadata keys for location info
     source_location = (
-        metadata.get('adzuna_city') or  # Normalized city code (lon, nyc, etc.)
-        metadata.get('adzuna_location') or  # Free text fallback
+        metadata.get('ashby_city') or  # Ashby structured city
+        metadata.get('ashby_location') or  # Ashby full location string
         metadata.get('lever_location') or
-        metadata.get('greenhouse_location')
+        metadata.get('greenhouse_location') or
+        metadata.get('workable_location') or
+        metadata.get('smartrecruiters_location')
     )
 
     # Convert short city codes to full names

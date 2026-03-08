@@ -25,7 +25,7 @@ description: Comprehensive security audit of the job analytics platform. Tests a
 - [ ] Identify public endpoints vs authenticated endpoints
 - [ ] List Supabase tables and their public exposure
 - [ ] Catalog frontend pages that consume APIs
-- [ ] Document external integrations (Adzuna, Gemini, Anthropic, Playwright)
+- [ ] Document external integrations (Gemini, Anthropic)
 
 **1.2 Identify Credential Storage**
 - [ ] Check `.env` files exist and are gitignored
@@ -106,8 +106,6 @@ curl "https://YOUR_PROJECT.supabase.co/rest/v1/enriched_jobs?select=*&limit=1000
 - [ ] Review GitHub Actions logs for exposed secrets
 
 **Patterns to grep for:**
-- `ADZUNA_APP_ID`
-- `ADZUNA_API_KEY`
 - `ANTHROPIC_API_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_KEY`

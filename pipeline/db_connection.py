@@ -71,7 +71,7 @@ def insert_raw_job(
     Insert a raw job posting into the database.
 
     Args:
-        source: Source identifier (e.g., 'adzuna', 'linkedin_rss', 'manual')
+        source: Source identifier (e.g., 'greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters')
         posting_url: Full URL to job posting
         raw_text: Complete job description text/HTML
         source_job_id: Optional external ID from source
@@ -79,7 +79,7 @@ def insert_raw_job(
         company: Optional company name from source (before classification)
         metadata: Optional additional metadata (dict)
         full_text: Optional full job description (for enrichment from ATS scraping)
-        text_source: Source of full_text ('adzuna_api', 'ats_scrape', 'company_website', etc.)
+        text_source: Source of full_text ('ats_scrape', 'company_website', etc.)
 
     Returns:
         ID of inserted raw job
@@ -122,13 +122,11 @@ def insert_raw_job_upsert(
     Insert or update a raw job posting using UPSERT (incremental pipeline mode).
 
     Uses (source, source_job_id) as the unique identifier for upserts when source_job_id
-    is provided. This correctly handles Adzuna URLs that contain session tracking 
-    parameters (same job appears with different URLs but same source_job_id).
-    
-    Also stores a hash (company+title+city) for potential cross-source deduplication.
+    is provided. Also stores a hash (company+title+city) for potential cross-source
+    deduplication.
 
     Args:
-        source: Source identifier ('adzuna', 'greenhouse', 'manual')
+        source: Source identifier ('greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters')
         posting_url: Full URL to job posting (stored but not used for deduplication)
         title: Job title
         company: Company name
@@ -137,7 +135,7 @@ def insert_raw_job_upsert(
         source_job_id: External ID from source (REQUIRED for deduplication)
         metadata: Optional additional metadata (dict)
         full_text: Optional full job description (for enrichment)
-        text_source: Source of full_text ('adzuna_api', 'greenhouse', etc.)
+        text_source: Source of full_text ('greenhouse', 'ats_scrape', etc.)
 
     Returns:
         Dict with:
@@ -170,7 +168,6 @@ def insert_raw_job_upsert(
 
     try:
         # Check if job already exists by (source, source_job_id)
-        # This handles Adzuna URLs that change session parameters
         if source_job_id:
             existing = supabase.table("raw_jobs").select("id, scraped_at").eq(
                 "source", source
@@ -251,8 +248,8 @@ def insert_enriched_job(
     equity_eligible: Optional[bool] = None,
     skills: Optional[List[Dict]] = None,
     # Dual pipeline tracking (new fields)
-    data_source: Optional[str] = "adzuna",
-    description_source: Optional[str] = "adzuna",
+    data_source: Optional[str] = None,
+    description_source: Optional[str] = None,
     deduplicated: Optional[bool] = False,
     original_url_secondary: Optional[str] = None,
     merged_from_source: Optional[str] = None,
@@ -421,7 +418,7 @@ def update_raw_job_full_text(
     """
     Update full_text and text_source on an existing raw job record.
 
-    Used for enriching Adzuna records with full job descriptions from ATS scraping.
+    Used for enriching raw job records with full job descriptions.
 
     Args:
         raw_job_id: ID of the raw_job record to update

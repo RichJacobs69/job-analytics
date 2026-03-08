@@ -1,7 +1,7 @@
 """
 Agency Detection Module
 Implements soft flagging of recruitment agencies using pattern matching.
-This supplements the hard filter in fetch_adzuna_jobs.py.
+This supplements the hard filter applied during job ingestion.
 """
 
 import yaml

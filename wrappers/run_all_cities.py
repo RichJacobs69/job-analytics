@@ -3,8 +3,8 @@
 Wrapper script: Parallel execution runner for fetching jobs from multiple cities simultaneously.
 
 Usage:
-    python run_all_cities.py --max-jobs 100 --sources adzuna,greenhouse
-    python run_all_cities.py                    # Uses defaults: 100 jobs, adzuna+greenhouse
+    python run_all_cities.py --max-jobs 100 --sources greenhouse,lever,ashby,workable,smartrecruiters
+    python run_all_cities.py                    # Uses defaults: 100 jobs, all ATS sources
 
 This script runs fetch_jobs.py for London, NYC, and Denver in parallel using
 Python's multiprocessing, significantly reducing total execution time.

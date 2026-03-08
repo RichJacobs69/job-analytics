@@ -133,7 +133,6 @@ CONFIG_PATHS = {
     'ashby': 'config/ashby/company_mapping.json',
     'workable': 'config/workable/company_mapping.json',
     'smartrecruiters': 'config/smartrecruiters/company_mapping.json',
-    'adzuna': 'config/adzuna/all_employers.json',
 }
 
 # ============================================
@@ -331,10 +330,9 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
     Load all companies from ATS config files.
 
     Returns list of dicts with: canonical_name, display_name, ats_source, slug, url_type/instance
-    For Adzuna sources, slug will be None (no career page URL available).
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 
     repo_root = Path(__file__).parent.parent.parent
     companies = []
@@ -356,22 +354,8 @@ def load_ats_companies(sources: List[str] = None) -> List[Dict]:
         source_data = data.get(source, {})
 
         for display_name, info in source_data.items():
-            if source == 'adzuna':
-                # Adzuna config format: {"display_name": {"canonical": "...", "job_count": N}}
-                # No career page URL - LLM-only enrichment
-                # Use display_name.lower() to match how seed_employer_metadata creates entries
-                canonical_name = display_name.lower()
-                companies.append({
-                    'canonical_name': canonical_name,
-                    'display_name': display_name,
-                    'ats_source': source,
-                    'slug': None,  # No career page
-                    'url_type': None,
-                    'instance': None,
-                })
-            else:
-                # ATS config format: {"slug": "...", "url_type": "..."}
-                if isinstance(info, dict):
+            # ATS config format: {"slug": "...", "url_type": "..."}
+            if isinstance(info, dict):
                     slug = info.get('slug', '')
                     url_type = info.get('url_type', 'standard')
                     instance = info.get('instance', 'global')
@@ -750,7 +734,7 @@ def get_employers_to_enrich(
     - OR force=True
     """
     # Get canonical names from ATS companies
-    # Build ranked source list: ATS sources first (in load order), adzuna last.
+    # Build ranked source list from ATS sources.
     # When multiple ATS sources exist for the same employer, the enrichment loop
     # will try each in order and use the first one whose page loads successfully.
     ats_sources_by_name = defaultdict(list)
@@ -759,9 +743,7 @@ def get_employers_to_enrich(
 
     ats_canonical_names = {}
     for name, sources in ats_sources_by_name.items():
-        ats_entries = [s for s in sources if s['ats_source'] != 'adzuna']
-        adzuna_entries = [s for s in sources if s['ats_source'] == 'adzuna']
-        ranked = ats_entries + adzuna_entries  # ATS sources first, adzuna last
+        ranked = list(sources)
         # Primary entry is the first; alternates stored for fallback on scrape fail
         primary = ranked[0]
         primary['alt_sources'] = ranked[1:] if len(ranked) > 1 else []
@@ -936,7 +918,7 @@ def enrich_employer_metadata(
     Main enrichment function.
     """
     if sources is None:
-        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'adzuna']
+        sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 
     print("=" * 70)
     print("EMPLOYER METADATA ENRICHMENT")
@@ -1024,7 +1006,7 @@ def enrich_employer_metadata(
 
         for source_entry in sources_to_try:
             if not source_entry.get('slug'):
-                continue  # Skip adzuna entries (no career page)
+                continue  # Skip entries without a career page
             url = build_career_page_url(
                 source_entry['slug'],
                 source_entry['ats_source'],
@@ -1169,8 +1151,8 @@ def enrich_employer_metadata(
 def propagate_logos_to_siblings():
     """Propagate logos from enriched employers to duplicate records with the same display name.
 
-    Duplicate records arise because adzuna-sourced employers use spaced names
-    (e.g. 'new relic') while ATS-sourced ones use slugs ('newrelic').
+    Duplicate records arise because some employers have variant canonical names
+    (e.g. 'new relic' vs 'newrelic').
     When one record gets a logo via scraping, siblings should inherit it.
     """
     all_records = []

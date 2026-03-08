@@ -436,10 +436,7 @@ Only jobs with full descriptions (skills coverage in output). If < 30 jobs with 
 
 ### Working Arrangement Analysis
 
-**CRITICAL: Direct employer sources only (Adzuna excluded).** The report_generator filters to direct employer sources (Greenhouse, Lever, Ashby, Workable) for working arrangement analysis. Adzuna is excluded because:
-- Truncated descriptions (100-200 chars) cause the classifier to default to "onsite"
-- Employer metadata fallback has only ~17% coverage for Adzuna employers
-- Including Adzuna inflates onsite from ~3% to ~52% -- a misleading artifact
+**All 5 ATS sources (Greenhouse, Lever, Ashby, Workable, SmartRecruiters) provide full job descriptions** for accurate working arrangement classification.
 
 Jobs with `unknown` arrangement are excluded from the distribution.
 
@@ -614,7 +611,7 @@ When generating reports for multiple cities, use this workflow to avoid sub-agen
 | Role Specialization | 30 | Combine <5 into "Other" |
 | Seniority Distribution | 30 | Add entry accessibility context |
 | IC vs Management | 30 | Report count if mgmt <10 |
-| Working Arrangement | 30 | Direct employer sources only (Adzuna excluded); unknown excluded |
+| Working Arrangement | 30 | All ATS sources; unknown excluded |
 | Compensation | 20 with salary | US cities only |
 | Skills Demand | 30 with skills | Source filter |
 | Market Metrics | 50 | Skip cross-segment if thin |

@@ -60,7 +60,6 @@ def _get_model_costs(model_name: str) -> dict:
 # Source-specific model overrides (default is Gemini 3 Flash)
 # Only list sources that need a different model
 SOURCE_MODEL_CONFIG = {
-    "adzuna": "gemini-2.5-flash",              # Cost-effective for high volume
 }
 
 GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview"
@@ -101,7 +100,7 @@ def build_classification_prompt(job_text: str, structured_input: dict = None) ->
         structured_input: Optional dict with structured fields:
             - title: Job title (from API)
             - company: Company name (from API)
-            - category: Job category (from Adzuna API, e.g., "IT Jobs")
+            - category: Job category (if available from source API)
             - location: Location string
             - salary_min: Minimum salary (if available)
             - salary_max: Maximum salary (if available)
@@ -776,7 +775,7 @@ def classify_job_with_gemini_retry(job_text: str, verbose: bool = False, structu
         verbose: Enable verbose logging
         structured_input: Structured fields from API
         max_retries: Maximum attempts (default 2 = 1 initial + 1 retry)
-        source: Data source (greenhouse, lever, ashby, workable, adzuna)
+        source: Data source (greenhouse, lever, ashby, workable, smartrecruiters)
         _use_fallback: Internal flag to use fallback model
 
     Returns:
@@ -961,7 +960,7 @@ def classify_job(job_text: str, verbose: bool = False, structured_input: dict = 
         job_text: Full job posting text
         verbose: If True, print prompt and raw response
         structured_input: Optional dict with structured fields from API
-        source: Data source (greenhouse, lever, ashby, workable, adzuna) for model selection
+        source: Data source (greenhouse, lever, ashby, workable, smartrecruiters) for model selection
 
     Returns:
         Dictionary with classified job data matching schema

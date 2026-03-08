@@ -157,7 +157,7 @@ cities:
       - golden, co
       - federal heights
       - commerce city
-      # County catch-alls for Adzuna format "City, County"
+      # County catch-alls
       - arapahoe county
       - adams county
       - douglas county
@@ -379,34 +379,6 @@ remote_patterns:
       - remote (latin america)
       - latin america remote
       - remote, latin america
-
-# =============================================================================
-# ADZUNA ENDPOINT MAPPING
-# =============================================================================
-# Maps country codes to Adzuna API endpoints and city queries
-
-adzuna_endpoints:
-  US:
-    base_url: https://api.adzuna.com/v1/api/jobs/us/search
-    cities:
-      new_york:
-        query: New York
-      san_francisco:
-        query: San Francisco
-      denver:
-        query: Colorado
-
-  GB:
-    base_url: https://api.adzuna.com/v1/api/jobs/gb/search
-    cities:
-      london:
-        query: London
-
-  SG:
-    base_url: https://api.adzuna.com/v1/api/jobs/sg/search
-    cities:
-      singapore:
-        query: Singapore
 
 # =============================================================================
 # LEGACY CITY CODE MAPPING

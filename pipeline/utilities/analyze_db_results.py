@@ -194,7 +194,7 @@ def analyze_database():
     today_str = today.isoformat()
 
     print("=" * 80)
-    print("DATABASE ANALYSIS - ADZUNA PIPELINE RESULTS")
+    print("DATABASE ANALYSIS - PIPELINE RESULTS")
     print("=" * 80)
     print(f"Analysis Date: {today}")
     print()
@@ -304,21 +304,19 @@ def analyze_database():
     print("DATA SOURCE BREAKDOWN (Enriched Jobs)")
     print("=" * 80)
 
-    # Today's breakdown
-    adzuna_today = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", "adzuna").gte("classified_at", today_str).execute()
-    greenhouse_today = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", "greenhouse").gte("classified_at", today_str).execute()
+    # Today's breakdown by source
+    sources = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 
     print(f"\nTODAY'S RUN ({today_str}):")
-    print(f"  Adzuna: {adzuna_today.count:,}")
-    print(f"  Greenhouse: {greenhouse_today.count:,}")
+    for src in sources:
+        src_today = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", src).gte("classified_at", today_str).execute()
+        print(f"  {src.capitalize()}: {src_today.count:,}")
 
     # Overall breakdown
-    adzuna_all = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", "adzuna").execute()
-    greenhouse_all = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", "greenhouse").execute()
-
     print(f"\nOVERALL (All Time):")
-    print(f"  Adzuna: {adzuna_all.count:,}")
-    print(f"  Greenhouse: {greenhouse_all.count:,}")
+    for src in sources:
+        src_all = supabase.table("enriched_jobs").select("*", count="exact").eq("data_source", src).execute()
+        print(f"  {src.capitalize()}: {src_all.count:,}")
 
     # ========== SUMMARY ==========
     print("\n" + "=" * 80)

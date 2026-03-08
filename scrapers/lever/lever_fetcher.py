@@ -3,7 +3,7 @@ Lever Postings API Client
 
 PURPOSE:
 Fetch job postings from Lever's public Postings API (no auth required).
-Similar to Adzuna client but with Greenhouse-quality full descriptions.
+Provides Greenhouse-quality full descriptions.
 
 API Documentation: https://github.com/lever/postings-api
 

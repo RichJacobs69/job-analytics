@@ -1,6 +1,6 @@
 ---
 name: gha-analyzer
-description: Analyze GitHub Actions workflow runs for the job-analytics scraping pipeline. Use when asked to analyze GHA logs, debug workflow failures, optimize batch timing, investigate classifier or deduplication issues, or review pipeline performance across Greenhouse, Lever, and Adzuna sources.
+description: Analyze GitHub Actions workflow runs for the job-analytics scraping pipeline. Use when asked to analyze GHA logs, debug workflow failures, optimize batch timing, investigate classifier or deduplication issues, or review pipeline performance across Greenhouse, Lever, Ashby, Workable, and SmartRecruiters sources.
 ---
 
 # GitHub Actions Pipeline Analyzer
@@ -15,16 +15,65 @@ Trigger when user asks to:
 - Optimize batch timing or parallelization
 - Investigate classifier issues (job_family, skills extraction)
 - Review deduplication behavior
-- Check pipeline health (Greenhouse, Lever, Ashby, Adzuna)
+- Check pipeline health (Greenhouse, Lever, Ashby, Workable, SmartRecruiters)
 - Find rate limiting or API issues
 - Review pipeline data quality
 - Analyze costs and performance trends
 
 ## Prerequisites: Verify GitHub API Access
 
-**IMPORTANT:** Before running any GitHub API commands, verify the token is available in `.env`.
+### Preferred: GitHub CLI (`gh`)
 
-### Step 0: Check GITHUB_TOKEN in .env
+The `gh` CLI is installed and authenticated. **Prefer `gh` over raw API calls** -- it handles auth, pagination, and JSON parsing automatically.
+
+```bash
+# Verify gh is available and authenticated
+gh auth status
+
+# Quick test - list recent workflow runs
+gh run list --repo RichJacobs69/job-analytics --limit 5
+```
+
+**Common `gh` commands for this skill:**
+
+```bash
+# List runs (all workflows)
+gh run list --repo RichJacobs69/job-analytics --limit 20
+
+# List runs for a specific workflow
+gh run list --repo RichJacobs69/job-analytics --workflow scrape-greenhouse.yml --limit 10
+
+# List only failed runs
+gh run list --repo RichJacobs69/job-analytics --status failure --limit 10
+
+# View a specific run's details
+gh run view <RUN_ID> --repo RichJacobs69/job-analytics
+
+# View run logs
+gh run view <RUN_ID> --repo RichJacobs69/job-analytics --log
+
+# View failed step logs only
+gh run view <RUN_ID> --repo RichJacobs69/job-analytics --log-failed
+
+# List workflow files
+gh workflow list --repo RichJacobs69/job-analytics
+
+# View workflow details
+gh workflow view scrape-greenhouse.yml --repo RichJacobs69/job-analytics
+
+# Get run data as JSON (for scripting)
+gh run list --repo RichJacobs69/job-analytics --json databaseId,name,status,conclusion,createdAt --limit 10
+
+# Get job-level details as JSON
+gh run view <RUN_ID> --repo RichJacobs69/job-analytics --json jobs
+
+# Use gh api for advanced queries
+gh api repos/RichJacobs69/job-analytics/actions/runs?per_page=5 --jq '.workflow_runs[] | "\(.id) | \(.name) | \(.conclusion) | \(.created_at)"'
+```
+
+### Fallback: GITHUB_TOKEN + Python requests
+
+If `gh` is not available, fall back to the GITHUB_TOKEN approach:
 
 ```bash
 # Check if GITHUB_TOKEN is set
@@ -33,16 +82,8 @@ grep GITHUB_TOKEN .env
 
 **Expected:** Line showing `GITHUB_TOKEN=ghp_...` or `GITHUB_TOKEN=github_pat_...`
 
-### Step 0b: Test API Connection
-
 ```bash
-# Windows PowerShell - test API access
-$env:GITHUB_TOKEN = (Get-Content .env | Select-String "GITHUB_TOKEN" | ForEach-Object { $_.Line.Split("=")[1] })
-curl -H "Authorization: token $env:GITHUB_TOKEN" "https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=1"
-```
-
-```bash
-# Or use Python (cross-platform)
+# Test API connection via Python
 python -c "import os; from dotenv import load_dotenv; load_dotenv(); import requests; r = requests.get('https://api.github.com/repos/richjacobs/job-analytics/actions/runs?per_page=1', headers={'Authorization': f'token {os.getenv(\"GITHUB_TOKEN\")}'}); print('OK' if r.status_code == 200 else f'Error: {r.status_code}')"
 ```
 
@@ -50,22 +91,28 @@ python -c "import os; from dotenv import load_dotenv; load_dotenv(); import requ
 
 | Issue | Solution |
 |-------|----------|
+| `gh` not found | Install via `winget install GitHub.cli` then `gh auth login --web` |
+| `gh` not authenticated | Run `gh auth login --web` and follow browser flow |
 | `GITHUB_TOKEN` not in .env | Create token at https://github.com/settings/tokens with `repo` and `workflow` scopes |
 | `401 Unauthorized` | Token expired or invalid - regenerate at GitHub |
 | `403 Forbidden` | Token lacks required scopes - needs `repo` and `workflow` |
 | `404 Not Found` | Check repository name spelling |
 
-**If GitHub API access is not available, inform the user and stop analysis.**
+**If neither `gh` nor GitHub API access is available, inform the user and stop analysis.**
 
 ## Repository Context
 
-The job-analytics repository has three main scraping workflows:
+The job-analytics repository has six scraping workflows and two maintenance workflows:
 
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
-| `scrape-greenhouse.yml` | Mon-Thu 7AM UTC | Batched (4 batches, ~91 companies, 120min timeout) |
-| `scrape-lever.yml` | Every 48h, 6AM UTC | All 61 companies (20min timeout) |
-| `scrape-adzuna.yml` | Every 48h, 6:30AM UTC | Matrix strategy for 5 cities (60min timeout) |
+| `scrape-greenhouse.yml` | Mon/Tue/Thu/Fri 7AM UTC | Batched (4 batches, ~100 companies each) |
+| `scrape-lever.yml` | Mon/Wed/Fri 6PM UTC | 182 companies |
+| `scrape-ashby.yml` | Tue/Thu 6PM UTC | 169 companies |
+| `scrape-workable.yml` | Wed/Sat 6PM UTC | 135 companies |
+| `scrape-smartrecruiters.yml` | Thu/Sun 8PM UTC | 35 companies |
+| `url-validation-stats.yml` | Mon-Fri 9AM UTC | URL validation + employer stats |
+| `refresh-employer-metadata.yml` | Sun 8AM UTC | Seed, enrich, backfill |
 
 ## Analysis Workflow
 
@@ -197,7 +244,7 @@ duplicate key.*unique constraint
 **Dedupe Metrics to Extract:**
 - Count of `was_duplicate: True` vs `False`
 - Ratio of `inserted` vs `updated` vs `skipped`
-- Cross-source duplicates (same job from Adzuna + Greenhouse)
+- Cross-source duplicates (same job from multiple ATS sources)
 
 ### 3. Timing and Performance
 
@@ -232,32 +279,7 @@ quota exceeded|billing
 **API Issues:**
 - Gemini/Claude rate limits
 - Supabase connection errors
-- Adzuna API quota exhaustion
 - Greenhouse/Lever scraping blocks
-
-### 5. Batch Parallelization (Adzuna)
-
-Adzuna uses matrix strategy for cities. Analyze:
-
-```python
-# Check matrix job timing
-python -c "
-import os, requests
-from dotenv import load_dotenv
-load_dotenv()
-token = os.getenv('GITHUB_TOKEN')
-RUN_ID = 'REPLACE_ME'
-r = requests.get(f'https://api.github.com/repos/richjacobs/job-analytics/actions/runs/{RUN_ID}/jobs',
-    headers={'Authorization': f'token {token}'})
-for job in r.json().get('jobs', []):
-    print(f\"{job['name']}: {job['conclusion']} | {job['started_at']} -> {job['completed_at']}\")
-"
-```
-
-**Parallelization Metrics:**
-- Are all 5 city jobs running in parallel?
-- Which cities are slowest?
-- Are there sequential bottlenecks?
 
 ## Extended Pipeline Observations
 
@@ -318,8 +340,7 @@ When analyzing across sources:
 
 ```
 # Source identification
-data_source.*adzuna|greenhouse|lever
-description_source.*adzuna|ats_scrape
+data_source.*greenhouse|lever|ashby|workable|smartrecruiters
 
 # Merge indicators
 deduplicated.*True
@@ -328,9 +349,8 @@ original_url_secondary
 ```
 
 **Cross-Source Metrics:**
-- Adzuna vs Greenhouse overlap rate (same job appearing in both)
-- Text source quality (Adzuna truncated vs Greenhouse full)
-- Classification accuracy by source (Greenhouse should be higher)
+- Cross-ATS overlap rate (same job appearing in multiple sources)
+- Classification accuracy by source
 
 ### 9. Agency Detection Effectiveness
 
@@ -442,7 +462,9 @@ if wf_id:
 |----------|------------------|-----------------|
 | Greenhouse Batch | 45-90 min | >100 min |
 | Lever | 10-20 min | >25 min |
-| Adzuna (per city) | 5-15 min | >30 min |
+| Ashby | 10-20 min | >30 min |
+| Workable | 10-20 min | >30 min |
+| SmartRecruiters | 5-15 min | >25 min |
 
 ### 14. Workflow Summary Artifacts
 
@@ -619,7 +641,6 @@ When analyzing, produce a structured report:
 | High duplicate rate | Normal for incremental runs; check if >90% suggests stale data |
 | Rate limit errors | Reduce batch size or add delays |
 | Timeout on Greenhouse | Increase `timeout-minutes` or reduce batch size |
-| Adzuna city fails | Check API quota at adzuna.com/developers |
 | Company returns 0 jobs | Verify careers page URL in company_ats_mapping.json |
 | High unmapped skills | Add common skills to `config/skill_family_mapping.yaml` |
 | Agency slipping through | Add to `config/agency_blacklist.yaml` |
@@ -629,7 +650,6 @@ When analyzing, produce a structured report:
 
 - `.github/workflows/scrape-greenhouse.yml` - Greenhouse workflow config
 - `.github/workflows/scrape-lever.yml` - Lever workflow config
-- `.github/workflows/scrape-adzuna.yml` - Adzuna workflow config
 - `pipeline/classifier.py` - LLM classification logic
 - `pipeline/db_connection.py` - Deduplication logic (generate_job_hash, upsert)
 - `pipeline/agency_detection.py` - Agency pattern matching

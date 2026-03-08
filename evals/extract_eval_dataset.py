@@ -1,6 +1,6 @@
 """
 Extract evaluation dataset for LLM provider comparison.
-Focuses on Greenhouse and Lever sources (full descriptions, not truncated like Adzuna).
+Focuses on Greenhouse and Lever sources (full descriptions).
 
 Usage:
     python wrappers/extract_eval_dataset.py --count 100

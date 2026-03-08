@@ -4,16 +4,17 @@ Wrapper script: Unified Job Fetcher - Multi-Source Pipeline Orchestrator
 
 Purpose:
 --------
-Main entry point for fetching jobs from multiple sources:
-- Adzuna API (aggregated job listings)
+Main entry point for fetching jobs from multiple ATS sources:
 - Greenhouse API (direct ATS, REST API)
 - Lever API (direct ATS, HTTP API)
 - Ashby API (direct ATS, HTTP API with structured compensation)
+- Workable API (direct ATS, workplace_type)
+- SmartRecruiters API (direct ATS, locationType, experienceLevel)
 
 Orchestrates the full pipeline: fetch -> filter -> classify -> store.
 
 Supports:
-- Single or multi-source fetching (--sources adzuna,greenhouse,lever,ashby)
+- Single or multi-source fetching (--sources greenhouse,lever,ashby,workable,smartrecruiters)
 - Multiple cities (lon, nyc, den, sf, sin, etc.)
 - Agency filtering (hard + soft detection)
 - Classification via Gemini 2.5 Flash
@@ -22,13 +23,10 @@ Supports:
 Usage:
 ------
 # All sources:
-python fetch_jobs.py --sources adzuna,greenhouse,lever,ashby
+python fetch_jobs.py --sources greenhouse,lever,ashby,workable,smartrecruiters
 
 # Specific companies (applies to Greenhouse, Lever, Ashby):
 python pipeline/fetch_jobs.py --sources greenhouse --companies stripe,gitlab
-
-# Adzuna only:
-python fetch_jobs.py lon 100 --sources adzuna
 
 # Greenhouse only:
 python fetch_jobs.py --sources greenhouse
@@ -38,9 +36,6 @@ python fetch_jobs.py --sources lever
 
 # Ashby only (best structured compensation data):
 python fetch_jobs.py --sources ashby
-
-# NYC with Adzuna + Greenhouse:
-python fetch_jobs.py nyc 200 --sources adzuna,greenhouse
 
 Author: Claude Code
 

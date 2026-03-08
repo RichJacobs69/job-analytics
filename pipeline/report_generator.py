@@ -62,8 +62,6 @@ class ReportGenerator:
     """
 
     # ATS sources with full job descriptions (reliable for working arrangement extraction)
-    # Adzuna is excluded because its 100-200 char truncated descriptions cause
-    # unreliable working arrangement classification (tends to default to "onsite")
     ATS_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 
     # City to country/region mapping for inclusive location filtering
@@ -360,8 +358,6 @@ class ReportGenerator:
         """
         Filter to only ATS sources with full job descriptions.
 
-        Excludes Adzuna because its truncated descriptions (100-200 chars)
-        cause unreliable working arrangement classification.
         Used for working_arrangement analysis.
         """
         return [j for j in jobs if j.get('data_source') in self.ATS_SOURCES]
@@ -816,9 +812,7 @@ class ReportGenerator:
         track_dist = self._calculate_distribution(
             direct_jobs, 'track', self.TRACK_LABELS
         )
-        # Working arrangement uses ATS sources only. Adzuna descriptions are truncated
-        # (100-200 chars), causing unreliable classifier output that skews toward "onsite".
-        # Employer metadata fallback has low coverage (~17%) for Adzuna employers.
+        # Working arrangement uses ATS sources only for reliable classification
         ats_jobs = self._filter_ats_jobs(direct_jobs)
         arrangement_dist = self._calculate_distribution(
             ats_jobs, 'working_arrangement', self.ARRANGEMENT_LABELS
@@ -1271,7 +1265,7 @@ class ReportGenerator:
                 'coverage': f"{raw['working_arrangement']['coverage']}% of roles with known working arrangement",
                 'data': [d for d in to_chart_data(raw['working_arrangement']['distribution']) if d['label'] != 'Unknown'],
                 'interpretation': '[PLACEHOLDER] Working arrangement interpretation.',
-                'note': f"Based on {raw['working_arrangement'].get('ats_job_count', 0)} ATS-sourced roles with full job descriptions. Adzuna excluded due to truncated descriptions."
+                'note': f"Based on {raw['working_arrangement'].get('ats_job_count', 0)} ATS-sourced roles with full job descriptions."
             },
             'compensation': compensation,
             'skillsDemand': {
@@ -1354,7 +1348,7 @@ class ReportGenerator:
                     "Not a complete census of the market - some roles may not be captured",
                     f"Skills analysis based on {skills_raw['total_with_skills']:,} roles with skill data ({skills_raw['coverage']}% coverage)",
                     f"Salary data {'available due to pay transparency law' if comp_raw.get('available') else 'not included due to low disclosure rates'}",
-                    f"Working arrangement based on {raw['working_arrangement'].get('ats_job_count', 0)} ATS-sourced roles (Adzuna excluded due to truncated descriptions)"
+                    f"Working arrangement based on {raw['working_arrangement'].get('ats_job_count', 0)} ATS-sourced roles"
                 ],
                 'dataQuality': [
                     {'label': 'Seniority coverage', 'value': f"{round(quality['seniority_coverage'])}%", 'description': 'Roles with seniority level classified'},

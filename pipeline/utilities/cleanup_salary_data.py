@@ -1,11 +1,9 @@
 """
 Cleanup salary data: remove unreliable salary entries.
 
-Three categories of bad salary data:
-1. Adzuna (all cities) - "predicted" salaries are Adzuna's own model estimates,
-   "actual" salaries are mostly agency-posted figures. Neither is structured employer data.
-2. London (all sources) - no pay transparency laws, classifier-extracted salary is not trustworthy.
-3. Singapore (all sources) - no pay transparency laws, classifier-extracted salary is not trustworthy.
+Two categories of bad salary data:
+1. London (all sources) - no pay transparency laws, classifier-extracted salary is not trustworthy.
+2. Singapore (all sources) - no pay transparency laws, classifier-extracted salary is not trustworthy.
 
 Usage:
     python pipeline/utilities/cleanup_salary_data.py --dry-run    # Preview affected rows
@@ -84,14 +82,11 @@ def main():
     # --- Count affected rows ---
     print('Counting affected rows...\n')
 
-    adzuna_count = count_salary_rows(supabase, {'data_source': 'adzuna'})
     london_count = count_salary_rows(supabase, {'city_code': 'lon'})
     singapore_count = count_salary_rows(supabase, {'city_code': 'sgp'})
 
-    print(f'1. Adzuna (all cities):    {adzuna_count:,} rows with salary data')
-    print(f'2. London (all sources):   {london_count:,} rows with salary data')
-    print(f'3. Singapore (all sources): {singapore_count:,} rows with salary data')
-    print(f'\nNote: Some rows overlap (e.g. Adzuna London jobs counted in both #1 and #2).')
+    print(f'1. London (all sources):   {london_count:,} rows with salary data')
+    print(f'2. Singapore (all sources): {singapore_count:,} rows with salary data')
 
     if args.dry_run:
         print(f'\n[DRY RUN] No changes applied. Run without --dry-run to apply.')
@@ -100,21 +95,14 @@ def main():
     # --- Apply cleanup ---
     print(f'\n--- Applying cleanup ---\n')
 
-    # 1. Adzuna
-    print('Fetching Adzuna job IDs...')
-    adzuna_ids = fetch_ids_with_salary(supabase, {'data_source': 'adzuna'})
-    print(f'  Found {len(adzuna_ids):,} Adzuna jobs to clean')
-    if adzuna_ids:
-        null_salary_for_ids(supabase, adzuna_ids, 'Adzuna')
-
-    # 2. London
-    print('\nFetching London job IDs...')
+    # 1. London
+    print('Fetching London job IDs...')
     london_ids = fetch_ids_with_salary(supabase, {'city_code': 'lon'})
     print(f'  Found {len(london_ids):,} London jobs to clean')
     if london_ids:
         null_salary_for_ids(supabase, london_ids, 'London')
 
-    # 3. Singapore
+    # 2. Singapore
     print('\nFetching Singapore job IDs...')
     sgp_ids = fetch_ids_with_salary(supabase, {'city_code': 'sgp'})
     print(f'  Found {len(sgp_ids):,} Singapore jobs to clean')
@@ -123,11 +111,9 @@ def main():
 
     # --- Verify ---
     print(f'\n--- Verification ---\n')
-    adzuna_after = count_salary_rows(supabase, {'data_source': 'adzuna'})
     london_after = count_salary_rows(supabase, {'city_code': 'lon'})
     sgp_after = count_salary_rows(supabase, {'city_code': 'sgp'})
 
-    print(f'Adzuna salary rows remaining:    {adzuna_after:,}')
     print(f'London salary rows remaining:    {london_after:,}')
     print(f'Singapore salary rows remaining: {sgp_after:,}')
 

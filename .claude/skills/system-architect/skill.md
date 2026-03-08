@@ -35,18 +35,14 @@ Trigger when user asks to:
 
 ```
 Data Sources                    Pipeline                      Storage              Frontend
-+------------+                 +------------------+          +----------+         +------------+
-| Adzuna API |----+            |                  |          |          |         |            |
-+------------+    |            | unified_job_     |          | Supabase |         | Next.js    |
-                  +----------->| ingester.py      |--------->| Postgres |-------->| Dashboard  |
-+------------+    |            |                  |          |          |         | (Vercel)   |
-| Greenhouse |----+            | classifier.py    |          +----------+         +------------+
-| Scraper    |    |            | (Gemini LLM)     |
-+------------+    |            +------------------+
-                  |
-+------------+    |
-| Lever      |----+
-| Fetcher    |
++---------------+              +------------------+          +----------+         +------------+
+| Greenhouse    |----+         |                  |          |          |         |            |
+| Lever         |    |         | unified_job_     |          | Supabase |         | Next.js    |
+| Ashby         |----+------->| ingester.py      |--------->| Postgres |-------->| Dashboard  |
+| Workable      |    |         |                  |          |          |         | (Vercel)   |
+| SmartRecruit. |----+         | classifier.py    |          +----------+         +------------+
++---------------+              | (Gemini LLM)     |
+                               +------------------+
 +------------+
 ```
 

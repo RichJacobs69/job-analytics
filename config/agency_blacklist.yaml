@@ -7,7 +7,7 @@ metadata:
   version: 1.7
   last_updated: "2026-02-16"
   total_agencies: 338
-  usage: "Import in fetch_adzuna_jobs.py and classify_jobs.py"
+  usage: "Import in agency_detection.py and classify_jobs.py"
 
 # =========================
 # HARD FILTER BLACKLIST

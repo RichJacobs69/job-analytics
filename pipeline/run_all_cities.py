@@ -3,8 +3,8 @@
 Parallel execution runner for fetching jobs from multiple cities simultaneously.
 
 Usage:
-    python run_all_cities.py --max-jobs 100 --sources adzuna,greenhouse
-    python run_all_cities.py                    # Uses defaults: 100 jobs, adzuna+greenhouse
+    python run_all_cities.py --max-jobs 100 --sources greenhouse,lever,ashby,workable,smartrecruiters
+    python run_all_cities.py                    # Uses defaults: 100 jobs, all ATS sources
 
 This script runs fetch_jobs.py for London, NYC, and Denver in parallel using
 Python's multiprocessing, significantly reducing total execution time.
@@ -42,8 +42,8 @@ def main():
 Examples:
   python run_all_cities.py
   python run_all_cities.py --max-jobs 100
-  python run_all_cities.py --max-jobs 100 --sources adzuna
-  python run_all_cities.py --max-jobs 100 --sources adzuna,greenhouse
+  python run_all_cities.py --max-jobs 100 --sources greenhouse
+  python run_all_cities.py --max-jobs 100 --sources greenhouse,lever,ashby,workable,smartrecruiters
         """
     )
 
@@ -56,8 +56,8 @@ Examples:
 
     parser.add_argument(
         "--sources",
-        default="adzuna,greenhouse",
-        help="Data sources to use: adzuna, greenhouse, or adzuna,greenhouse (default: adzuna,greenhouse)"
+        default="greenhouse,lever,ashby,workable,smartrecruiters",
+        help="Data sources to use: greenhouse, lever, ashby, workable, smartrecruiters (default: all)"
     )
 
     args = parser.parse_args()

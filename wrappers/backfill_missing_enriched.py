@@ -78,7 +78,7 @@ Examples:
     parser.add_argument(
         '--source',
         type=str,
-        help='Filter by source (e.g., custom, greenhouse, lever, ashby, workable, adzuna)'
+        help='Filter by source (e.g., custom, greenhouse, lever, ashby, workable, smartrecruiters)'
     )
 
     args = parser.parse_args()

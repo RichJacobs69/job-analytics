@@ -50,7 +50,7 @@ def measure_token_usage(sample_size: int = 20, verbose: bool = False):
         'input_tokens': [],
         'output_tokens': [],
         'total_costs': [],
-        'sources': {'greenhouse': [], 'lever': [], 'adzuna': []}
+        'sources': {'greenhouse': [], 'lever': [], 'ashby': []}
     }
 
     for i, job in enumerate(jobs, 1):

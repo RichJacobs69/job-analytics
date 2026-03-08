@@ -7,7 +7,7 @@ Run with: pytest tests/test_db_upsert.py -m integration -v
 Tests:
 1. First insert creates new record
 2. Second insert with same hash updates existing (deduplication)
-3. Source priority: Greenhouse description overwrites Adzuna
+3. Same source re-insert updates description
 4. Different city = different job (no deduplication)
 5. Hash generation consistency
 """
@@ -42,7 +42,7 @@ class TestUpsertBehavior:
             except Exception:
                 pass
         # Also clean up by source_job_id
-        for sid in ['adzuna_123', 'adzuna_nyc_789']:
+        for sid in ['greenhouse_123', 'greenhouse_nyc_789']:
             try:
                 supabase.table('raw_jobs').delete().eq('source_job_id', sid).execute()
             except Exception:
@@ -51,13 +51,13 @@ class TestUpsertBehavior:
         try:
             # Test 1: First insert creates new record
             result1 = insert_raw_job_upsert(
-                source='adzuna',
+                source='greenhouse',
                 posting_url='https://test.com/job1',
                 title=test_title,
                 company=test_company,
-                raw_text='Short description from Adzuna (100 chars)',
+                raw_text='Short description from Greenhouse (100 chars)',
                 city_code=test_city,
-                source_job_id='adzuna_123'
+                source_job_id='greenhouse_123'
             )
             assert result1['action'] == 'inserted'
             assert not result1['was_duplicate']
@@ -65,28 +65,28 @@ class TestUpsertBehavior:
 
             # Test 2: Second insert with same (source, source_job_id) updates existing
             result2 = insert_raw_job_upsert(
-                source='adzuna',
+                source='greenhouse',
                 posting_url='https://test.com/job1_updated',
                 title=test_title,
                 company=test_company,
-                raw_text='Updated description from Adzuna',
+                raw_text='Updated description from Greenhouse',
                 city_code=test_city,
-                source_job_id='adzuna_123'
+                source_job_id='greenhouse_123'
             )
             assert result2['id'] == first_id
             assert result2['action'] == 'updated'
             assert result2['was_duplicate']
 
             # Test 3: Same source re-insert updates description
-            updated_text = "Updated full job description from Adzuna with more detail" * 10
+            updated_text = "Updated full job description from Greenhouse with more detail" * 10
             result3 = insert_raw_job_upsert(
-                source='adzuna',
+                source='greenhouse',
                 posting_url='https://test.com/job1_v3',
                 title=test_title,
                 company=test_company,
                 raw_text=updated_text,
                 city_code=test_city,
-                source_job_id='adzuna_123'
+                source_job_id='greenhouse_123'
             )
             assert result3['id'] == first_id
             assert result3['action'] == 'updated'
@@ -96,13 +96,13 @@ class TestUpsertBehavior:
 
             # Test 4: Different city = different job
             result4 = insert_raw_job_upsert(
-                source='adzuna',
+                source='greenhouse',
                 posting_url='https://test.com/job_nyc',
                 title=test_title,
                 company=test_company,
                 raw_text='Same job but in NYC',
                 city_code='nyc',
-                source_job_id='adzuna_nyc_789'
+                source_job_id='greenhouse_nyc_789'
             )
             assert result4['id'] != first_id
             assert result4['action'] == 'inserted'

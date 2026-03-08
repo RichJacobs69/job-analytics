@@ -1,14 +1,14 @@
 """
-Unified Job Ingester: Merge Adzuna + Greenhouse with Deduplication
+Unified Job Ingester: Multi-Source Merge with Deduplication
 
 Purpose:
 --------
-Combines job results from multiple sources (Adzuna API + Greenhouse scraper)
-into a single deduplicated job list with intelligent source preference.
+Combines job results from multiple ATS sources (Greenhouse, Lever, Ashby,
+Workable, SmartRecruiters) into a single deduplicated job list with
+intelligent source preference.
 
 Key Features:
 - Deduplicates by (company + title + location) MD5 hash
-- Prefers Greenhouse descriptions (9,000+ chars vs Adzuna's 100-200)
 - Tracks data source for each job
 - Handles data format normalization
 - Optional filtering by function/location
@@ -16,11 +16,10 @@ Key Features:
 Usage:
 ------
 ingester = UnifiedJobIngester()
-merged_jobs = await ingester.merge(adzuna_jobs, greenhouse_jobs)
+merged_jobs = await ingester.merge(greenhouse_jobs)
 
 # Or with filtering
 merged_jobs = await ingester.merge(
-    adzuna_jobs,
     greenhouse_jobs,
     function_filter=['data_engineer', 'data_scientist'],
     location_code='lon'
@@ -39,14 +38,12 @@ from enum import Enum
 
 class DataSource(Enum):
     """Enum for job data sources"""
-    ADZUNA = "adzuna"
     GREENHOUSE = "greenhouse"
     LEVER = "lever"
     ASHBY = "ashby"
     WORKABLE = "workable"
     SMARTRECRUITERS = "smartrecruiters"
     CUSTOM = "custom"  # Config-driven scrapers for custom career sites (Google, FAANG, banks)
-    HYBRID = "hybrid"  # When Adzuna job data + Greenhouse description
 
 
 @dataclass
@@ -65,17 +62,10 @@ class UnifiedJob:
     job_id: Optional[str] = None
 
     # Tracking fields
-    source: DataSource = DataSource.ADZUNA
+    source: DataSource = DataSource.GREENHOUSE
     original_url: Optional[str] = None  # URL from original source
-    description_source: DataSource = DataSource.ADZUNA
-    adzuna_description: Optional[str] = None  # Keep original for reference
+    description_source: DataSource = DataSource.GREENHOUSE
     greenhouse_description: Optional[str] = None  # Keep original for reference
-
-    # Adzuna API metadata (for classifier context)
-    adzuna_category: Optional[str] = None  # e.g., "IT Jobs"
-    adzuna_salary_min: Optional[float] = None
-    adzuna_salary_max: Optional[float] = None
-    adzuna_salary_predicted: Optional[bool] = None
 
     # Lever API metadata (for classifier context)
     lever_id: Optional[str] = None
@@ -114,7 +104,6 @@ class UnifiedJobIngester:
 
     async def merge(
         self,
-        adzuna_jobs: List = None,
         greenhouse_jobs: List = None,
         function_filter: Optional[List[str]] = None,
         location_code: Optional[str] = None
@@ -123,8 +112,7 @@ class UnifiedJobIngester:
         Merge jobs from multiple sources with deduplication.
 
         Args:
-            adzuna_jobs: List of Job objects from Adzuna API
-            greenhouse_jobs: List of Job objects from Greenhouse scraper
+            greenhouse_jobs: List of Job objects from Greenhouse scraper (or any ATS source)
             function_filter: Optional list of job functions to keep (e.g., ['data_engineer'])
             location_code: Optional location code to filter by (e.g., 'lon')
 
@@ -132,12 +120,10 @@ class UnifiedJobIngester:
             Tuple of (merged_jobs, merge_stats)
         """
 
-        if not adzuna_jobs:
-            adzuna_jobs = []
         if not greenhouse_jobs:
             greenhouse_jobs = []
 
-        self._log(f"Starting merge: {len(adzuna_jobs)} Adzuna + {len(greenhouse_jobs)} Greenhouse jobs")
+        self._log(f"Starting merge: {len(greenhouse_jobs)} jobs")
 
         merged_jobs = []
 
@@ -168,13 +154,11 @@ class UnifiedJobIngester:
                     self.job_type = getattr(job, 'job_type', None)
                     self._original = job
 
-        # Normalize all greenhouse jobs
+        # Normalize all jobs
         greenhouse_jobs = [JobWrapper(job) for job in greenhouse_jobs]
-        # Normalize all adzuna jobs
-        adzuna_jobs = [JobWrapper(job) for job in adzuna_jobs]
 
-        # Process Greenhouse jobs first (higher priority due to quality)
-        self._log("Processing Greenhouse jobs (higher priority)")
+        # Process jobs with deduplication
+        self._log("Processing jobs")
         for job in greenhouse_jobs:
             dedup_key = self._make_dedup_key(job.company, job.title, job.location)
 
@@ -188,40 +172,7 @@ class UnifiedJobIngester:
                 merged_jobs.append(unified_job)
                 self._log(f"  [NEW] {job.company} - {job.title[:50]}")
             else:
-                self._log(f"  [DUP-SKIPPED] {job.company} - {job.title[:50]} (already in Adzuna)")
-
-        # Process Adzuna jobs
-        self._log("Processing Adzuna jobs")
-        for job in adzuna_jobs:
-            dedup_key = self._make_dedup_key(job.company, job.title, job.location)
-
-            if dedup_key not in self.dedup_key_map:
-                # New job from Adzuna
-                unified_job = self._convert_to_unified(
-                    job,
-                    source=DataSource.ADZUNA,
-                    description_source=DataSource.ADZUNA
-                )
-                self.dedup_key_map[dedup_key] = unified_job
-                merged_jobs.append(unified_job)
-                self._log(f"  [NEW] {job.company} - {job.title[:50]}")
-            else:
-                # Duplicate: we already have this job from Greenhouse
-                existing = self.dedup_key_map[dedup_key]
-
-                # Check if we should prefer Adzuna description (unlikely, but possible)
-                if (len(job.description or "") > len(existing.description or "") * 1.2):
-                    # Adzuna description is significantly longer
-                    self._log(f"  [DUP-UPGRADED] {job.company} - Using Adzuna desc ({len(job.description)} vs {len(existing.description)})")
-                    existing.adzuna_description = existing.description
-                    existing.description = job.description
-                    existing.description_source = DataSource.ADZUNA
-                    existing.deduplicated = True
-                else:
-                    # Keep Greenhouse description (standard case)
-                    self._log(f"  [DUP-KEPT] {job.company} - Keeping Greenhouse desc ({len(existing.description)} vs {len(job.description)})")
-                    existing.adzuna_description = job.description
-                    existing.deduplicated = True
+                self._log(f"  [DUP-SKIPPED] {job.company} - {job.title[:50]} (already exists)")
 
         # Apply filters if specified
         if function_filter or location_code:
@@ -232,11 +183,10 @@ class UnifiedJobIngester:
             )
 
         # Generate statistics
-        stats = self._generate_stats(merged_jobs, len(adzuna_jobs), len(greenhouse_jobs))
+        stats = self._generate_stats(merged_jobs, len(greenhouse_jobs))
 
         self._log(f"\nMerge complete: {len(merged_jobs)} final jobs")
-        self._log(f"  - New from Greenhouse: {stats['greenhouse_only']}")
-        self._log(f"  - New from Adzuna: {stats['adzuna_only']}")
+        self._log(f"  - New from sources: {stats['greenhouse_only']}")
         self._log(f"  - Deduplicated: {stats['deduplicated']}")
 
         return merged_jobs, stats
@@ -276,7 +226,6 @@ class UnifiedJobIngester:
             source=source,
             original_url=url,
             description_source=description_source,
-            adzuna_description=description if source == DataSource.ADZUNA else None,
             greenhouse_description=description if source == DataSource.GREENHOUSE else None
         )
 
@@ -322,11 +271,10 @@ class UnifiedJobIngester:
         # Return first 3 letters if no mapping found
         return location_lower[:3]
 
-    def _generate_stats(self, merged_jobs, adzuna_count, greenhouse_count) -> Dict:
+    def _generate_stats(self, merged_jobs, greenhouse_count) -> Dict:
         """Generate merge statistics"""
 
         greenhouse_only = sum(1 for j in merged_jobs if j.source == DataSource.GREENHOUSE and not j.deduplicated)
-        adzuna_only = sum(1 for j in merged_jobs if j.source == DataSource.ADZUNA)
         deduplicated = sum(1 for j in merged_jobs if j.deduplicated)
 
         avg_description_length = sum(len(j.description) for j in merged_jobs) // len(merged_jobs) if merged_jobs else 0
@@ -334,15 +282,12 @@ class UnifiedJobIngester:
         return {
             'total_merged': len(merged_jobs),
             'greenhouse_input': greenhouse_count,
-            'adzuna_input': adzuna_count,
             'greenhouse_only': greenhouse_only,
-            'adzuna_only': adzuna_only,
             'deduplicated': deduplicated,
-            'dedup_rate': f"{100 * deduplicated // (adzuna_count + greenhouse_count)}%" if (adzuna_count + greenhouse_count) > 0 else "0%",
+            'dedup_rate': f"{100 * deduplicated // greenhouse_count}%" if greenhouse_count > 0 else "0%",
             'avg_description_length': avg_description_length,
             'source_breakdown': {
                 'greenhouse': sum(1 for j in merged_jobs if j.description_source == DataSource.GREENHOUSE),
-                'adzuna': sum(1 for j in merged_jobs if j.description_source == DataSource.ADZUNA),
             }
         }
 
@@ -397,14 +342,13 @@ class UnifiedJobIngester:
 async def main():
     """Example usage of UnifiedJobIngester"""
 
-    # This would normally come from fetch_adzuna_jobs.py and greenhouse_scraper.py
+    # This would normally come from ATS fetchers (greenhouse, lever, etc.)
     # For now, showing the interface
 
     ingester = UnifiedJobIngester(verbose=True)
 
-    # Example with empty lists (would use real data in production)
+    # Example with empty list (would use real data in production)
     merged_jobs, stats = await ingester.merge(
-        adzuna_jobs=[],
         greenhouse_jobs=[],
     )
 

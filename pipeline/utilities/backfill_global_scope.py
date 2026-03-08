@@ -41,7 +41,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-VALID_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'adzuna']
+VALID_SOURCES = ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters']
 VALID_SCOPES = ['global', 'country', 'region']
 
 
@@ -112,8 +112,8 @@ def extract_location_string(metadata: Dict) -> Optional[str]:
         metadata.get('ashby_location') or
         metadata.get('lever_location') or
         metadata.get('greenhouse_location') or
-        metadata.get('adzuna_location') or
-        metadata.get('adzuna_city') or
+        metadata.get('workable_location') or
+        metadata.get('smartrecruiters_location') or
         None
     )
 

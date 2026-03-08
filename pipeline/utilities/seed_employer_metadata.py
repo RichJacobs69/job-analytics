@@ -41,7 +41,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 load_dotenv()
 
 
-# Display name overrides for companies not in ATS configs (e.g., Adzuna-only employers)
+# Display name overrides for companies not in ATS configs
 # These ensure proper casing even when source data is lowercase
 DISPLAY_NAME_OVERRIDES = {
     # Big Tech
